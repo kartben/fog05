@@ -4,7 +4,12 @@
 
 		@AC: In general we need to provide monitoring of nodes as well as 
 		deployed entities.
-		 	
+		
+
+		@GB: Yes, for entities there should be a lifecycle monitor which allow access to lifecycle managment and monitoring
+		Also possibility to decide what the node should monitor
+
+
 - Start/Stop of native applications
 - Managment of µServices (current status,configuration,deploy,relation changes,scaling,migration,shutdown)
 - Managment of containers (via Docker/Kuberentes/LXC/LXD API)
@@ -23,3 +28,12 @@ All these functionalities should be exposed by API
 		@AC: We should also list the network-releated control features 
 		that will eventually be provided. Then we'll do a roadmap to
 		describe what will be the intial focus.
+
+		@GB: As we discussed network-relater control features should be:
+		- assign bandwidth to a entity 
+		- probably modify linux wireless stack in a way to allocate bandwidth even on wireless interfaces
+		- tunnels between entities that should appear on the same network (VxLAN/OpenVSwitch VOSYS-OVSwitch/L2 Tunnels/VPN) this should also address network slicing
+
+		Also the agent as to be extensible with plugins, these plugins can cover all the functionalites
+		eg. underlying os interaction, new hypervisor/entity support
+		In this way the agent become very light and can load functionalities at runtime
