@@ -19,6 +19,7 @@ class OSPlugin(Plugin):
         :command: String
         :return: String or bool?
         """
+        
         raise NotImplementedError("This is and interface!")
 
     def installPackage(self, packages):
@@ -51,7 +52,8 @@ class OSPlugin(Plugin):
 
         """
         Read the content from a file in the local disk, maybe can convert from windows dir separator to unix dir separator
-        return the file content 
+        return the file content
+        throw an exception if file not exits
         
         :file_path: String
         :return: byte
@@ -115,6 +117,7 @@ class OSPlugin(Plugin):
 
         """
         Send a signal to the process identified by pid
+        throw an exception if pid not exits
 
         :signal: int
         :pid: int
@@ -136,6 +139,7 @@ class OSPlugin(Plugin):
 
         """
         Send a SigKill (Ctrl+C) to the process identified by pid
+        throw an exception if pid not exits
         :pid: int
         :return: bool
         """
@@ -146,8 +150,24 @@ class OSPlugin(Plugin):
 
         """
         Send a SigKill (kill the process) to the process identified by pid
+        throw an exception if pid not exits
         :pid: int
         :return: bool
         """
 
         raise NotImplementedError("This is and interface!")
+
+
+
+class ProcessNotExisting(Exception):
+    def __init__(self, message, errors):
+
+        super(ProcessNotExisting, self).__init__(message)
+        self.errors = errors
+
+
+class FileNotExisting(Exception):
+    def __init__(self, message, errors):
+
+        super(FileNotExisting, self).__init__(message)
+        self.errors = errors
