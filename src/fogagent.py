@@ -4,7 +4,7 @@ from PluginLoader import PluginLoader
 def main():
     pl = PluginLoader("./plugins")
     pl.getPlugins()
-    kvm=pl.locatePlugin('RuntimeKVM')
+    kvm=pl.locatePlugin('RuntimeLibVirt')
     if kvm != None:
         kvm=pl.loadPlugin(kvm)
         kvm.run()
