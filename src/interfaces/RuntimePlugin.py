@@ -1,10 +1,14 @@
-class RuntimePlugin():
-    
+from Plugin import Plugin
+
+
+class RuntimePlugin(Plugin):
+
     def __init__(self):
         self.pid=-1
         self.uuid="0"
         self.currentRunningEntities={}
         raise NotImplementedError("This is and interface!")
+
 
     def startRuntime(self):
         raise NotImplementedError("This is and interface!")
@@ -45,4 +49,3 @@ class RuntimePlugin():
     def cleanEntity(self,entityID):
         raise NotImplementedError("This is and interface!")
 
-    
