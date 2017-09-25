@@ -9,8 +9,8 @@ class RuntimePlugin(Plugin):
     def __init__(self):
         self.pid=-1
         self.uuid="0"
+        self.name=""
         self.currentRunningEntities={}
-        raise NotImplementedError("This is and interface!")
 
 
     def startRuntime(self):
