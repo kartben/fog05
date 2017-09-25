@@ -5,24 +5,24 @@ class NetworkPlugin():
     """
     Class: NetworkPlugin
 
-    This class is an interface for plugins that control the network resouces, and provide an abstraction layer 
+    This class is an interface for plugins that control the network resouces, and provide an abstraction layer
     for networking managment functions
     """
 
     def __init__(self):
         raise NotImplementedError("This is and interface!")
 
-    def createVirtualInterface(self,name):
+    def createVirtualInterface(self, name):
         """
         This should create a virtual network interface
 
-        :name: String 
+        :name: String
         :return: tuple (interface_name,interface_uuid) or None in case of failure
 
         """
         raise NotImplementedError("This is and interface!")
     
-    def creareVirtualBridge(self,name):
+    def creareVirtualBridge(self, name):
         """
         This should create a virtual bridge 
 
@@ -31,9 +31,10 @@ class NetworkPlugin():
         """
         raise NotImplementedError("This is and interface!")
 
-    def allocateBandwidth(self,intf_uuid,bandwidth):
+    def allocateBandwidth(self, intf_uuid, bandwidth):
         """
-        This should allocate bandwidth to a certaint virtual interface, if the interface not exists throw an exception
+        This should allocate bandwidth to a certaint virtual interface,
+        if the interface not exists throw an exception
 
         :intf_uuid: String
         :bandwidth: tuple (up,down)
@@ -42,18 +43,19 @@ class NetworkPlugin():
         """
         raise NotImplementedError("This is and interface!")
 
-    def createVirtualNetwork(self,network_name,ip_range,has_dhcp,gateway):
+    def createVirtualNetwork(self, network_name, ip_range, has_dhcp, gateway):
         """
         This should create a virtual network, with given caratteristics
 
-        range should specified as CIRD subnet eg. 192.168.0.0/24 wich means from 192.168.0.1 to 192.168.0.254
+        range should specified as CIRD subnet
+        eg. 192.168.0.0/24 wich means from 192.168.0.1 to 192.168.0.254
         if gateway address is none the entities connected to that network cannot reach internet
         if dhcp is true the easiest way to have a dhcp server is using dnsmasq
         eg. sudo dnsmasq -d  --interface=<bridge_associated_to_this_network> --bind-interfaces  --dhcp-range=<start_ip>,<end_ip>
-        using -d you can parse dnsmasq output to listen to events like dhcp ack 
+        using -d you can parse dnsmasq output to listen to events like dhcp ack
 
         :network_name: String
-        :ip_range: String 
+        :ip_range: String
         :has_dhcp: bool
         :gateway: String
         :return: tuple (net_name,net_uuid) or None in case of failure
@@ -64,7 +66,8 @@ class NetworkPlugin():
 
     def assignInterfaceToNetwork(self,network_uuid,intf_uuid):
         """
-        This should assign the interface identified by intf_uuid to the network identified by network_uuid, if the interface not exists throw an exception
+        This should assign the interface identified by intf_uuid to the network identified by network_uuid,
+        if the interface not exists throw an exception
 
         :network_uuid: String
         :intf_uuid: String
@@ -78,7 +81,8 @@ class NetworkPlugin():
 
         """
         This should delete a virtual interface identified by intf_uuid, if the interface is assigned to a network
-        maybe can also call removeInterfaceFromNetwork() to avoid any problem, if the interface not exists throw an exception
+        maybe can also call removeInterfaceFromNetwork() to avoid any problem,
+        if the interface not exists throw an exception
 
         :intf_uuid: String
         :return: bool
