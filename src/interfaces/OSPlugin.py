@@ -159,15 +159,15 @@ class OSPlugin(Plugin):
 
 
 
-class ProcessNotExisting(Exception):
+class ProcessNotExistingException(Exception):
     def __init__(self, message, errors):
 
-        super(ProcessNotExisting, self).__init__(message)
+        super(ProcessNotExistingException, self).__init__(message)
         self.errors = errors
 
 
-class FileNotExisting(Exception):
+class FileNotExistingException(Exception):
     def __init__(self, message, errors):
 
-        super(FileNotExisting, self).__init__(message)
+        super(FileNotExistingException, self).__init__(message)
         self.errors = errors

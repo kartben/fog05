@@ -137,26 +137,26 @@ class BridgeAssociatedToNetworkException(Exception):
         self.errors = errors
 
 
-class NetworkHasPendingInterfaces(Exception):
+class NetworkHasPendingInterfacesException(Exception):
     def __init__(self, message, errors):
 
-        super(NetworkHasPendingInterfaces, self).__init__(message)
+        super(NetworkHasPendingInterfacesException, self).__init__(message)
         self.errors = errors
 
-class InterfaceNotInNetwork(Exception):
+class InterfaceNotInNetworkException(Exception):
     def __init__(self, message, errors):
 
-        super(InterfaceNotInNetwork, self).__init__(message)
+        super(InterfaceNotInNetworkException, self).__init__(message)
         self.errors = errors
 
-class BridgeNotExisting(Exception):
+class BridgeNotExistingException(Exception):
     def __init__(self, message, errors):
 
-        super(BridgeNotExisting, self).__init__(message)
+        super(BridgeNotExistingException, self).__init__(message)
         self.errors = errors
 
-class InterfaceNotExisting(Exception):
+class InterfaceNotExistingException(Exception):
     def __init__(self, message, errors):
 
-        super(InterfaceNotExisting, self).__init__(message)
+        super(InterfaceNotExistingException, self).__init__(message)
         self.errors = errors
