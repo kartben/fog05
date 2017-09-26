@@ -127,7 +127,7 @@ class RuntimeLibVirt(RuntimePlugin):
         elif entity.getState() != State.RUNNING:
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
-            self.conn.lookupByID(entity_uuid).save(str("/opt/fog/%s_paused" % entity_uuid))
+            self.conn.lookupByID(entity_uuid).suspend()
             entity.onPause()
             self.currentEntities.update({entity_uuid:entity})
             return True
@@ -139,7 +139,7 @@ class RuntimeLibVirt(RuntimePlugin):
         elif entity.getState() != State.PAUSED:
             raise StateTransitionNotAllowedException("Entity is not in PAUSED state",str("Entity %s is not in PAUSED state" % entity_uuid))
         else:
-            self.conn.restore(str("/opt/fog/%s_paused" % entity_uuid))
+            self.conn.lookupByID(entity_uuid).resume()
             entity.onResume()
             self.currentEntities.update({entity_uuid:entity})
             return True
