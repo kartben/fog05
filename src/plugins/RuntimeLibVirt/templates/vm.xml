@@ -1,0 +1,38 @@
+<domain type='kvm'>
+  <name>{{ name }}</name>
+  <uuid>{{ uuid }}</uuid>
+  <memory>{{ memory }}</memory>
+  <currentMemory>{{ memory }}</currentMemory>
+  <vcpu>{{ cpu }}</vcpu>
+  <os>
+    <type arch='x86_64' machine='pc'>hvm</type>
+    <boot dev='cdrom'/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+    <pae/>
+  </features>
+  <clock offset='localtime'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>destroy</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+    <disk type='file' device='disk'>
+      <source file='{{ disk_image }}'/>
+      <target dev='hda' bus='ide'/>
+    </disk>
+    <disk type='file' device='cdrom'>
+      <source file='{{ iso_image }}'/>
+      <target dev='hdb' bus='ide'/>
+      <readonly/>
+    </disk>
+    <!-- <interface type='bridge'>
+      <source bridge='br0'/>
+      <mac address="0E:1F:35:AB:45:0C"/>
+    </interface> -->
+    <input type='mouse' bus='ps2'/>
+    <graphics type='vnc' port='-1' autoport='yes' keymap='en-us'/>
+  </devices>
+</domain>

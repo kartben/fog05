@@ -10,13 +10,13 @@ class RuntimePlugin(Plugin):
         self.pid=-1
         self.uuid="0"
         self.name=""
-        self.currentRunningEntities={}
+        self.currentEntities={}
 
 
     def startRuntime(self):
         """
         start the runtime
-        :return: runtime pid
+        :return: runtime pid or runtime uuid?
         """
         raise NotImplementedError("This is and interface!")
 

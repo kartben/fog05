@@ -13,6 +13,8 @@ class Entity():
     def getState(self):
         return self.state
 
+    def setState(self,state):
+        self.state = state
 
     def onConfigured(self, configuration):
         raise NotImplementedError("This is and interface!")
