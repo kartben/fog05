@@ -18,10 +18,10 @@ class DistribuitedCache():
     def write(self, key, value):
         raise NotImplementedError("This is and interface!")
     
-    def query(self, sql):
+    def query(self, function):
         raise NotImplementedError("This is and interface!")
 
-    def addContinuousQuery(self, sql, listener):
+    def addContinuousQuery(self, function, listener):
         raise NotImplementedError("This is and interface!")
 
     def addMissingHandler(self, handler):

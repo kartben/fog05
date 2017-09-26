@@ -6,11 +6,13 @@ from Plugin import Plugin
 
 class RuntimePlugin(Plugin):
 
-    def __init__(self):
+    def __init__(self,version):
+        super(RuntimePlugin, self).__init__(version)
         self.pid=-1
         self.uuid="0"
         self.name=""
         self.currentEntities={}
+        
 
 
     def startRuntime(self):

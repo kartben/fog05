@@ -8,6 +8,7 @@ from LibVirtEntity import LibVirtEntity
 from jinja2 import Environment
 
 
+
 def readFile(filename):
     with open(filename, 'r') as myfile:
         data=myfile.read()
@@ -15,8 +16,8 @@ def readFile(filename):
 
 class RuntimeLibVirt(RuntimePlugin):
 
-    def __init__(self,name):
-        super(RuntimeLibVirt, self).__init__()
+    def __init__(self,name,version):
+        super(RuntimeLibVirt, self).__init__(version)
         self.uuid=uuid.uuid4()
         self.name=name
 
@@ -47,7 +48,7 @@ class RuntimeLibVirt(RuntimePlugin):
         cdrom_path=str("/opt/fog/%s_config.iso" % entity_uuid)
 
         #is defined 
-        entity=LibVirtEntity(entity_uuid,args[0],args[1],args[2],disk_path,args[3],cdrom_path,[])
+        entity=LibVirtEntity(entity_uuid,args[0],args[2],args[1],disk_path,args[3],cdrom_path,[])
         entity.setState(State.DEFINED)
         self.currentEntities.update({entity_uuid:entity})
 
@@ -80,12 +81,16 @@ class RuntimeLibVirt(RuntimePlugin):
             vm_xml = vm_xml.render(name=entity.name, uuid=entity_uuid, memory=entity.ram,
                                    cpu=entity.cpu, disk_image=entity.disk,
                                    iso_image=entity.cdrom)
-            conf_cmd = str("%s --hostname %s %s" % (os.path.join(sys.path[0],'plugins','RuntimeLibVirt','templates','creare_config_drive.sh'),entity.name,entity.cdrom))
+            conf_cmd = str("%s --hostname %s %s" % (os.path.join(sys.path[0],'plugins','RuntimeLibVirt','templates','create_config_drive.sh'),entity.name,entity.cdrom))
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk,entity.disk_size))
+            dd_cmd = str("dd if=/opt/fog/images/%s of=/opt/fog/%s" ('image',entity.disk))
             print(qemu_cmd)
             print(conf_cmd)
+            
             #os.system(qemu_cmd)
-            print(vm_xml)
+            #os.system(conf_cmd)
+
+            #print(vm_xml)
             self.conn.defineXML(vm_xml)
             entity.onConfigured(vm_xml)
             self.currentEntities.update({entity_uuid:entity})

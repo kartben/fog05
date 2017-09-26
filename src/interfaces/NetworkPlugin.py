@@ -1,7 +1,7 @@
 from Plugin import Plugin
 
 
-class NetworkPlugin():
+class NetworkPlugin(Plugin):
     """
     Class: NetworkPlugin
 
@@ -9,8 +9,8 @@ class NetworkPlugin():
     for networking managment functions
     """
 
-    def __init__(self):
-        raise NotImplementedError("This is and interface!")
+    def __init__(self,version):
+        super(NetworkPlugin, self).__init__(version)
 
     def createVirtualInterface(self, name):
         """

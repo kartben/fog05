@@ -8,8 +8,8 @@ class OSPlugin(Plugin):
 
     """
 
-    def __init__(self):
-        raise NotImplementedError("This is and interface!")
+    def __init__(self,version):
+        super(OSPlugin, self).__init__(version)
 
     def executeCommand(self, command):
 
