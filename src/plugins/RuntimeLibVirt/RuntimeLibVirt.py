@@ -57,7 +57,7 @@ class RuntimeLibVirt(RuntimePlugin):
         entity=self.currentEntities.get(entity_uuid,None)
         if entity == None:
             raise EntityNotExistingException("Enitity not existing",str("Entity %s not in runtime %s" % (entity_uuid,self.uuid)))
-        elif entity.getState != State.DEFINED:
+        elif entity.getState() != State.DEFINED:
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             self.currentEntities.pop(entity_uuid,None)
@@ -67,7 +67,7 @@ class RuntimeLibVirt(RuntimePlugin):
         entity=self.currentEntities.get(entity_uuid,None)
         if entity == None:
             raise EntityNotExistingException("Enitity not existing",str("Entity %s not in runtime %s" % (entity_uuid,self.uuid)))
-        elif entity.getState != State.DEFINED:
+        elif entity.getState() != State.DEFINED:
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             # read from file only for test, should use a method from OSPlugin
@@ -87,7 +87,7 @@ class RuntimeLibVirt(RuntimePlugin):
             #os.system(qemu_cmd)
             print(vm_xml)
             self.conn.defineXML(vm_xml)
-            entity.onConfigure(vm_xml)
+            entity.onConfigured(vm_xml)
             self.currentEntities.update({entity_uuid:entity})
             return True
 
@@ -95,7 +95,7 @@ class RuntimeLibVirt(RuntimePlugin):
         entity=self.currentEntities.get(entity_uuid,None)
         if entity == None:
             raise EntityNotExistingException("Enitity not existing",str("Entity %s not in runtime %s" % (entity_uuid,self.uuid)))
-        elif entity.getState != State.CONFIGURED:
+        elif entity.getState() != State.CONFIGURED:
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
             # should undefine on libvirt
@@ -111,7 +111,7 @@ class RuntimeLibVirt(RuntimePlugin):
         entity=self.currentEntities.get(entity_uuid,None)
         if entity == None:
             raise EntityNotExistingException("Enitity not existing",str("Entity %s not in runtime %s" % (entity_uuid,self.uuid)))
-        elif entity.getState != State.RUNNING:
+        elif entity.getState() != State.RUNNING:
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
             self.conn.lookupByID(entity_uuid).destroy()
@@ -124,7 +124,7 @@ class RuntimeLibVirt(RuntimePlugin):
         entity=self.currentEntities.get(entity_uuid,None)
         if entity == None:
             raise EntityNotExistingException("Enitity not existing",str("Entity %s not in runtime %s" % (entity_uuid,self.uuid)))
-        elif entity.getState != State.RUNNING:
+        elif entity.getState() != State.RUNNING:
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
             self.conn.lookupByID(entity_uuid).save(str("/opt/fog/%s_paused" % entity_uuid))
@@ -136,7 +136,7 @@ class RuntimeLibVirt(RuntimePlugin):
         entity=self.currentEntities.get(entity_uuid,None)
         if entity == None:
             raise EntityNotExistingException("Enitity not existing",str("Entity %s not in runtime %s" % (entity_uuid,self.uuid)))
-        elif entity.getState != State.PAUSED:
+        elif entity.getState() != State.PAUSED:
             raise StateTransitionNotAllowedException("Entity is not in PAUSED state",str("Entity %s is not in PAUSED state" % entity_uuid))
         else:
             self.conn.restore(str("/opt/fog/%s_paused" % entity_uuid))
