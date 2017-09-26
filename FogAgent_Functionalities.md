@@ -9,7 +9,13 @@
 		@GB: Yes, for entities there should be a lifecycle monitor which allow access to lifecycle managment and monitoring
 		Also possibility to decide what the node should monitor
 
-
+		@AC: Pinning should be supported for entities that should never be migrated.
+		That is important for real-time or applications depending on I/O latency. 
+		Added to the list below.
+		
+- Pinning
+- Support for Accelerators and I/O awareness in deployment
+- Should be able to describe attributes of the target platform that are (1) required, (2) desirable, (3) optional, ...
 - Start/Stop of native applications
 - Managment of µServices (current status,configuration,deploy,relation changes,scaling,migration,shutdown)
 - Managment of containers (via Docker/Kuberentes/LXC/LXD API)
