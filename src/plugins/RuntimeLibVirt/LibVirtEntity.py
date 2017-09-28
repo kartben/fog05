@@ -12,7 +12,7 @@ def readFile(filename):
 
 class LibVirtEntity(Entity):
 
-    def __init__(self,uuid,name,cpu,ram,disk,disk_size,cdrom,networks):
+    def __init__(self, uuid, name, cpu, ram, disk, disk_size ,cdrom ,networks):
 
         super(LibVirtEntity, self).__init__()
         self.uuid = uuid
