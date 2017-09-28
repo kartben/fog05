@@ -2,7 +2,7 @@ import imp
 import os
 import sys
 
-class PluginLoader():
+class PluginLoader(object):
 
     def __init__(self,plugin_path):
         self.PluginFolder = plugin_path

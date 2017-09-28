@@ -83,7 +83,7 @@ class RuntimeLibVirt(RuntimePlugin):
                                    iso_image=entity.cdrom)
             conf_cmd = str("%s --hostname %s %s" % (os.path.join(sys.path[0],'plugins','RuntimeLibVirt','templates','create_config_drive.sh'),entity.name,entity.cdrom))
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk,entity.disk_size))
-            dd_cmd = str("dd if=/opt/fog/images/%s of=/opt/fog/%s" ('image',entity.disk))
+            dd_cmd = str("dd if=/opt/fog/images/%s of=/opt/fog/%s" % ('image',entity.disk))
             print(qemu_cmd)
             print(conf_cmd)
             

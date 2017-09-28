@@ -1,4 +1,4 @@
-class DistribuitedCache():
+class DistribuitedCache(object):
 
     def __init__(self):
         raise NotImplementedError("This is and interface!")

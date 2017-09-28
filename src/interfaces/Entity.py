@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.join(sys.path[0],'interfaces'))
 from States import State
 
-class Entity():
+class Entity(object):
 
     def __init__(self):
         self.state=State.UNDEFINED
