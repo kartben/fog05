@@ -103,7 +103,8 @@ fos://<system_id>/<node_id>/<type_of_resource>/<id_of_resource>/<type_of_subreso
 > * virtual_bridge
 > * virtual_interface
 > 
->	~~action,~~ query and fragment depend on level
+> ~~action,~~ query and fragment depend on level
+>
 > Action are part of the JSON Object, see below some JSON object types
 > 
 > At node level is possible to monitor information about a node and manage is lifecycle, the same is possible at id_of_resource level and id_of_subresource level
