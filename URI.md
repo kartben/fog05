@@ -1,5 +1,7 @@
 #URI definition
 
+###### updated 29/09/2017
+
 Because we want to share all possibile information through our distributed cache (K,V cache), URI are very important as they are the key for our cache.
 
 ## So let's see some examples:
@@ -19,11 +21,13 @@ Then the value should be a JSON object with all information that permitt to get 
 		
 			pput(`fos://<system_id>/<node_id>/plugins/<plugin-name>`, plug-in-descr)
 			
-		As adding this URI to the cache has the effect of "registering the plugin.
+		As adding this URI to the cache has the effect of "registering" the plugin.
 		
 			
 ###### Interact with a runtime
 `fos://<system_id>/<node_id>/runtime/<runtime_id>/$action_to_runtime` 
+
+	@GB: see comments below, all actions become desidered state and are passed through the JSON parameter
 
 ###### Create a new entity
 `fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/$create_entity` 
@@ -50,6 +54,23 @@ In this case `action` can be very different things, depend on entity type (vm, u
 
 	The value associated with a specific key K should represent the desired state for 
 	the a specific resource.
+	
+	
+	@GB: As discussed can we use 
+	
+	`fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>` as key
+	
+	and the previously defined 'action' become part of the JSON send in the put() or pput()
+	
+	in a way that we don't have actions inside the uri, but they rappresent a desidered state for that resource
+	
+	so as example:
+	
+	previously uri: pput('fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>$run')
+	now uri: pput('fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>',{'status':run ... })
+	
+	
+	
 ## Definition
 
 So after this example we can try to define a more general URI scheme for FogOS
@@ -59,16 +80,18 @@ fos://<system_id>/<node_id>/<type_of_resource>/<id_of_resource>/<type_of_subreso
 `
 
 > It is possible to get basic information about all nodes/entity/... at every level by using `**`, where id is required is possible to use wildcard `*` or list of ids
-
-> At each level is possible to have `['$'action]['?'query]['#'fragment]` 
-
+>
+> ~~At each level is possible to have `['$'action]['?'query]['#'fragment]`~~ 
+>
+> At each level is possible to have `['?'query]['#'fragment]`
+>
 >`<type_of_resource>` can be: 
-
+>
 > * plugin
 > * runtime
 > * network
 > * os
-
+>
 > `<type_of_subresource>` depend on resource type
 > 
 > eg for network can be 
@@ -77,9 +100,9 @@ fos://<system_id>/<node_id>/<type_of_resource>/<id_of_resource>/<type_of_subreso
 > * virtual_bridge
 > * virtual_interface
 > 
->  action, query and fragment depend on level
-> 
+>	~~action,~~ query and fragment depend on level
+> Action are part of the JSON Object, see below some JSON object types
 > 
 > At node level is possible to monitor information about a node and manage is lifecycle, the same is possible at id_of_resource level and id_of_subresource level
-
+>
 > All values must be JSON objects
