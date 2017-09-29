@@ -114,7 +114,7 @@ fos://<system_id>/<node_id>/<type_of_resource>/<id_of_resource>/<type_of_subreso
 ---
 
 #### JSON Types
--
+--
 
 Here some JSON object types
 
