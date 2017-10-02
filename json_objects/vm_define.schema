@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "title": "NodeInformation",
+  "description": "Information about a FogOS Node",
+  "type": "object",
+  "properties": {
+    "name":{
+      "type":"string",
+      "description":"vm name"
+    },
+    "uuid":{
+      "type":"string"
+    },
+    "cpu":{
+      "type":"int"
+    },
+    "memory":{
+      "type":"int"
+    },
+    "disk_size":{
+      "type":"int"
+    },
+    "base_image":{
+      "type":"string"
+    },
+    "networks":{
+      "type":"array",
+      "items":{
+        "type":"object",
+        "properties":{
+          "mac_address":{
+            "type":"string"
+          },
+          "intf_name":{
+            "type":"string"
+          }
+        }
+      }
+    }
+
+  }
+}

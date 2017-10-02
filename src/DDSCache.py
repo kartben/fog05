@@ -9,6 +9,8 @@ class DDSCache(Cache):
         self.__node_id = node_id
         self.__observer = observer
         self.__local_cache = {}
+        self.__observers = {}
+
 
     def pput(self, uri, value):
         pass
@@ -20,7 +22,7 @@ class DDSCache(Cache):
         pass
 
     def observe(self, uri, action):
-        pass
+        self.__observers.update({uri: action})
 
     def remove(self, uri):
         self.__observer.onRemove(uri)
@@ -31,7 +33,7 @@ class DDSCache(Cache):
         uri = str("%s%s" % (uri, '*'))
         self.__observer.onGet(uri)
         for key in self.__local_cache:
-            if fnmatch.fnmatch(key,uri):
+            if fnmatch.fnmatch(key, uri):
                 data.append({key: self.__local_cache.get(key)})
         if len(data) == 0:
             self.observer.onMiss()
@@ -41,6 +43,14 @@ class DDSCache(Cache):
     def put(self, uri, value):
         self.__observer.onPut(uri, value)
         self.__local_cache.update({uri: value})
+
+        for key in self.__observers:
+            if fnmatch.fnmatch(uri, key):
+                self.__observers.get(key)(uri, value)
+
+
+
+
 
     def miss_handler(self, action):
         pass

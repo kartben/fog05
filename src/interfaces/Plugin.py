@@ -8,3 +8,6 @@ class Plugin(object):
 
     def getVersion(self):
         return self.version
+
+    def reactToCache(self,key,value):
+        raise NotImplemented

@@ -31,7 +31,7 @@ class RuntimePlugin(Plugin):
     def getEntities(self):
         raise NotImplementedError("This is and interface!")
 
-    def defineEntity(self,*args):
+    def defineEntity(self, *args, **kwargs):
         """
         Define entity from args of from manifest file passed within parameters
         return the entity uuid

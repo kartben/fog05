@@ -66,7 +66,6 @@ class FogAgent(Agent):
         print (self.cache)
 
 
-
         d = self.cache.get(str('fos://*/%s/plugins/kvm-libvirt' % self.uuid))
         for a in d:
             kvm = a[list(a.keys())[0]]
@@ -74,15 +73,39 @@ class FogAgent(Agent):
             uri = str('fos://<sys-id>/%s/runtime/%s' % (self.uuid, kvm_uuid))
             self.cache.put(uri, kvm)
 
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.uuid, kvm_uuid))
+        self.cache.observe(uri,kvm.reactToCache)
 
-        print (self.cache)
+        print("Press enter to define a vm")
+        input()
+
+        vm_uuid = str(uuid.uuid4())
+        vm_name = 'test'
+
+        vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 5, 'base_image':
+            'cirros-0.3.5-x86_64-disk.img' }
+
+        entity_definition = {'status': 'define', 'name': vm_name, 'version': 1, 'entity_data': vm_definition}
+
+        json_data = json.dumps(entity_definition)
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm_uuid, vm_uuid))
+        self.cache.put(uri, json_data)
 
 
-        data = self.cache.get(str('fos://*/%s/runtime/%s' % (self.uuid,kvm_uuid)))
+
+        print("Press enter to configure the vm")
+        input()
+
+
+
+
+        '''
+
+        data = self.cache.get(str('fos://*/%s/runtime/%s' % (self.uuid, kvm_uuid)))
         for a in d:
             kvm = a[list(a.keys())[0]]
-            test_uuid = kvm.defineEntity('test', 512, 1, 5,uuid.uuid4())
-            uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm_uuid,test_uuid))
+            test_uuid = kvm.defineEntity('test', 512, 1, 5,uuid.uuid4(),'cirros.img')
+            uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm_uuid, test_uuid))
             self.cache.put(uri, "")
 
             print (self.cache)
@@ -100,6 +123,8 @@ class FogAgent(Agent):
             self.cache.remove(uri)
 
             print(self.cache)
+            
+        '''
 
         '''
         kvm = self.loadRuntimePlugin('RuntimeLibVirt')
