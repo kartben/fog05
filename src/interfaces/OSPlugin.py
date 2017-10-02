@@ -1,5 +1,5 @@
 from Plugin import Plugin
-
+import uuid
 
 class OSPlugin(Plugin):
     """
@@ -157,6 +157,8 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError("This is and interface!")
 
+    def getUUID(self):
+        return uuid.uuid4()
 
 
 class ProcessNotExistingException(Exception):

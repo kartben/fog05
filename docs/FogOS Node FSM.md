@@ -4,7 +4,7 @@
 
 Here some points to the Node (VM/unikernel/container/miscroservice) states in FogOS.
 
-![](img/fogos_fsm_node.png)
+![](../img/fogos_fsm_node.png)
 
 
 Each Node can have 9 states (the marine green ones):
@@ -35,7 +35,7 @@ The definition can be made in several ways:
 
 For the definition of microservices we think that each service should have a manifest file where are defined the constraints and the requirements (eg. the use of some HW accellerator or memory/storage constraints) 
 
-![Microservice Manifest](img/fogos_microservice_manifest.png)
+![Microservice Manifest](../img/fogos_microservice_manifest.png)
 
 And then should be a manifest file for the entire application in which are fenined the Affinity Class for each service (eg two or more services should be deployed on the same system) and the graph that describe the connection between the sevices (also describe the order in which the services should be deployed)
 

@@ -1,8 +1,8 @@
 <domain type='kvm'>
   <name>{{ name }}</name>
   <uuid>{{ uuid }}</uuid>
-  <memory>{{ memory }}</memory>
-  <currentMemory>{{ memory }}</currentMemory>
+  <memory unit='MB'>{{ memory }}</memory>
+  <currentMemory unit='MB'>{{ memory }}</currentMemory>
   <vcpu>{{ cpu }}</vcpu>
   <os>
     <type arch='x86_64' machine='pc'>hvm</type>

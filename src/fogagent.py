@@ -2,20 +2,25 @@ from interfaces.Agent import Agent
 from PluginLoader import PluginLoader
 import uuid
 import sys
-
+from DDSCache import *
+import json
 
 class FogAgent(Agent):
 
     def __init__(self):
-        self.PLUINGDIR='./plugins'
+        self.PLUINGDIR ='./plugins'
         self.pl=PluginLoader(self.PLUINGDIR)
         self.pl.getPlugins()
-        self.osPlugin=None
-        self.rtPlugins={}
-        self.nwPlugins={}
+        self.osPlugin = None
+        self.rtPlugins = {}
+        self.nwPlugins = {}
         self.loadOSPlugin()
-        super(FogAgent, self).__init__(uuid.uuid4())
+        super(FogAgent, self).__init__(self.osPlugin.getUUID())
+        self.cache = DDSCache(10, self.uuid,DDSObserver())
 
+        val = {'status': 'add', 'version': self.osPlugin.version, 'description': 'linux plugin'}
+        uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, self.osPlugin.name, self.osPlugin.uuid))
+        self.cache.put(uri, self.osPlugin)
 
 
     def loadOSPlugin(self):
@@ -38,21 +43,64 @@ class FogAgent(Agent):
     def getOSPlugin(self):
         return self.osPlugin
 
-
-    def loadRuntimePlugin(self,plugin_name):
+    def loadRuntimePlugin(self, plugin_name):
         rt = self.pl.locatePlugin(plugin_name)
-        if rt != None:
+        if rt is not None:
             rt = self.pl.loadPlugin(rt)
-            rt = rt.run()
-            self.rtPlugins.update({rt.uuid:rt})
+            rt = rt.run(agent=self)
+            self.rtPlugins.update({rt.uuid: rt})
+
+            val = {'status': 'add', 'version': rt.version, 'description':str('runtime %s'  % rt.name)}
+            uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, rt.name, rt.uuid))
+            self.cache.put(uri, rt)
             return rt
         else:
             return None
     
     def main(self):
-        
 
-        self.osPlugin.executeCommand("ls -al /")
+        print(self.cache)
+
+        kvm = self.loadRuntimePlugin('RuntimeLibVirt')
+
+        print (self.cache)
+
+
+
+        d = self.cache.get(str('fos://*/%s/plugins/kvm-libvirt' % self.uuid))
+        for a in d:
+            kvm = a[list(a.keys())[0]]
+            kvm_uuid = kvm.startRuntime()
+            uri = str('fos://<sys-id>/%s/runtime/%s' % (self.uuid, kvm_uuid))
+            self.cache.put(uri, kvm)
+
+
+        print (self.cache)
+
+
+        data = self.cache.get(str('fos://*/%s/runtime/%s' % (self.uuid,kvm_uuid)))
+        for a in d:
+            kvm = a[list(a.keys())[0]]
+            test_uuid = kvm.defineEntity('test', 512, 1, 5,uuid.uuid4())
+            uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm_uuid,test_uuid))
+            self.cache.put(uri, "")
+
+            print (self.cache)
+
+            print("test vm uuid %s\n" % test_uuid)
+            print("entities inside kvm ")
+            print(kvm.getEntities())
+            print("Result of configuring %s is %s" % (test_uuid, kvm.configureEntity(test_uuid)))
+
+            import time
+            time.sleep(10)
+
+            print("Result of clean %s" % kvm.cleanEntity(test_uuid))
+            print("Result of undefine %s" % kvm.undefineEntity(test_uuid))
+            self.cache.remove(uri)
+
+            print(self.cache)
+
         '''
         kvm = self.loadRuntimePlugin('RuntimeLibVirt')
         if kvm != None:

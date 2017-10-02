@@ -5,9 +5,9 @@ import os
 VERSION = 1
 
 def run(*args,**kwargs):
-
+    print (kwargs)
     sys.path.append(os.path.join(sys.path[0],'plugins','RuntimeLibVirt'))
     from RuntimeLibVirt import RuntimeLibVirt
-    kvm = RuntimeLibVirt('kvm-libvirt',VERSION)
+    kvm = RuntimeLibVirt('kvm-libvirt',VERSION,kwargs.get('agent'))
     return kvm
 
