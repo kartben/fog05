@@ -119,7 +119,7 @@ fos://<system_id>/<node_id>/<type_of_resource>/<id_of_resource>/<type_of_subreso
 Here some JSON object types
 
 ### Plugin Interaction
-URI: `fos://<system_id>/<node_id>/plugins/<plugin-name>`
+URI: `fos://<system_id>/<node_id>/plugins/<plugin-name>/<uuid>`
 
 ##### Add a plugin
 
@@ -133,13 +133,13 @@ URI: `fos://<system_id>/<node_id>/plugins/<plugin-name>`
 
 ##### Remove a plugin
 
-	{
-		"status" : "remove",
-		"uuid": uuid
-    }
+    remove('fos://<system_id>/<node_id>/plugins/<plugin-name>/<uuid>')
+    
     
 ##### Update a plugin
 
+        @ AC this primitive is equivalente to a 'put' followed by a 'remove', thus not essential.
+         
 	{
 		"status" : "update",
 		"version": plugin_version,
@@ -151,7 +151,7 @@ URI: `fos://<system_id>/<node_id>/plugins/<plugin-name>`
  
 ### Runtime Interaction
  
- URI: `fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/`
+ URI: `fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity-uuid>`
  
 ##### Create an Entity
 
@@ -162,13 +162,17 @@ URI: `fos://<system_id>/<node_id>/plugins/<plugin-name>`
 		"entity_data" : this should depend on entity type (vm/container/µSvc,...) and should containt information about how and where recover the entity
     }
     
-  In this case if the entity is defined a new key is added to the cache
-  `fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>`
   
   
 ### Entity Interaction
 
- URI: `fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>` 
+ URI: `fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>#status=run&entity_data.memory=2GB
+  
+   
+ dput('fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>#status=run&entity_data.memory=2GB')
+ 
+ dput('fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>, "{status=run, entity_data.memory=2GB }")
+ 
   
 ##### Configure an Entity
 
@@ -221,7 +225,8 @@ eg. if entity is a vm I can define the let's say 'base image and requirements', 
     }
     
 ##### Undefine an Entity
-
+        @AC: This should be a remove(uri).
+        
 	{
 		"status" : "undefine"
     }
