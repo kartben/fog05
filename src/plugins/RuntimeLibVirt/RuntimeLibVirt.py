@@ -96,12 +96,21 @@ class RuntimeLibVirt(RuntimePlugin):
                                    cpu=entity.cpu, disk_image=entity.disk,
                                    iso_image=entity.cdrom)
 
+            image_name = entity.image.split('/')[-1]
+
+            wget_cmd = str('wget %s -O /opt/fog/images/%s' % (entity.image, image_name))
+
             conf_cmd = str("%s --hostname %s %s" % (os.path.join(sys.path[0], 'plugins', 'RuntimeLibVirt', 'templates',
                                                                  'create_config_drive.sh'), entity.name, entity.cdrom))
 
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
-            dd_cmd = str("dd if=/opt/fog/images/%s of=%s" % (entity.image, entity.disk))
 
+
+            dd_cmd = str("dd if=/opt/fog/images/%s of=%s" % (image_name, entity.disk))
+
+            entity.image = image_name
+
+            self.agent.getOSPlugin().executeCommand(wget_cmd)
             self.agent.getOSPlugin().executeCommand(qemu_cmd)
             self.agent.getOSPlugin().executeCommand(conf_cmd)
             self.agent.getOSPlugin().executeCommand(dd_cmd)
@@ -127,7 +136,7 @@ class RuntimeLibVirt(RuntimePlugin):
             # should undefine on libvirt
             self.lookupByUUID(entity_uuid).undefine()
             ## should remove files (disk, conf drive)
-            rm_cmd=str("rm -f %s %s" % (entity.cdrom, entity.disk))
+            rm_cmd=str("rm -f %s %s /opt/fog/images/%s" % (entity.cdrom, entity.disk, entity.image))
             self.agent.getOSPlugin().executeCommand(rm_cmd)
 
             entity.onClean()
