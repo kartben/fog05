@@ -1,6 +1,8 @@
 from interfaces.Cache import *
 import fnmatch
 from threading import Thread
+import json
+
 
 class DDSCache(Cache):
 
@@ -13,13 +15,43 @@ class DDSCache(Cache):
 
 
     def pput(self, uri, value):
-        pass
+        self.__observer.onPput(uri, value)
 
     def conflict_handler(self, action):
         pass
 
     def dput(self, uri):
-        pass
+        self.__observer.onDput(uri)
+        ##status=run&entity_data.memory=2GB
+        uri = uri.split('#')
+        values = uri[-1]
+        uri = uri[0]
+        data = {}
+        for key in self.__local_cache:
+            if fnmatch.fnmatch(key, uri):
+                data = json.loads(self.__local_cache.get(key))
+        print(data)
+        if len(data) == 0:
+            print("this is a miss")
+        else:
+            values = values.split('&')
+            for tokens in values:
+                v = tokens.split('=')[-1]
+                k = tokens.split('=')[0]
+                if len(k.split('.')) < 2:
+                    data.update({k: v})
+
+        print(data)
+        self.__local_cache.update({uri: json.dumps(data)})
+
+        for key in self.__observers:
+            if fnmatch.fnmatch(uri, key):
+                Thread(target=self.__observers.get(key), args=(uri, json.dumps(data))).start()
+
+
+
+
+
 
     def observe(self, uri, action):
         self.__observers.update({uri: action})

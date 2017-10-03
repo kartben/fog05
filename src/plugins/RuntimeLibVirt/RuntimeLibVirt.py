@@ -59,6 +59,8 @@ class RuntimeLibVirt(RuntimePlugin):
         return entity_uuid
 
     def undefineEntity(self, entity_uuid):
+        if type(entity_uuid) == dict:
+            entity_uuid = entity_uuid.get('entity_uuid')
         entity = self.currentEntities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing", str("Entity %s not in runtime %s" % (
@@ -71,11 +73,10 @@ class RuntimeLibVirt(RuntimePlugin):
             self.currentEntities.pop(entity_uuid,None)
             return True
 
-    def configureEntity(self,entity_uuid):
+    def configureEntity(self, entity_uuid):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-
 
         entity = self.currentEntities.get(entity_uuid, None)
         if entity is None:
@@ -111,6 +112,9 @@ class RuntimeLibVirt(RuntimePlugin):
             return True
 
     def cleanEntity(self, entity_uuid):
+        if type(entity_uuid) == dict:
+            entity_uuid = entity_uuid.get('entity_uuid')
+
         entity = self.currentEntities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing", str("Entity %s not in runtime %s" % (entity_uuid,
@@ -133,6 +137,8 @@ class RuntimeLibVirt(RuntimePlugin):
 
 
     def runEntity(self, entity_uuid):
+        if type(entity_uuid) == dict:
+            entity_uuid = entity_uuid.get('entity_uuid')
         entity = self.currentEntities.get(entity_uuid,None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing", str("Entity %s not in runtime %s" % (entity_uuid,
@@ -147,6 +153,8 @@ class RuntimeLibVirt(RuntimePlugin):
             return True
 
     def stopEntity(self, entity_uuid):
+        if type(entity_uuid) == dict:
+            entity_uuid = entity_uuid.get('entity_uuid')
         entity = self.currentEntities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing", str("Entity %s not in runtime %s" % (entity_uuid,
@@ -162,7 +170,9 @@ class RuntimeLibVirt(RuntimePlugin):
             return True
 
     def pauseEntity(self, entity_uuid):
-        entity = self.currentEntities.get(entity_uuid,None)
+        if type(entity_uuid) == dict:
+            entity_uuid = entity_uuid.get('entity_uuid')
+        entity = self.currentEntities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing", str("Entity %s not in runtime %s" % (entity_uuid,
                                                                                                          self.uuid)))
@@ -177,6 +187,8 @@ class RuntimeLibVirt(RuntimePlugin):
             return True
 
     def resumeEntity(self, entity_uuid):
+        if type(entity_uuid) == dict:
+            entity_uuid = entity_uuid.get('entity_uuid')
         entity = self.currentEntities.get(entity_uuid,None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing", str("Entity %s not in runtime %s" % (entity_uuid,
@@ -200,7 +212,10 @@ class RuntimeLibVirt(RuntimePlugin):
             react_func(uuid)
         elif react_func is not None:
             entity_data.update({'entity_uuid': uuid})
-            react_func(**entity_data)
+            if action == 'define':
+                react_func(**entity_data)
+            else:
+                react_func(entity_data)
 
     def lookupByUUID(self, uuid):
         domains = self.conn.listAllDomains(0)
