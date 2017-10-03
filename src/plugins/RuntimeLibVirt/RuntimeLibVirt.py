@@ -105,7 +105,6 @@ class RuntimeLibVirt(RuntimePlugin):
 
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
 
-
             dd_cmd = str("dd if=/opt/fog/images/%s of=%s" % (image_name, entity.disk))
 
             entity.image = image_name
