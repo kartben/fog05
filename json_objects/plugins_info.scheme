@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "title": "Plugins Informations",
+  "description": "Information about a FogOS Node",
+  "type": "array",
+  "items":{
+    "type":"object",
+    "properties":{
+      "name":{
+        "type":"string",
+
+      },
+      "uuid":{
+        "type":"string"
+      },
+      "version":{
+        "type":"int"
+      },
+      "type":{
+        "type":"string",
+        "enum":["os","network","runtime"]
+      }
+    }
+  }
+}

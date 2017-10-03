@@ -3,6 +3,7 @@ from PluginLoader import PluginLoader
 import uuid
 import sys
 from DDSCache import *
+#from RedisLocalCache import RedisCache
 import json
 
 class FogAgent(Agent):
@@ -16,11 +17,17 @@ class FogAgent(Agent):
         self.nwPlugins = {}
         self.loadOSPlugin()
         super(FogAgent, self).__init__(self.osPlugin.getUUID())
-        self.cache = DDSCache(10, self.uuid,DDSObserver())
+        self.cache = DDSCache(100, self.uuid, DDSObserver())
 
-        val = {'status': 'add', 'version': self.osPlugin.version, 'description': 'linux plugin'}
+        val = {'status': 'add', 'version': self.osPlugin.version, 'description': 'linux plugin', 'plugin': self.osPlugin}
         uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, self.osPlugin.name, self.osPlugin.uuid))
-        self.cache.put(uri, self.osPlugin)
+        self.cache.put(uri, val)
+
+        val = {'plugins': [{'name': 'linux', 'version': self.osPlugin.version, 'uuid': str(self.osPlugin.uuid),
+                           'type': 'os'}]}
+        uri = uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
+        self.cache.put(uri, json.dumps(val))
+
 
 
     def loadOSPlugin(self):
@@ -50,9 +57,15 @@ class FogAgent(Agent):
             rt = rt.run(agent=self)
             self.rtPlugins.update({rt.uuid: rt})
 
-            val = {'status': 'add', 'version': rt.version, 'description':str('runtime %s'  % rt.name)}
+            val = {'status': 'add', 'version': rt.version, 'description': str('runtime %s' % rt.name), 'plugin':rt}
             uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, rt.name, rt.uuid))
-            self.cache.put(uri, rt)
+            self.cache.put(uri, val)
+
+            val = {'plugins': [{'name': rt.name, 'version': rt.version, 'uuid': str(rt.uuid),
+                                'type': 'runtime'}]}
+            uri = uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
+            self.cache.dput(uri, json.dumps(val))
+
             return rt
         else:
             return None
@@ -65,8 +78,12 @@ class FogAgent(Agent):
 
         print (self.cache)
 
+        exit(0)
 
-        d = self.cache.get(str('fos://*/%s/plugins/kvm-libvirt' % self.uuid))
+
+        '''
+
+        d = self.cache.get(str('fos://*/%s/plugins/kvm-libvirt/' % self.uuid))
         for a in d:
             kvm = a[list(a.keys())[0]]
             kvm_uuid = kvm.startRuntime()
@@ -74,7 +91,7 @@ class FogAgent(Agent):
             self.cache.put(uri, kvm)
 
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.uuid, kvm_uuid))
-        self.cache.observe(uri,kvm.reactToCache)
+        self.cache.observe(uri, kvm.reactToCache)
 
         print("Press enter to define a vm")
         input()
@@ -135,6 +152,8 @@ class FogAgent(Agent):
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm_uuid, vm_uuid))
         self.cache.put(uri, json_data)
         print (self.cache)
+
+        '''
 
         '''
 

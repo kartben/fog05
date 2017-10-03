@@ -3,7 +3,6 @@ import fnmatch
 from threading import Thread
 import json
 
-
 class DDSCache(Cache):
 
     def __init__(self, local_information_cache_size, node_id, observer):
@@ -20,28 +19,47 @@ class DDSCache(Cache):
     def conflict_handler(self, action):
         pass
 
-    def dput(self, uri):
+
+
+    def dput(self, uri, values = None):
         self.__observer.onDput(uri)
-        ##status=run&entity_data.memory=2GB
-        uri = uri.split('#')
-        values = uri[-1]
-        uri = uri[0]
+
+        if values == None:
+            ##status=run&entity_data.memory=2GB
+            uri = uri.split('#')
+            uri_values = uri[-1]
+            uri = uri[0]
+
         data = {}
         for key in self.__local_cache:
             if fnmatch.fnmatch(key, uri):
                 data = json.loads(self.__local_cache.get(key))
-        print(data)
+
+
         if len(data) == 0:
             print("this is a miss")
+            return
         else:
-            values = values.split('&')
-            for tokens in values:
-                v = tokens.split('=')[-1]
-                k = tokens.split('=')[0]
-                if len(k.split('.')) < 2:
+
+            if values == None:
+                uri_values = uri_values.split('&')
+                for tokens in uri_values:
+                    v = tokens.split('=')[-1]
+                    k = tokens.split('=')[0]
+                    if len(k.split('.')) < 2:
+                        data.update({k: v})
+            else:
+                values = json.loads(values)
+                for k in values.keys():
+                    v = values.get(k)
+                    if type(v) == list:
+                        old_v = data.get(k)
+                        v = old_v + v
+
                     data.update({k: v})
 
-        print(data)
+
+
         self.__local_cache.update({uri: json.dumps(data)})
 
         for key in self.__observers:
@@ -62,13 +80,13 @@ class DDSCache(Cache):
 
     def get(self, uri):
         data = []
-        uri = str("%s%s" % (uri, '*'))
+        #uri = str("%s%s" % (uri, '*'))
         self.__observer.onGet(uri)
         for key in self.__local_cache:
             if fnmatch.fnmatch(key, uri):
                 data.append({key: self.__local_cache.get(key)})
         if len(data) == 0:
-            self.observer.onMiss()
+            self.__observer.onMiss()
             print("this is a miss")
         return data
 
