@@ -57,9 +57,6 @@ class DDSCache(Cache):
                         v = old_v + v
 
                     data.update({k: v})
-
-
-
         self.__local_cache.update({uri: json.dumps(data)})
 
         for key in self.__observers:

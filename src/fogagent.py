@@ -74,11 +74,33 @@ class FogAgent(Agent):
 
         print(self.cache)
 
-        kvm = self.loadRuntimePlugin('RuntimeLibVirt')
+        self.loadRuntimePlugin('RuntimeLibVirt')
 
         print (self.cache)
 
-        exit(0)
+        uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
+        print (uri)
+        all_plugins = json.loads(self.cache.get(uri)[0].get(uri)).get('plugins')
+        print(all_plugins)
+
+        runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
+
+        print (runtimes)
+
+        print("locating kvm plugin")
+        kvm = [x for x in runtimes if 'kvm' in x.get('name')][0]
+
+        print(kvm)
+        uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, kvm.get('name'), kvm.get('uuid')))
+        kvm = self.cache.get(uri)[0].get(uri)
+        print(kvm)
+        kvm = kvm.get('plugin')
+        print (kvm)
+        kvm.startRuntime()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.uuid, kvm.uuid))
+        self.cache.observe(uri, kvm.reactToCache)
+
 
 
         '''
@@ -93,6 +115,9 @@ class FogAgent(Agent):
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.uuid, kvm_uuid))
         self.cache.observe(uri, kvm.reactToCache)
 
+
+        '''
+
         print("Press enter to define a vm")
         input()
 
@@ -105,7 +130,7 @@ class FogAgent(Agent):
         entity_definition = {'status': 'define', 'name': vm_name, 'version': 1, 'entity_data': vm_definition}
 
         json_data = json.dumps(entity_definition)
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm_uuid, vm_uuid))
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm.uuid, vm_uuid))
         self.cache.put(uri, json_data)
         print (self.cache)
 
@@ -121,39 +146,39 @@ class FogAgent(Agent):
         #print (self.cache)
 
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (self.uuid, kvm_uuid, vm_uuid))
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (self.uuid, kvm.uuid, vm_uuid))
         self.cache.dput(uri)
         print (self.cache)
 
         print("Press enter to start vm")
         input()
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (self.uuid, kvm_uuid, vm_uuid))
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (self.uuid, kvm.uuid, vm_uuid))
         self.cache.dput(uri)
         print (self.cache)
 
         print("Press enter to stop vm")
         input()
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (self.uuid, kvm_uuid, vm_uuid))
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (self.uuid, kvm.uuid, vm_uuid))
         self.cache.dput(uri)
         print (self.cache)
 
         print("Press enter to clean vm")
         input()
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' % (self.uuid, kvm_uuid, vm_uuid))
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' % (self.uuid, kvm.uuid, vm_uuid))
         self.cache.dput(uri)
         print (self.cache)
         print("Press enter to undefine vm")
         input()
 
         json_data = json.dumps({'status': 'undefine'})
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm_uuid, vm_uuid))
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm.uuid, vm_uuid))
         self.cache.put(uri, json_data)
         print (self.cache)
 
-        '''
+        exit(0)
 
         '''
 
