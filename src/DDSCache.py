@@ -1,6 +1,6 @@
 from interfaces.Cache import *
 import fnmatch
-
+from threading import Thread
 
 class DDSCache(Cache):
 
@@ -46,7 +46,7 @@ class DDSCache(Cache):
 
         for key in self.__observers:
             if fnmatch.fnmatch(uri, key):
-                self.__observers.get(key)(uri, value)
+                Thread(target=self.__observers.get(key), args=(uri, value)).start()
 
 
 
