@@ -48,7 +48,7 @@ class NetworkPlugin(Plugin):
         This should create a virtual network, with given caratteristics
 
         range should specified as CIRD subnet
-        eg. 192.168.0.0/24 wich means from 192.168.0.1 to 192.168.0.254
+        eg. 192.168.0.0/24 which means from 192.168.0.1 to 192.168.0.254
         if gateway address is none the entities connected to that network cannot reach internet
         if dhcp is true the easiest way to have a dhcp server is using dnsmasq
         eg. sudo dnsmasq -d  --interface=<bridge_associated_to_this_network> --bind-interfaces  --dhcp-range=<start_ip>,<end_ip>

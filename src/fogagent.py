@@ -72,6 +72,26 @@ class FogAgent(Agent):
         else:
             return None
 
+    def loadNetworkPlugin(self, plugin_name):
+        net = self.pl.locatePlugin(plugin_name)
+        if net is not None:
+            net = self.pl.loadPlugin(net)
+            net = net.run(agent=self)
+            self.rtPlugins.update({net.uuid: net})
+
+            val = {'status': 'add', 'version': net.version, 'description': str('runtime %s' % net.name), 'plugin':net}
+            uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, net.name, net.uuid))
+            self.cache.put(uri, val)
+
+            val = {'plugins': [{'name': net.name, 'version': net.version, 'uuid': str(net.uuid),
+                                'type': 'network'}]}
+            uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
+            self.cache.dput(uri, json.dumps(val))
+
+            return net
+        else:
+            return None
+
     def populateNodeInformation(self):
 
         node_info = {}
@@ -86,23 +106,16 @@ class FogAgent(Agent):
         uri = str('fos://<sys-id>/%s/' % self.uuid)
         self.cache.put(uri, json.dumps(node_info))
 
-
-    
     def main(self):
-
-
-
-        print (self.cache)
-
-
-
-        exit(0)
 
         print(self.cache)
 
         self.loadRuntimePlugin('RuntimeLibVirt')
+        self.loadNetworkPlugin('brctl')
 
         print (self.cache)
+
+        exit(0)
 
         uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
         print (uri)
@@ -128,22 +141,6 @@ class FogAgent(Agent):
         self.cache.observe(uri, kvm.reactToCache)
 
 
-
-        '''
-
-        d = self.cache.get(str('fos://*/%s/plugins/kvm-libvirt/' % self.uuid))
-        for a in d:
-            kvm = a[list(a.keys())[0]]
-            kvm_uuid = kvm.startRuntime()
-            uri = str('fos://<sys-id>/%s/runtime/%s' % (self.uuid, kvm_uuid))
-            self.cache.put(uri, kvm)
-
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.uuid, kvm_uuid))
-        self.cache.observe(uri, kvm.reactToCache)
-
-
-        '''
-
         print("Press enter to define a vm")
         input()
 
@@ -165,12 +162,6 @@ class FogAgent(Agent):
 
         print("Press enter to configure the vm")
         input()
-
-        #json_data = json.dumps({'status': 'configure'})
-        #uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm_uuid, vm_uuid))
-        #self.cache.put(uri, json_data)
-        #print (self.cache)
-
 
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (self.uuid, kvm.uuid, vm_uuid))
         self.cache.dput(uri)
@@ -205,49 +196,6 @@ class FogAgent(Agent):
         print (self.cache)
 
         exit(0)
-
-        '''
-
-        data = self.cache.get(str('fos://*/%s/runtime/%s' % (self.uuid, kvm_uuid)))
-        for a in d:
-            kvm = a[list(a.keys())[0]]
-            test_uuid = kvm.defineEntity('test', 512, 1, 5,uuid.uuid4(),'cirros.img')
-            uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm_uuid, test_uuid))
-            self.cache.put(uri, "")
-
-            print (self.cache)
-
-            print("test vm uuid %s\n" % test_uuid)
-            print("entities inside kvm ")
-            print(kvm.getEntities())
-            print("Result of configuring %s is %s" % (test_uuid, kvm.configureEntity(test_uuid)))
-
-            import time
-            time.sleep(10)
-
-            print("Result of clean %s" % kvm.cleanEntity(test_uuid))
-            print("Result of undefine %s" % kvm.undefineEntity(test_uuid))
-            self.cache.remove(uri)
-
-            print(self.cache)
-            
-        '''
-
-        '''
-        kvm = self.loadRuntimePlugin('RuntimeLibVirt')
-        if kvm != None:
-            print("KVM Runtime UUID: %s\n" % kvm.startRuntime())
-            test_uuid=kvm.defineEntity('test',512,1,5)
-            print("test vm uuid %s\n" % test_uuid)
-            print("entities inside kvm " )
-            print(kvm.getEntities)
-            print("Result of configuring %s is %s" % (test_uuid,kvm.configureEntity(test_uuid)))
-        else:
-            print("Error on plugin load")
-
-        print (self.rtPlugins)
-        '''
-
 
 
 
