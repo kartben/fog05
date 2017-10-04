@@ -12,7 +12,7 @@ class NetworkPlugin(Plugin):
     def __init__(self,version):
         super(NetworkPlugin, self).__init__(version)
 
-    def createVirtualInterface(self, name):
+    def createVirtualInterface(self, name, uuid):
         """
         This should create a virtual network interface
 
@@ -22,7 +22,7 @@ class NetworkPlugin(Plugin):
         """
         raise NotImplementedError("This is and interface!")
     
-    def creareVirtualBridge(self, name):
+    def creareVirtualBridge(self, name, uuid):
         """
         This should create a virtual bridge 
 
@@ -43,7 +43,7 @@ class NetworkPlugin(Plugin):
         """
         raise NotImplementedError("This is and interface!")
 
-    def createVirtualNetwork(self, network_name, ip_range, has_dhcp, gateway):
+    def createVirtualNetwork(self, network_name, uuid, ip_range, has_dhcp, gateway):
         """
         This should create a virtual network, with given caratteristics
 
@@ -64,7 +64,7 @@ class NetworkPlugin(Plugin):
 
         raise NotImplementedError("This is and interface!")
 
-    def assignInterfaceToNetwork(self,network_uuid,intf_uuid):
+    def assignInterfaceToNetwork(self, network_uuid, intf_uuid):
         """
         This should assign the interface identified by intf_uuid to the network identified by network_uuid,
         if the interface not exists throw an exception
@@ -77,7 +77,7 @@ class NetworkPlugin(Plugin):
 
         raise NotImplementedError("This is and interface!")
 
-    def deleteVirtualInterface(self,intf_uuid):
+    def deleteVirtualInterface(self, intf_uuid):
 
         """
         This should delete a virtual interface identified by intf_uuid, if the interface is assigned to a network
@@ -91,7 +91,7 @@ class NetworkPlugin(Plugin):
 
         raise NotImplementedError("This is and interface!")
 
-    def deleteVirtualBridge(self,br_uuid):
+    def deleteVirtualBridge(self, br_uuid):
 
         """ 
         Delete a virtual bride, if the bridge is one assigned to a network should throw an exception, if the bridge not exists throw an exception
@@ -102,7 +102,7 @@ class NetworkPlugin(Plugin):
 
         raise NotImplementedError("This is and interface!")
 
-    def removeInterfaceFromNetwork(self,network_uuid,intf_uuid):
+    def removeInterfaceFromNetwork(self, network_uuid, intf_uuid):
 
         """
         Remove the interface intf_uuid from network network_uuid, if interface not present throw an exception
@@ -115,7 +115,7 @@ class NetworkPlugin(Plugin):
 
         raise NotImplementedError("This is and interface!")
 
-    def deleteVirtualNetwork(self,network_uuid):
+    def deleteVirtualNetwork(self, network_uuid):
 
         """
         Delete the virtual network network_uuid, for correct network shutdown should kill the dnsmasq process eventually associated

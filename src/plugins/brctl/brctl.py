@@ -29,29 +29,28 @@ class brctl(NetworkPlugin):
         self.brmap = {}
         self.netmap = {}
 
-
-    def createVirtualInterface(self, name):
+    def createVirtualInterface(self, name, uuid):
         #sudo ip link add type veth
         #sudo ip link set dev veth1 addr 00:01:02:aa:bb:cc name vnic0
         #sudo ip link add name vnic0 type veth peer name vnic0-vm
 
         cmd = str('sudo ip link add name %s type veth peer name %-guest' % (name, name))
         self.agent.getOSPlugin().executeCommand(cmd)
-        intf_uuid = str(uuid.uuid4())
+        intf_uuid = uuid
         self.interfaces_map.update({uuid: name})
 
         return name, intf_uuid
 
-    def creareVirtualBridge(self, name):
+    def creareVirtualBridge(self, name, uuid):
         cmd = str('sudo brctl addbr %s', name)
         self.agent.getOSPlugin().executeCommand(cmd)
-        br_uuid = str(uuid.uuid4())
+        br_uuid = uuid
         self.brmap.update({br_uuid, name})
         return br_uuid, name
 
-    def createVirtualNetwork(self, network_name, ip_range=None, has_dhcp=False, gateway=None):
+    def createVirtualNetwork(self, network_name, uuid, ip_range=None, has_dhcp=False, gateway=None):
         brcmd = str('sudo brctl addbr %s-net', network_name)
-        net_uuid = str(uuid.uuid4())
+        net_uuid = uuid
 
         #
 
