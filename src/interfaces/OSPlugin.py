@@ -48,6 +48,9 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError("This is and interface!")
 
+    def fileExists(self, file_path):
+        raise NotImplementedError
+
     def readFile(self, file_path):
 
         """

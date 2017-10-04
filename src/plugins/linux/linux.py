@@ -38,6 +38,10 @@ class Linux(OSPlugin):
         for line in p.stdout:
             print (line)
 
+
+    def fileExists(self, file_path):
+        return os.path.isfile(file_path)
+
     def storeFile(self, content, file_path, filename):
         full_path = os.path.join(file_path, filename)
         f = open(full_path, 'w')
@@ -92,7 +96,7 @@ class Linux(OSPlugin):
     def removePackage(self, packages):
         raise NotImplementedError
 
-    def getPid(self,process):
+    def getPid(self, process):
         raise NotImplementedError
 
     def getProcessorInformation(self):

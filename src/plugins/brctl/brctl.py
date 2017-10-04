@@ -23,7 +23,7 @@ class brctl(NetworkPlugin):
         #sudo ip link set dev veth1 addr 00:01:02:aa:bb:cc name vnic0
         #sudo ip link add name vnic0 type veth peer name vnic0-vm
 
-        cmd = str('sudo ip link add name %s type veth peer name %-guest' % (name, name))
+        cmd = str('' % (name, name))
         self.agent.getOSPlugin().executeCommand(cmd)
         intf_uuid = uuid
         self.interfaces_map.update({uuid: name})
@@ -60,19 +60,77 @@ class brctl(NetworkPlugin):
         raise NotImplemented
 
     def assignInterfaceToNetwork(self, network_uuid, intf_uuid):
-        raise NotImplemented
+        #brctl addif virbr0 vnet0
+        intf = self.interfaces_map.get(intf_uuid, None)
+        if intf is None:
+            raise InterfaceNotExistingException("%s interface not exists" % intf_uuid)
+        net = self.netmap.get(network_uuid, None)
+        if net is None:
+            raise BridgeAssociatedToNetworkException("%s network not exists" % network_uuid)
+
+        br_cmd = str('sudo brctl addif %s-net %s' % (net.get('network_name'), intf))
+        self.agent.getOSPlugin().executeCommand(br_cmd)
+
+        return True
 
     def deleteVirtualInterface(self, intf_uuid):
-        raise NotImplemented
+        #ip link delete dev ${interface name}
+        intf = self.interfaces_map.get(intf_uuid, None)
+        if intf is None:
+            raise InterfaceNotExistingException("%s interface not exists" % intf_uuid)
+        rm_cmd = str("sudo ip link delete dev %s" % intf)
+        self.agent.getOSPlugin().executeCommand(rm_cmd)
+        self.interfaces_map.pop(intf_uuid)
+        return True
 
     def deleteVirtualBridge(self, br_uuid):
-        raise NotImplemented
+
+        net = self.netmap.get(br_uuid, None)
+        if net is not None:
+            raise BridgeAssociatedToNetworkException("%s associated to a network" % br_uuid)
+        br = self.brmap.get(br_uuid, None)
+        if br is None:
+            raise BridgeNotExistingException("%s bridge not exists" % br_uuid)
+
+        rm_cmd = str("sudo brcrl delbr %s" % br)
+        self.agent.getOSPlugin().executeCommand(rm_cmd)
+        self.brmap.pop(br_uuid)
+        return True
+
+
 
     def removeInterfaceFromNetwork(self, network_uuid, intf_uuid):
-        raise NotImplemented
+        net = self.netmap.get(network_uuid, None)
+        if net is None:
+            raise BridgeAssociatedToNetworkException("%s network not exists" % network_uuid)
+        intf = self.brmap.get(intf_uuid, None)
+        if intf is None:
+            raise InterfaceNotExistingException("%s interface not exists" % intf_uuid)
+        if intf not in net.get('intf'):
+            raise InterfaceNotInNetworkException("%s interface not in this networks" % intf_uuid)
+
+        net.get('intf').remove(intf)
+        return True
 
     def deleteVirtualNetwork(self, network_uuid):
-        raise NotImplemented
+        net = self.netmap.get(network_uuid, None)
+        if net is None:
+            raise BridgeAssociatedToNetworkException("%s network not exists" % network_uuid)
+        if len(net.get('intf')) > 0:
+            raise NetworkHasPendingInterfacesException("%s has pending interfaces" % network_uuid)
+
+        dhcp_pid_file = str('/opt/fog/dhcp_out/%s.pid' % net.get('network_name'))
+        if self.agent.getOSPlugin().fileExists(dhcp_pid_file):
+            pid = self.agent.getOSPlugin().readFile(dhcp_pid_file)
+            self.agent.getOSPlugin().sendSigKill(pid)
+
+
+        rm_cmd = str("sudo brcrl delbr %s-net" % net.get('network_name'))
+        self.agent.getOSPlugin().executeCommand(rm_cmd)
+        self.brmap.pop(network_uuid)
+
+
+        return True
 
     def cird2block(self, cird):
         (ip, cidr) = cird.split('/')
@@ -83,10 +141,6 @@ class brctl(NetworkPlugin):
         end = i | ((1 << host_bits) - 1)
 
         return inet_ntoa(struct.pack('>I', start+1)), inet_ntoa(struct.pack('>I', end-1))
-
-        #print (socket.inet_ntoa(struct.pack('>I',start+1)))
-        #print (socket.inet_ntoa(struct.pack('>I',end-1)))
-
 
     def reactToCache(self, key, value):
         uuid = key.split('/')[-1]
