@@ -8,17 +8,6 @@ from NetworkPlugin import *
 from socket import *
 
 
-
-
-
-'''
-        Redhat and friends: Test for /etc/redhat-release, check contents
-        Debian: Test for /etc/debian_version, check contents
-        Mandriva and friends: Test for /etc/version, check contents
-        Slackware: Test for /etc/slackware-version, check contents
-
-'''
-
 class brctl(NetworkPlugin):
 
     def __init__(self, name, version, agent):
@@ -63,7 +52,7 @@ class brctl(NetworkPlugin):
                             (network_name, address[0], address[1], network_name, network_name))
             self.agent.getOSPlugin().executeCommand(dhcpq_cmd)
 
-        self.netmap.update({net_uuid: { 'network_name': network_name, 'intf': []}})
+        self.netmap.update({net_uuid: {'network_name': network_name, 'intf': []}})
 
         return network_name, net_uuid
 
