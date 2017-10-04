@@ -160,6 +160,26 @@ class OSPlugin(Plugin):
     def getUUID(self):
         return uuid.uuid4()
 
+    def getProcessorInformation(self):
+        raise NotImplemented
+
+    def getMemoryInformation(self):
+        raise NotImplemented
+
+    def getDisksInformation(self):
+        raise NotImplemented
+
+    def getIOInformations(self):
+        raise NotImplemented
+
+    def getAcceleratorsInformations(self):
+        raise NotImplemented
+
+    def getNetworkInformations(self):
+        raise NotImplemented
+
+    def getPositionInformation(self):
+        raise NotImplemented
 
 class ProcessNotExistingException(Exception):
     def __init__(self, message, errors):

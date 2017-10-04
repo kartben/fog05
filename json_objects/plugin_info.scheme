@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "title": "Single Plugin Information",
+  "description": "Information about a FogOS Node",
+  "type": "object",
+  "properties":{
+    "status":{
+      "type":"string"
+    },
+    "version":{
+      "type":"int"
+    },
+    "description":{
+      "type":"string"
+    },
+    "plugin":{
+      "type":"python object"
+    }
+  }
+}

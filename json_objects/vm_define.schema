@@ -22,6 +22,7 @@
     },
     "base_image":{
       "type":"string"
+      "description":"url or local path of image"
     },
     "networks":{
       "type":"array",

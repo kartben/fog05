@@ -28,6 +28,8 @@ class FogAgent(Agent):
         uri = uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
         self.cache.put(uri, json.dumps(val))
 
+        self.populateNodeInformation()
+
 
 
     def loadOSPlugin(self):
@@ -63,14 +65,38 @@ class FogAgent(Agent):
 
             val = {'plugins': [{'name': rt.name, 'version': rt.version, 'uuid': str(rt.uuid),
                                 'type': 'runtime'}]}
-            uri = uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
+            uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
             self.cache.dput(uri, json.dumps(val))
 
             return rt
         else:
             return None
+
+    def populateNodeInformation(self):
+
+        node_info = {}
+        node_info.update({'uuid': str(self.uuid)})
+        node_info.update({'name': 'develop node'})
+
+        node_info.update({'cpu': self.osPlugin.getProcessorInformation()})
+        node_info.update({'ram': self.osPlugin.getMemoryInformation()})
+        node_info.update({'disks': self.osPlugin.getDisksInformation()})
+        node_info.update({'network': self.osPlugin.getNetworkInformations()})
+
+        uri = str('fos://<sys-id>/%s/' % self.uuid)
+        self.cache.put(uri, json.dumps(node_info))
+
+
     
     def main(self):
+
+
+
+        print (self.cache)
+
+
+
+        exit(0)
 
         print(self.cache)
 

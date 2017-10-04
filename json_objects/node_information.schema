@@ -37,7 +37,7 @@
                             "minItems": 1,
                             "uniqueItems" : false
                         }
-                    }
+                    },
                     "ram":{
                         "type":"object",
                         "properties":{
@@ -129,7 +129,7 @@
                                 "intf_configuration":{
                                     "type":"object",
                                     "properties":{
-                                        "ipv4_address:{
+                                        "ipv4_address":{
                                             "description":"interface ipv4 address",
                                             "type":"string"
                                         },
