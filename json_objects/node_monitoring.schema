@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-06/schema#",
   "title": "Node Monitoring",
-  "description": "Information about a FogOS Node",
+  "description": "Monitoring about a FogOS Node",
   "type": "object",
   "properties": {
     "uuid": {

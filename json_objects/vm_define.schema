@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-06/schema#",
   "title": "VM Definition",
-  "description": "Information about a FogOS Node",
+  "description": "VM definition schema",
   "type": "object",
   "properties": {
     "name":{

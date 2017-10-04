@@ -39,7 +39,7 @@ For the definition of microservices we think that each service should have a man
 
 And then should be a manifest file for the entire application in which are fenined the Affinity Class for each service (eg two or more services should be deployed on the same system) and the graph that describe the connection between the sevices (also describe the order in which the services should be deployed)
 
-![Example App Graph](img/fogos_example_app_graph.png)
+![Example App Graph](../img/fogos_example_app_graph.png)
 
 
 

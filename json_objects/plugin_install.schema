@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-06/schema#",
-  "title": "Single Plugin Information",
-  "description": "Information about a single plugin",
-  "type": "object",
+  "title": "Plugins Installation",
+  "description": "Information for installing a plugin",
+  "type":"object",
   "properties":{
     "status":{
       "type":"string"
@@ -13,8 +13,9 @@
     "description":{
       "type":"string"
     },
-    "plugin":{
-      "type":"python object"
+    "uuid":{
+      "type":"string"
     }
   }
 }
+

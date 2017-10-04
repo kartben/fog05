@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-06/schema#",
   "title": "Plugins Informations",
-  "description": "Information about a FogOS Node",
+  "description": "Information about a Node's plugins",
   "plugins":{
     "type": "array",
     "items":{
