@@ -22,7 +22,7 @@ class DDSCache(Cache):
 
 
     def dput(self, uri, values = None):
-        self.__observer.onDput(uri)
+
 
         if values == None:
             ##status=run&entity_data.memory=2GB
@@ -58,6 +58,7 @@ class DDSCache(Cache):
 
                     data.update({k: v})
         self.__local_cache.update({uri: json.dumps(data)})
+        self.__observer.onPut(uri, json.dumps(data))
 
         for key in self.__observers:
             if fnmatch.fnmatch(uri, key):

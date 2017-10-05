@@ -1,38 +1,59 @@
-<domain type='kvm'>
-  <name>{{ name }}</name>
-  <uuid>{{ uuid }}</uuid>
-  <memory unit='MB'>{{ memory }}</memory>
-  <currentMemory unit='MB'>{{ memory }}</currentMemory>
-  <vcpu>{{ cpu }}</vcpu>
-  <os>
-    <type arch='x86_64' machine='pc'>hvm</type>
-    <boot dev='cdrom'/>
-  </os>
-  <features>
-    <acpi/>
-    <apic/>
-    <pae/>
-  </features>
-  <clock offset='localtime'/>
-  <on_poweroff>destroy</on_poweroff>
-  <on_reboot>destroy</on_reboot>
-  <on_crash>destroy</on_crash>
-  <devices>
-    <emulator>/usr/bin/qemu-system-x86_64</emulator>
-    <disk type='file' device='disk'>
-      <source file='{{ disk_image }}'/>
-      <target dev='hda' bus='ide'/>
-    </disk>
-    <disk type='file' device='cdrom'>
-      <source file='{{ iso_image }}'/>
-      <target dev='hdb' bus='ide'/>
-      <readonly/>
-    </disk>
-    <!-- <interface type='bridge'>
-      <source bridge='br0'/>
-      <mac address="0E:1F:35:AB:45:0C"/>
+<domain type="kvm">
+    <name>{{ name }}</name>
+    <!-- <cpu>
+        <topology cores="4" sockets="1" threads="4" />
+    </cpu> -->
+    <uuid>{{ uuid }}</uuid>
+    <memory unit="MB">{{ memory }}</memory>
+    <currentMemory unit="MB">{{ memory }}</currentMemory>
+    <vcpu placement="static">{{ cpu }}</vcpu>
+    <os>
+        <type>hvm</type>
+        <boot dev="hd" />
+    </os>
+    <features>
+        <acpi />
+        <apic />
+        <pae />
+    </features>
+    <clock offset="utc" />
+    <on_poweroff>destroy</on_poweroff>
+    <on_reboot>restart</on_reboot>
+    <on_crash>restart</on_crash>
+    <devices>
+        <emulator>/usr/bin/qemu-system-x86_64</emulator>
+        <disk device="disk" type="file">
+            <driver name="qemu" type="qcow2" />
+            <source file="{{ disk_image }}" />
+            <target dev="hda" />
+            <address bus="0" controller="0" target="0" type="drive" unit="0" />
+        </disk>
+        <disk device="cdrom" type="file">
+            <source file="{{ iso_image }}" />
+            <driver name="qemu" type="raw" />
+            <target bus="ide" dev="hdc" />
+            <readyonly />
+            <address bus="1" controller="0" target="0" type="drive" unit="0" />
+        </disk>
+        <!--
+    <interface type='bridge'>
+        <mac address='{{ vm_mac }}'/>
+        <source network='default' bridge='{{ bridge_name }}'/>
+      <target dev='{{ domain_name }}0'/>
+      <model type='rtl8139'/>
+      <alias name='net0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
     </interface> -->
-    <input type='mouse' bus='ps2'/>
-    <graphics type='vnc' port='-1' autoport='yes' keymap='en-us'/>
-  </devices>
+     <serial type='pty'>
+      <source path='/dev/pts/20'/>
+      <target port='0'/>
+      <alias name='serial0'/>
+    </serial>
+    <console type='pty' tty='/dev/pts/20'>
+      <source path='/dev/pts/20'/>
+      <target type='serial' port='0'/>
+      <alias name='serial0'/>
+    </console>
+    <graphics port="-1" type="vnc" />
+    </devices>
 </domain>

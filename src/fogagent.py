@@ -6,6 +6,7 @@ from DDSCache import *
 #from RedisLocalCache import RedisCache
 import json
 
+
 class FogAgent(Agent):
 
     def __init__(self):
@@ -115,30 +116,37 @@ class FogAgent(Agent):
 
         print (self.cache)
 
-        exit(0)
+
+
+
+
+
+
+
+
+    #############
 
         uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
-        print (uri)
+        #print (uri)
         all_plugins = json.loads(self.cache.get(uri)[0].get(uri)).get('plugins')
-        print(all_plugins)
+        #print(all_plugins)
 
         runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
 
-        print (runtimes)
+        #print (runtimes)
 
         print("locating kvm plugin")
         kvm = [x for x in runtimes if 'kvm' in x.get('name')][0]
 
-        print(kvm)
+        #print(kvm)
         uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, kvm.get('name'), kvm.get('uuid')))
         kvm = self.cache.get(uri)[0].get(uri)
-        print(kvm)
+        #print(kvm)
         kvm = kvm.get('plugin')
-        print (kvm)
-        kvm.startRuntime()
+        #print (kvm)
 
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.uuid, kvm.uuid))
-        self.cache.observe(uri, kvm.reactToCache)
+        ##self.cache.observe(uri, kvm.reactToCache)
 
 
         print("Press enter to define a vm")
@@ -155,20 +163,43 @@ class FogAgent(Agent):
         json_data = json.dumps(entity_definition)
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm.uuid, vm_uuid))
         self.cache.put(uri, json_data)
-        print (self.cache)
+        #print (self.cache)
 
-        print (kvm.getEntities())
+
+        ##### testing decupling with redis
+        import redis
+        r = redis.StrictRedis(host='localhost', port=6379)  # Connect to local Redis instance
+
+        p = r.pubsub()  # See https://github.com/andymccurdy/redis-py/#publish--subscribe
+
+        print("Starting main scripts...")
+
+        print ("pubishing to %s" % uri)
+
+        r.publish(uri, json_data)
+        ######
+
+
+        #print (kvm.getEntities())
 
 
         print("Press enter to configure the vm")
+
         input()
 
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (self.uuid, kvm.uuid, vm_uuid))
         self.cache.dput(uri)
-        print (self.cache)
+
+        #### testing decupling with redis
+        r.publish(uri, '{"status":"configure"}')
+        ####
+
+        #print (self.cache)
+
 
         print("Press enter to start vm")
-        input()
+        exit(0)
+        #input()
 
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (self.uuid, kvm.uuid, vm_uuid))
         self.cache.dput(uri)
@@ -197,7 +228,7 @@ class FogAgent(Agent):
 
         exit(0)
 
-
+        #################
 
 
 if __name__=='__main__':

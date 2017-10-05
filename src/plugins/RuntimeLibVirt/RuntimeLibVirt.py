@@ -11,18 +11,30 @@ import json
 
 class RuntimeLibVirt(RuntimePlugin):
 
-    def __init__(self,name,version,agent):
+    def __init__(self, name, version, agent):
         super(RuntimeLibVirt, self).__init__(version)
         self.uuid = uuid.uuid4()
         self.name = name
         self.agent = agent
+        self.startRuntime()
 
+        '''
+        ###### test decupling with redis
+        import redis
+        r = redis.StrictRedis(host='localhost', port=6379)  # Connect to local Redis instance
+        self.p = r.pubsub(ignore_subscribe_messages=True)  # See https://github.com/andymccurdy/redis-py/#publish--subscribe
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (agent.uuid, self.uuid))
+        print ("subscribed to %s" % uri)
 
+        self.p.psubscribe(uri)
+        import threading
+        threading.Thread(target=self.reactToCache, args=(None, None)).start()
+        ######
+        '''
     def startRuntime(self):
 
         import libvirt
-
-        self.conn=libvirt.open("qemu:///system")
+        self.conn = libvirt.open("qemu:///system")
         return self.uuid
 
 
@@ -34,10 +46,9 @@ class RuntimeLibVirt(RuntimePlugin):
 
     def defineEntity(self, *args, **kwargs):
         """
-         Try defining vm
-         generating xml from templates/vm.xml with jinja2
+        Try defining vm
+        generating xml from templates/vm.xml with jinja2
         """
-
         if len(args) > 0:
             entity_uuid = args[4]
             disk_path = str("/opt/fog/%s.qcow2" % entity_uuid)
@@ -48,8 +59,8 @@ class RuntimeLibVirt(RuntimePlugin):
             disk_path = str("/opt/fog/%s.qcow2" % entity_uuid)
             cdrom_path = str("/opt/fog/%s_config.iso" % entity_uuid)
             entity = LibVirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
-                               kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'), kwargs.get(
-                'base_image'))
+                                   kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'), kwargs.get(
+                    'base_image'))
         else:
             return None
 
@@ -89,7 +100,7 @@ class RuntimeLibVirt(RuntimePlugin):
         else:
 
             template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', 'RuntimeLibVirt',
-                                                                        'templates', 'vm.xml'))
+                                                                          'templates', 'vm.xml'))
 
             vm_xml = Environment().from_string(template_xml)
             vm_xml = vm_xml.render(name=entity.name, uuid=entity_uuid, memory=entity.ram,
@@ -126,11 +137,11 @@ class RuntimeLibVirt(RuntimePlugin):
         entity = self.currentEntities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing", str("Entity %s not in runtime %s" % (entity_uuid,
-                                                                                                         self.uuid)))
+                                                                                                          self.uuid)))
         elif entity.getState() != State.CONFIGURED:
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state", str("Entity %s is not in  "
-                                                                                             "CONFIGURED state"  %
-                                                                                             entity_uuid))
+                                                                                              "CONFIGURED state"  %
+                                                                                              entity_uuid))
         else:
             # should undefine on libvirt
             self.lookupByUUID(entity_uuid).undefine()
@@ -150,10 +161,10 @@ class RuntimeLibVirt(RuntimePlugin):
         entity = self.currentEntities.get(entity_uuid,None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing", str("Entity %s not in runtime %s" % (entity_uuid,
-                                                                                                         self.uuid)))
+                                                                                                          self.uuid)))
         elif entity.getState() != State.CONFIGURED:
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state", str("Entity %s is not in CONFIGURED "
-                                                                                         "state" % entity_uuid))
+                                                                                              "state" % entity_uuid))
         else:
             self.lookupByUUID(entity_uuid).create()
             entity.onStart()
@@ -166,11 +177,11 @@ class RuntimeLibVirt(RuntimePlugin):
         entity = self.currentEntities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing", str("Entity %s not in runtime %s" % (entity_uuid,
-                                                                                                         self.uuid)))
+                                                                                                          self.uuid)))
         elif entity.getState() != State.RUNNING:
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state", str("Entity %s is not in "
-                                                                                          "RUNNING state"
-                                                                                          % entity_uuid))
+                                                                                           "RUNNING state"
+                                                                                           % entity_uuid))
         else:
             self.lookupByUUID(entity_uuid).destroy()
             entity.onStop()
@@ -183,11 +194,11 @@ class RuntimeLibVirt(RuntimePlugin):
         entity = self.currentEntities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing", str("Entity %s not in runtime %s" % (entity_uuid,
-                                                                                                         self.uuid)))
+                                                                                                          self.uuid)))
         elif entity.getState() != State.RUNNING:
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state", str("Entity %s is not in "
-                                                                                          "RUNNING state"
-                                                                                          % entity_uuid))
+                                                                                           "RUNNING state"
+                                                                                           % entity_uuid))
         else:
             self.lookupByUUID(entity_uuid).suspend()
             entity.onPause()
@@ -200,30 +211,45 @@ class RuntimeLibVirt(RuntimePlugin):
         entity = self.currentEntities.get(entity_uuid,None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing", str("Entity %s not in runtime %s" % (entity_uuid,
-                                                                                                         self.uuid)))
+                                                                                                          self.uuid)))
         elif entity.getState() != State.PAUSED:
             raise StateTransitionNotAllowedException("Entity is not in PAUSED state", str("Entity %s is not in PAUSED "
-                                                                                         "state" % entity_uuid))
+                                                                                          "state" % entity_uuid))
         else:
             self.lookupByUUID(entity_uuid).resume()
             entity.onResume()
             self.currentEntities.update({entity_uuid: entity})
             return True
 
+
+
+
     def reactToCache(self, key, value):
-        uuid = key.split('/')[-1]
-        value = json.loads(value)
-        action = value.get('status')
-        entity_data = value.get('entity_data')
-        react_func = self.react(action)
-        if react_func is not None and entity_data is None:
-            react_func(uuid)
-        elif react_func is not None:
-            entity_data.update({'entity_uuid': uuid})
-            if action == 'define':
-                react_func(**entity_data)
+        import time
+        while True:
+            #print("Waiting for messages on cache...")
+            message = self.p.get_message()  # Checks for message
+            if message is None or message.get('type') != 'pmessage':
+                time.sleep(1)
             else:
-                react_func(entity_data)
+                print (message)
+                key = message.get('channel').decode()
+                value = message.get('data').decode()
+                uuid = key.split('/')[-1]
+                value = json.loads(value)
+                action = value.get('status')
+                entity_data = value.get('entity_data')
+                react_func = self.react(action)
+                if react_func is not None and entity_data is None:
+                    react_func(uuid)
+                elif react_func is not None:
+                    entity_data.update({'entity_uuid': uuid})
+                    if action == 'define':
+                        react_func(**entity_data)
+                    else:
+                        react_func(entity_data)
+
+
 
     def lookupByUUID(self, uuid):
         domains = self.conn.listAllDomains(0)

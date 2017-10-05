@@ -5,21 +5,13 @@
 # (using the -k/--ssh-key option) and a user-data blog (using the
 # -u/--user-data option).
 
-md_api_versions='
-2015-10-15
-2016-06-30
-2016-10-06
-2017-02-22
-'
-
-
 usage () {
 	echo "usage: ${0##*/}: [--ssh-key <pubkey>] [--vendor-data <file>] [--user-data <file>] [--hostname <hostname>] <imagename>"
 }
 
 ARGS=$(getopt \
-	-o k:u:v:h:n: \
-	--long help,hostname:,ssh-key:,user-data:,vendor-data:,network-data: -n ${0##*/} \
+	-o k:u:v:h: \
+	--long help,hostname:,ssh-key:,user-data:,vendor-data: -n ${0##*/} \
 	-- "$@")
 
 if [ $? -ne 0 ]; then
@@ -47,10 +39,6 @@ while :; do
 			vendor_data="$2"
 			shift 2
 			;;
-		-n|--network-data)
-			network_data="$2"
-			shift 2
-			;;
 		-h|--hostname)
 			hostname="$2"
 			shift 2
@@ -60,11 +48,6 @@ while :; do
 			;;
 	esac
 done
-
-if ! [ "$#" -eq 1 ]; then
-	echo "ERROR: missing target filename" >&2
-	exit 1
-fi
 
 config_image=$1
 shift
@@ -82,52 +65,31 @@ fi
 trap 'rm -rf $config_dir' EXIT
 config_dir=$(mktemp -t -d configXXXXXX)
 
-mkdir -p "${config_dir}/openstack/latest"
-
 if [ "$user_data" ] && [ -f "$user_data" ]; then
 	echo "adding user data from $user_data"
-	cp $user_data $config_dir/openstack/latest/user-data
+	cp $user_data $config_dir/user-data
+else
+	touch $config_dir/user-data
 fi
 
 if [ "$vendor_data" ] && [ -f "$vendor_data" ]; then
 	echo "adding vendor data from $vendor_data"
-	cp $vendor_data "$config_dir/openstack/latest/vendor_data.json"
-else
-	echo "{}" > "$config_dir/openstack/latest/vendor_data.json"
+	cp $vendor_data $config_dir/vendor-data
 fi
 
-if [ "$network_data" ] && [ -f "$network_data" ]; then
-	echo "adding network data from $network_data"
-	cp $network_data "$config_dir/openstack/latest/network_data.json"
-fi
-
-cat > $config_dir/openstack/latest/meta_data.json <<-EOF
-{
-"uuid": "$uuid",
-"hostname": "$hostname",
-"name": "$hostname",
-"launch_index": 0,
-"availability_zone": "nova"
+cat > $config_dir/meta-data <<-EOF
+instance-id: $uuid
+hostname: $hostname
+local-hostname: $hostname
 EOF
 
 if [ "$ssh_key_data" ]; then
-	cat >> $config_dir/meta_data.json <<-EOF
-	,
-	"keys": [
-	{ "name": "default", "type": "ssh", "data": "$ssh_key_data" }
-	],
-	"public_keys": {
-	  "default": "$ssh_key_data"
-	}
+	cat >> $config_dir/meta-data <<-EOF
+	public-keys:
+	  - |
+	    $ssh_key_data
 	EOF
 fi
-
-echo "}" >> $config_dir/openstack/latest/meta_data.json
-
-for v in $md_api_versions; do
-	echo "setting up api version $v"
-	cp -a "$config_dir/openstack/latest" "$config_dir/openstack/$v"
-done
 
 #PS1="debug> " bash --norc
 
