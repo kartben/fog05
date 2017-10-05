@@ -115,7 +115,7 @@ class FogAgent(Agent):
 
         print (self.cache)
 
-        exit(0)
+        #exit(0)
 
         uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
         print (uri)
