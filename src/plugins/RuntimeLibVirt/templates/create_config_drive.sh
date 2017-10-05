@@ -100,3 +100,4 @@ if ! mkisofs -o $config_image -V cidata -r -J --quiet $config_dir; then
 fi
 chmod a+r $config_image
 
+
