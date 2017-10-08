@@ -1,16 +1,19 @@
-from interfaces.Cache import *
+from interfaces.Store import *
 import fnmatch
 from threading import Thread
 import json
 
-class DDSCache(Cache):
+class DStore(Store):
 
-    def __init__(self, local_information_cache_size, node_id, observer):
-        self.__local_size = local_information_cache_size
-        self.__node_id = node_id
+    def __init__(self, root, home, store_id, cache_size, observer):
+        self.root = root
+        self.home = home
+        self.store_id = store_id
+        self.__cache_size = cache_size
         self.__observer = observer
         self.__local_cache = {}
         self.__observers = {}
+        self.__controller = DController(self)
 
 
     def pput(self, uri, value):

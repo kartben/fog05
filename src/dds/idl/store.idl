@@ -1,0 +1,41 @@
+module fogos {
+  module dds {
+    module types {
+
+      struct KeyValye {
+	    string key;
+	    string value;
+	    unsigned long long revision;
+	    string store_id;
+      };
+      #pragma keylist KeyValue key
+
+      struct StoreInfo {
+	    string store_id;
+	    string root;
+	    string home;
+      };
+      #pragma keylist StoreInfo cache_id
+      
+      enum StoreCommandId {
+	    RESOLVE_KEY  = 0,
+	    INVALIDATE_KEY = 1
+      };
+
+      union Command switch (StoreCommandId) {
+	
+      case RESOLVE:
+	    string cache_id;
+	    string key;
+      case INVALIDATE:
+	    string key;
+      };
+
+      struct StoreCommand {
+	    Command cmd;
+      };
+      #pragma keylist CacheCommand
+      
+    };
+  };
+};

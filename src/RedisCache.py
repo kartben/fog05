@@ -1,4 +1,4 @@
-from interfaces.Cache import *
+from interfaces.Store import *
 import fnmatch
 from threading import Thread
 import json

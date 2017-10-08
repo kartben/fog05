@@ -65,10 +65,11 @@ class Controller(object):
             Stops a controller and releases all resources used to receive/send data on the network.
         """
 
-class Cache(object):
+class Store(object):
 
-    def __init__(self,local_information_cache_size,remote_information_cache_size,node_id,hashing_function):
+    def __init__(self, root, home, store_id, cache_size, hashing_function):
         raise NotImplementedError
+
 
     def put(self,uri,value):
         """
@@ -134,3 +135,9 @@ class Cache(object):
         raise NotImplementedError
 
 
+    def close(self):
+        '''
+            Cloese a store and releases all associated resources
+        '''
+
+        raise NotImplementedError
