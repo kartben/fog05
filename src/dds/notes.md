@@ -27,7 +27,7 @@ represents a delta update.
 
 ## DDS Mapping 
 
-Given a cache **Ci** with home **Hi** and a root **H**, the current
+Given a cache **Ci** with home **Hi** and a root **R**, the current
 implementation defines the following partitions:
 
 - **Hi** is used to write the local data. A writer with persistent QoS

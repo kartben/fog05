@@ -1,19 +1,20 @@
 from interfaces.Store import *
+import DController
 import fnmatch
 from threading import Thread
 import json
 
 class DStore(Store):
 
-    def __init__(self, root, home, store_id, cache_size, observer):
+    def __init__(self, root, home, store_id, cache_size):
         self.root = root
         self.home = home
         self.store_id = store_id
         self.__cache_size = cache_size
-        self.__observer = observer
         self.__local_cache = {}
         self.__observers = {}
         self.__controller = DController(self)
+        self.__observer = self.__controller
 
 
     def pput(self, uri, value):
@@ -116,48 +117,48 @@ class DStore(Store):
 
         return ret
 
-
-class DDSObserver(Observer):
-
-    def onRemove(self, uri):
-        print('Observer onRemove Called')
-
-    def onConflict(self):
-        print('Observer onConflict Called')
-
-    def onDput(self, uri):
-        print('Observer onDput Called')
-
-    def onPput(self, uri, value):
-        print('Observer onPput Called')
-
-    def onMiss(self):
-        print('Observer onMiss Called')
-
-    def onGet(self, uri):
-        print('Observer onGet Called')
-
-    def onObserve(self, uri, action):
-        print('Observer onObserve Called')
-
-    def onPut(self, uri, value):
-        print('Observer onPut Called')
-
-
-class DDSController(Controller):
-
-    def __init__(self, cache):
-        super(DDSController, self).__init__(cache)
-
-    def start(self):
-        print('Controller start Called')
-
-    def stop(self):
-        print('Controller stop Called')
-
-    def resume(self):
-        print('Controller resume Called')
-
-    def pause(self):
-        print('Controller pause Called')
-
+#
+# class DDSObserver(Observer):
+#
+#     def onRemove(self, uri):
+#         print('Observer onRemove Called')
+#
+#     def onConflict(self):
+#         print('Observer onConflict Called')
+#
+#     def onDput(self, uri):
+#         print('Observer onDput Called')
+#
+#     def onPput(self, uri, value):
+#         print('Observer onPput Called')
+#
+#     def onMiss(self):
+#         print('Observer onMiss Called')
+#
+#     def onGet(self, uri):
+#         print('Observer onGet Called')
+#
+#     def onObserve(self, uri, action):
+#         print('Observer onObserve Called')
+#
+#     def onPut(self, uri, value):
+#         print('Observer onPut Called')
+#
+#
+# class DDSController(Controller):
+#
+#     def __init__(self, cache):
+#         super(DDSController, self).__init__(cache)
+#
+#     def start(self):
+#         print('Controller start Called')
+#
+#     def stop(self):
+#         print('Controller stop Called')
+#
+#     def resume(self):
+#         print('Controller resume Called')
+#
+#     def pause(self):
+#         print('Controller pause Called')
+#

@@ -1,8 +1,9 @@
-module fogos {
+module fos {
   module dds {
     module types {
 
-      struct KeyValye {
+      
+      struct KeyValue {
 	    string key;
 	    string value;
 	    unsigned long long revision;
@@ -10,31 +11,20 @@ module fogos {
       };
       #pragma keylist KeyValue key
 
+
       struct StoreInfo {
 	    string store_id;
-	    string root;
-	    string home;
+	    string sroot;
+	    string shome;
       };
-      #pragma keylist StoreInfo cache_id
-      
-      enum StoreCommandId {
-	    RESOLVE_KEY  = 0,
-	    INVALIDATE_KEY = 1
-      };
+      #pragma keylist StoreInfo store_id
 
-      union Command switch (StoreCommandId) {
-	
-      case RESOLVE:
-	    string cache_id;
-	    string key;
-      case INVALIDATE:
-	    string key;
+      struct Resolve {
+        string source_store_id;
+        string key;
       };
+      #pragma keylist Resolve
 
-      struct StoreCommand {
-	    Command cmd;
-      };
-      #pragma keylist CacheCommand
       
     };
   };
