@@ -136,6 +136,7 @@ def run_store_info_logger():
 class DController (Controller, Observer):
 
     def __init__(self, store):
+        super(DController, self).__init__()
         self.__store = store
         dp = DomainParticipant()
         init_dds_topic_info(dp, dds_store_info)
@@ -147,23 +148,20 @@ class DController (Controller, Observer):
     # below we also need to properly take into account the semantic of put right now
     # everything is persisted
 
-    def onPut(self, uri, value):
+    def onPut(self, uri, value, version):
         v = dds_key_value_info.builder(key = uri , value= value, store_id = self.__store, revision = 0)
         dds_key_value_info.writer.write(v)
 
 
     # One of these for each operation on the cache...
-    def onPput(self, uri, value):
+    def onPput(self, uri, value, version):
         v = dds_key_value_info.builder(key = uri , value= value, store_id = self.__store, revision = 0)
         dds_key_value_info.writer.write(v)
 
-    def onDput(self, uri):
+    def onDput(self, uri, version):
         v = dds_key_value_info.builder(key = uri , value= value, store_id = self.__store, revision = 0)
         dds_key_value_info.writer.write(v)
 
-    def onDput(self, uri, value):
-        v = dds_key_value_info.builder(key = uri , value= value, store_id = self.__store, revision = 0)
-        dds_key_value_info.writer.write(v)
 
     def onGet(self, uri):
         print("onGet Not yet...")
@@ -180,4 +178,13 @@ class DController (Controller, Observer):
     def onConflict(self):
         print("onConflict Not yet...")
 
+
+    def resolve(self, uri):
+        """
+            Tries to resolve this URI on across the distributed caches
+            :param uri: the URI to be resolved
+            :return: the value, if something is found
+        """
+        print("Resolving...")
+        return None
 

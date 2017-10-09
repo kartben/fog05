@@ -7,18 +7,104 @@ import json
 class DStore(Store):
 
     def __init__(self, root, home, store_id, cache_size):
+        super(DStore, self).__init__()
         self.root = root
         self.home = home
         self.store_id = store_id
+        self.__store = {} # This stores URI whose prefix is **home**
         self.__cache_size = cache_size
-        self.__local_cache = {}
+        self.__local_cache = {} # this is a cache that stores up
+                                # to __cache_size entry for URI whose prefix is not **home**
         self.__observers = {}
         self.__controller = DController(self)
-        self.__observer = self.__controller
+        self.__controller.start()
+
+    def is_stored_value(self, uri):
+        return fnmatch.fnmatch(uri, self.home)
+
+    def is_cached_value(self, uri):
+        return  not self.is_stored_value(uri)
+
+
+    def get_version(self, uri):
+        version = None
+        v = None
+        if self.is_stored_value(uri):
+            v = self.__store[uri]
+        else:
+            v = self.__local_cache[uri]
+
+        if v != None:
+            version = v[1]
+
+        return version
+
+    def get_value(self, uri):
+        v = None
+        if self.is_stored_value(uri):
+            v = self.__store[uri]
+        else:
+            v = self.__local_cache[uri]
+
+
+        return v
+
+    def next_version(self, uri):
+        nv = 0
+        v = self.get_version(uri)
+        if v != None:
+            nv = v +1
+
+        return nv
+
+    def __unchecked_store_value(self, uri, value, version):
+        if self.is_stored_value(uri):
+            self.__store[uri] = (value, version)
+        else:
+            self.__local_cache[uri] = (value, version)
+
+
+    def update_value(self, uri, value, version):
+        succeeded = False
+
+        current_version = self.get_version(uri)
+        if current_version != None:
+            if current_version < version:
+                self.__unchecked_store_value(uri, value, version)
+                succeeded = True
+        else:
+            self.__unchecked_store_value(uri, value, version)
+            succeeded = True
+
+
+        return succeeded
+
+    def notify_observers(self, uri, value, v):
+        # AC: Should not use a separate thread of each observer... This is going to result in a
+        #     few DDS writes which are non-blocking and thus not so useful to start a separate thread
+        for key in self.__observers:
+            if fnmatch.fnmatch(uri, key):
+                Thread(target=self.__observers.get(key), args=(uri, value, v)).start()
+
+    def put(self, uri, value):
+        v = self.get_version(uri)
+        if v == None:
+            v = 0
+        else:
+            v = v + 1
+        self.update_value(uri, value, v)
+
+        # It is always the observer that inserts data in the cache
+        self.__controller.onPut(uri, value, v)
+        self.notify_observers(uri, value, v)
 
 
     def pput(self, uri, value):
-        self.__observer.onPput(uri, value)
+        v = self.next_version(uri)
+        self.__unchecked_store_value(uri, value, v)
+        self.__controller.onPput(uri, value, v)
+        self.notify_observers(uri, value, v)
+
 
     def conflict_handler(self, action):
         pass
@@ -26,8 +112,7 @@ class DStore(Store):
 
 
     def dput(self, uri, values = None):
-
-
+        v = self.next_version(uri)
         if values == None:
             ##status=run&entity_data.memory=2GB
             uri = uri.split('#')
@@ -40,6 +125,7 @@ class DStore(Store):
                 data = json.loads(self.__local_cache.get(key))
 
 
+        # @TODO: Need to resolve this miss
         if len(data) == 0:
             print("this is a miss")
             return
@@ -61,13 +147,11 @@ class DStore(Store):
                         v = old_v + v
 
                     data.update({k: v})
-        self.__local_cache.update({uri: json.dumps(data)})
-        self.__observer.onPut(uri, json.dumps(data))
 
-        for key in self.__observers:
-            if fnmatch.fnmatch(uri, key):
-                Thread(target=self.__observers.get(key), args=(uri, json.dumps(data))).start()
-
+        value = json.dumps(data)
+        self.__unchecked_store_value(uri, value , v)
+        self.__controller.onDPut(uri, value, v)
+        self.notify_observers(uri, value, v)
 
 
 
@@ -77,30 +161,21 @@ class DStore(Store):
         self.__observers.update({uri: action})
 
     def remove(self, uri):
-        self.__observer.onRemove(uri)
+        self.__controller.onRemove(uri)
         self.__local_cache.pop(uri)
 
     def get(self, uri):
-        data = []
-        #uri = str("%s%s" % (uri, '*'))
-        self.__observer.onGet(uri)
-        for key in self.__local_cache:
-            if fnmatch.fnmatch(key, uri):
-                data.append({key: self.__local_cache.get(key)})
-        if len(data) == 0:
-            self.__observer.onMiss()
+        v = self.get_value(uri)
+        if v == None:
             print("this is a miss")
-        return data
+            self.__controller.onMiss()
+            rv= self.__controller.resolve(uri)
+            if rv != None:
+                self.update_value(uri, v[0], v[1])
+                self.notify_observers(uri, v[0], v[1])
+                v = rv[0]
 
-    def put(self, uri, value):
-        self.__observer.onPut(uri, value)
-        self.__local_cache.update({uri: value})
-
-        for key in self.__observers:
-            if fnmatch.fnmatch(uri, key):
-                Thread(target=self.__observers.get(key), args=(uri, value)).start()
-
-
+        return v
 
 
 

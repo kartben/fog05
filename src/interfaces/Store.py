@@ -4,13 +4,11 @@ class Observer(object):
         raise NotImplemented("Not yet...")
 
     # One of these for each operation on the cache...
-    def onPput(self, uri, value):
+    def onPput(self, uri, value, version):
         raise NotImplemented("Not yet...")
 
-    def onDput(self, uri):
-        raise NotImplemented("Not yet...")
-
-    def onDput(self, uri, value):
+    # @TODO: The semantics of dput and persistence has to be refined.
+    def onDput(self, uri, value, version):
         raise NotImplemented("Not yet...")
 
     def onGet(self, uri):
@@ -30,15 +28,6 @@ class Observer(object):
 
 
 class Controller(object):
-    """
-    Controls the cache, in the sense that automatically fills it with the 
-    information coming from the network, e.g. from DDS.
-     
-    """
-
-    def __init__(self, cache):
-        self.__cache = cache
-
 
     def start(self):
         """
@@ -65,9 +54,18 @@ class Controller(object):
             Stops a controller and releases all resources used to receive/send data on the network.
         """
 
+    def resolve(self, uri):
+        """
+            Tries to resolve this URI on across the distributed caches
+        :param uri: the URI to be resolved
+        :return: the value, if something is found
+        """
+        raise NotImplemented("Not yet...")
+
+
 class Store(object):
 
-    def __init__(self, root, home, store_id, cache_size, hashing_function):
+    def __init__(self):
         raise NotImplementedError
 
 
