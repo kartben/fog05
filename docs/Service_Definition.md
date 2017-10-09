@@ -26,10 +26,58 @@ This file describe the single component of an application/service so it should d
 some low level information needed to deploy the component, so it should contain:
 
 - description of component
-- entity type (vm, unikernel, µSvc, Ros Nodelet, native app...)
+- entity type (vm, unikernel, , µSvc, Ros Nodelet, native app...)
 - entity description (depend on entity type)
 - eventual need of hw acceleration or specific I/O
 
 ---
 
 Should be agent's work to start the components in the correct order and with correct relations
+
+
+---
+
+##### Examples
+
+Application manifest:
+
+    {
+        "name":"wp_blog"
+        "description":"simple wordpress blog",
+        "components":[
+            {
+                "name":"wordpress",
+                "need":["mysql"],
+                "manifest":"/some/path/to/wordpress_manifest.json"
+            },
+            {
+                "name":"mysql",
+                "need":[],
+                "manifest":"/some/path/to/mysql_manifest.json"
+            }
+        ]
+    }
+
+
+Wordpress manifest:
+
+    {
+        "name":"wp_v2.foo.bar"
+        "description":"wordpress blog engine"
+        "type":"container",
+        "entity_description":{...},
+        "accelerators":[]
+        "io":[]
+    }
+
+mysql manifest file:
+
+    {
+        "name":"myql_v2.foo.bar"
+        "description":"mysql db engine"
+        "type":"vm",
+        "entity_description":{...},
+        "accelerators":[]
+        "io":[]
+    }
+ 
