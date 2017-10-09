@@ -42,9 +42,13 @@ class TestCache():
         uri = str('fos://<sys-id>/%s/' % self.uuid)
         self.store.put(uri, json.dumps(node_info))
 
-    def test_observer(self, key, value):
+    def test_observer(self, key, value,v):
+        print ("###########################")
         print ("##### I'M an Observer #####")
-        print ("Change to %s : %s" % (key, value))
+        print ("## Key: %s" % key)
+        print ("## Value: %s" % value)
+        print ("## V: %s" % v)
+        print ("###########################")
         print ("###########################")
 
     def main(self):
