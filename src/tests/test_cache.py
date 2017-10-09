@@ -11,8 +11,12 @@ class TestCache():
 
     def __init__(self):
         self.uuid = uuid.uuid4()
-        self.root = str("fos://<sys-id>/%s" % self.uuid)
-        self.store = DStore(self.root, self.uuid, 1, 100)
+        sid = str(self.uuid)
+        self.root = "fos://<sys-id>"
+        self.home = str("fos://<sys-id>/%s" % sid)
+        # Notice that a node may have multiple caches, but here we are
+        # giving the same id to the nodew and the cache
+        self.store = DStore(sid, self.root, self.home, 1024)
 
         osuuid = uuid.uuid4()
 
@@ -20,9 +24,9 @@ class TestCache():
 
         val = {'status': 'add', 'version': 1, 'description': 'linux plugin', 'plugin': 'here should be python object'}
         uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, 'linux', osuuid ))
-        self.store.put(uri, val)
+        self.store.put(uri, json.dumps(val))
 
-        val = {'plugins': [{'name': 'linux', 'version': 1, 'uuid': osuuid,
+        val = {'plugins': [{'name': 'linux', 'version': 1, 'uuid': str(osuuid),
                            'type': 'os'}]}
         uri = uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
         self.store.put(uri, json.dumps(val))
@@ -50,13 +54,16 @@ class TestCache():
 
         uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
         #print (uri)
-        all_plugins = json.loads(self.store.get(uri)[0].get(uri)).get('plugins')
-        print(all_plugins)
+        v = self.store.get(uri)
+
+        all_plugins = json.loads(v).get('plugins')
+
+        print(">> Plugins: " + str(all_plugins))
 
         rt_uuid = uuid.uuid4()
         val = {'status': 'add', 'version': 1, 'description': 'test runtime', 'plugin': 'python obj'}
         uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, 'test runtime', rt_uuid))
-        self.store.put(uri, val)
+        self.store.put(uri, json.dumps(val))
 
         val = {'plugins': [{'name': 'runtime', 'version': 1, 'uuid': str(rt_uuid),
                             'type': 'runtime'}]}

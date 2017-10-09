@@ -43,7 +43,7 @@ dds_store_info = DDSTopicInfo()
 dds_store_info.idl = "/opt/fos/idl/store.idl"
 dds_store_info.topic_name = "StoreInfo"
 dds_store_info.type_name = "fos::dds::types::StoreInfo"
-dds_store_info.key = "store_id"
+dds_store_info.key = "sid"
 dds_store_info.tqos = tl_state_rqos
 dds_store_info.dwqos = tl_state_wqos
 dds_store_info.drqos = tl_state_rqos
@@ -59,13 +59,13 @@ dds_key_value_info.dwqos = t_state_wqos
 dds_key_value_info.drqos = t_state_qos
 
 dds_resolve_info = DDSTopicInfo()
-dds_key_value_info.idl = "/opt/fos/idl/store.idl"
-dds_key_value_info.topic_name = "Resolve"
-dds_key_value_info.type_name = "fos::dds::types::Resolve"
-dds_key_value_info.key = ""
-dds_key_value_info.tqos = event_qos
-dds_key_value_info.dwqos = event_qos
-dds_key_value_info.drqos = event_qos
+dds_resolve_info.idl = "/opt/fos/idl/store.idl"
+dds_resolve_info.topic_name = "Resolve"
+dds_resolve_info.type_name = "fos::dds::types::Resolve"
+dds_resolve_info.key = "key"
+dds_resolve_info.tqos = event_qos
+dds_resolve_info.dwqos = event_qos
+dds_resolve_info.drqos = event_qos
 
 
 
@@ -79,7 +79,7 @@ def init_dds_topic_info(dp, info):
 
     info.builder = info.type.get_class(info.type_name)
 
-# The info should be properly initialised
+# The info should  be properly initialised
 def init_dds_topic_entities(dp, info, partitions):
 
     ps_qos = Qos([PresentationQosPolicy(DDSPresentationAccessScopeKind.TOPIC, True, True),
@@ -110,7 +110,7 @@ def run_store_info():
     k = 0
     while True:
         key_value_builder = dds_key_value_info.type.get_class(dds_key_value_info.type_name)
-        kv = key_value_builder(key = "fos://system0/node0/plugins" + str(k) , value="{\"name\": \"foo\"}", store_id = sid, revision = v)
+        kv = key_value_builder(uri = "fos://system0/node0/plugins" + str(k) , value="{\"name\": \"foo\"}", store_id = sid, revision = v)
         print(">> " + str(kv))
         dds_key_value_info.writer.write(kv)
         time.sleep(5)
@@ -136,6 +136,8 @@ def run_store_info_logger():
 class DController (Controller, Observer):
 
     def __init__(self, store):
+        global dds_store_info
+        global dds_key_value_info
         super(DController, self).__init__()
         self.__store = store
         dp = DomainParticipant()
@@ -148,18 +150,25 @@ class DController (Controller, Observer):
     # below we also need to properly take into account the semantic of put right now
     # everything is persisted
 
-    def onPut(self, uri, value, version):
-        v = dds_key_value_info.builder(key = uri , value= value, store_id = self.__store, revision = 0)
+    def onPut(self, uri, val, ver):
+        global dds_key_value_info
+        print(">> val: " + val)
+        # dds_key_value_info.
+        v = dds_key_value_info.builder(key = uri , value = val, sid = self.__store.store_id, version = ver)
         dds_key_value_info.writer.write(v)
 
 
     # One of these for each operation on the cache...
-    def onPput(self, uri, value, version):
-        v = dds_key_value_info.builder(key = uri , value= value, store_id = self.__store, revision = 0)
+    def onPput(self, uri, val, ver):
+        global dds_key_value_info
+
+        v = dds_key_value_info.builder(key = uri , value = val, sid = self.__store.store_id, version = ver)
         dds_key_value_info.writer.write(v)
 
-    def onDput(self, uri, version):
-        v = dds_key_value_info.builder(key = uri , value= value, store_id = self.__store, revision = 0)
+    def onDput(self, uri, val, ver):
+        global dds_key_value_info
+
+        v = dds_key_value_info.builder(key = uri , value = val, sid = self.__store.store_id, version = ver)
         dds_key_value_info.writer.write(v)
 
 
@@ -188,28 +197,30 @@ class DController (Controller, Observer):
         print("Resolving...")
         return None
 
-   def start(self):
+    def start(self):
         """
             This method starts the controller and "connects" the cache to the rest of the system.
 
         """
-        raise NotImplemented("Not yet...")
+        print("Starting..")
 
     def pause(self):
         """
             Pauses the execution of the controller. The incoming updates are not lost.
         """
-        raise NotImplemented("Not yet...")
+        print("Pausing..")
+
 
     def resume(self):
         """
             Resumes the execution of the controller and applies all pending changes received from the network.
         """
-        raise NotImplemented("Not yet...")
+        print("Resuming..")
 
 
     def stop(self):
         """
             Stops a controller and releases all resources used to receive/send data on the network.
         """
+        print("Stopping..")
 

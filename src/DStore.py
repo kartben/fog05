@@ -6,7 +6,7 @@ import json
 
 class DStore(Store):
 
-    def __init__(self, root, home, store_id, cache_size):
+    def __init__(self, store_id, root, home, cache_size):
         super(DStore, self).__init__()
         self.root = root
         self.home = home
@@ -19,6 +19,7 @@ class DStore(Store):
         self.__controller = DController(self)
         self.__controller.start()
 
+
     def is_stored_value(self, uri):
         return fnmatch.fnmatch(uri, self.home)
 
@@ -30,9 +31,11 @@ class DStore(Store):
         version = None
         v = None
         if self.is_stored_value(uri):
-            v = self.__store[uri]
+            if uri in self.__store:
+                v = self.__store[uri]
         else:
-            v = self.__local_cache[uri]
+            if uri in self.__local_cache:
+                v = self.__local_cache[uri]
 
         if v != None:
             version = v[1]
@@ -42,9 +45,11 @@ class DStore(Store):
     def get_value(self, uri):
         v = None
         if self.is_stored_value(uri):
-            v = self.__store[uri]
+            if uri in self.__store:
+                v = self.__store[uri]
         else:
-            v = self.__local_cache[uri]
+            if uri in self.__local_cache:
+                v = self.__local_cache[uri]
 
 
         return v
@@ -112,7 +117,7 @@ class DStore(Store):
 
 
     def dput(self, uri, values = None):
-        v = self.next_version(uri)
+        version = self.next_version(uri)
         if values == None:
             ##status=run&entity_data.memory=2GB
             uri = uri.split('#')
@@ -122,7 +127,7 @@ class DStore(Store):
         data = {}
         for key in self.__local_cache:
             if fnmatch.fnmatch(key, uri):
-                data = json.loads(self.__local_cache.get(key))
+                data = json.loads(self.__local_cache.get(key)[0])
 
 
         # @TODO: Need to resolve this miss
@@ -149,9 +154,9 @@ class DStore(Store):
                     data.update({k: v})
 
         value = json.dumps(data)
-        self.__unchecked_store_value(uri, value , v)
-        self.__controller.onDPut(uri, value, v)
-        self.notify_observers(uri, value, v)
+        self.__unchecked_store_value(uri, value , version)
+        self.__controller.onDput(uri, value, version)
+        self.notify_observers(uri, value, version)
 
 
 
@@ -173,9 +178,9 @@ class DStore(Store):
             if rv != None:
                 self.update_value(uri, v[0], v[1])
                 self.notify_observers(uri, v[0], v[1])
-                v = rv[0]
+                v = rv
 
-        return v
+        return v[0]
 
 
 
