@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-06/schema#",
-  "title": "Plugins Installation",
+  "title": "Define virtual bridge",
   "description": "Information for creating a virtual bridge",
   "type":"object",
   "properties":{

@@ -12,7 +12,7 @@ def readFile(filename):
 
 class LibVirtEntity(Entity):
 
-    def __init__(self, uuid, name, cpu, ram, disk, disk_size ,cdrom ,networks,image):
+    def __init__(self, uuid, name, cpu, ram, disk, disk_size, cdrom, networks, image, user_file, ssh_key):
 
         super(LibVirtEntity, self).__init__()
         self.uuid = uuid
@@ -24,6 +24,8 @@ class LibVirtEntity(Entity):
         self.cdrom = cdrom
         self.networks = networks
         self.image = image
+        self.user_file = user_file
+        self.ssh_key = ssh_key
 
     def onConfigured(self,configuration):
         self.xml = configuration

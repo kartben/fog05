@@ -21,8 +21,16 @@
       "type":"int"
     },
     "base_image":{
-      "type":"string"
+      "type":"string",
       "description":"url or local path of image"
+    },
+    "user-data":{
+      "type" : "string",
+      "description":"cloud init file"
+    },
+    "ssh-key":{
+      "type":"string",
+      "description":"ssh key to login to the machine"
     },
     "networks":{
       "type":"array",

@@ -35,15 +35,28 @@
             <readyonly />
             <address bus="1" controller="0" target="0" type="drive" unit="0" />
         </disk>
-        <!--
-    <interface type='bridge'>
-        <mac address='{{ vm_mac }}'/>
-        <source network='default' bridge='{{ bridge_name }}'/>
-      <target dev='{{ domain_name }}0'/>
-      <model type='rtl8139'/>
-      <alias name='net0'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
-    </interface> -->
+
+         {% for disk in disks %}
+
+         <disk device="disk" type="file">
+            <driver name="qemu" type="qcow2" />
+            <source file="{{ disk.path }}" />
+            <target dev="hd{{loop.index}}" />
+            <!-- <address bus="0" controller="0" target="0" type="drive" unit="0" /> -->
+        </disk>
+        {% endfor %}
+
+        {% for net in networks %}
+
+        <interface type='bridge'>
+            <mac address='{{ net.mac }}'/>
+            <source network='default' bridge='{{ net.br_name }}'/>
+            <target dev='{{ net.name }}0'/>
+            <model type='rtl8139'/>
+            <alias name='net{{loop.index}}'/>
+            <!-- <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/> -->
+        </interface>
+        {% endfor %}
      <serial type='pty'>
       <source path='/dev/pts/20'/>
       <target port='0'/>
@@ -57,4 +70,3 @@
     <graphics port="-1" type="vnc" />
     </devices>
 </domain>
-
