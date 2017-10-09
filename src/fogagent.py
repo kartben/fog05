@@ -198,8 +198,8 @@ class FogAgent(Agent):
 
 
         print("Press enter to start vm")
-        exit(0)
-        #input()
+        #exit(0)
+        input()
 
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (self.uuid, kvm.uuid, vm_uuid))
         self.store.dput(uri)

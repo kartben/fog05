@@ -39,7 +39,7 @@
     <interface type='bridge'>
         <mac address='{{ vm_mac }}'/>
         <source network='default' bridge='{{ bridge_name }}'/>
-      <target dev='{{ domain_name }}0'/>
+      <target dev='{{ name }}0'/>
       <model type='rtl8139'/>
       <alias name='net0'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>

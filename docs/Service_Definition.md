@@ -1,0 +1,35 @@
+# Service Definition
+
+To deploy a complex application/service the first thing to do is to define a manifest file,
+those file should contain all information needed to correctly deploy the application/service,
+so it should describe all entities and dependencies between these entities that compose the application/service.
+---
+
+### Application/Service manifest file
+
+This file describe how to deploy the application/service, so it should contain:
+
+- description of application/service
+- entities that compose the application/service (eg. database server, http server...)
+- relations and constraints between entities
+- path to manifest files of components
+
+
+So this describe the "graph" of the application/service
+Then with this file the agent can decide where deploy the application/service
+
+---
+
+### Component manifest file
+
+This file describe the single component of an application/service so it should describe
+some low level information needed to deploy the component, so it should contain:
+
+- description of component
+- entity type (vm, unikernel, µSvc, Ros Nodelet, native app...)
+- entity description (depend on entity type)
+- eventual need of hw acceleration or specific I/O
+
+---
+
+Should be agent's work to start the components in the correct order and with correct relations
