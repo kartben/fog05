@@ -6,7 +6,8 @@
 # -u/--user-data option).
 
 usage () {
-	echo "usage: ${0##*/}: [--ssh-key <pubkey>] [--vendor-data <file>] [--user-data <file>] [--hostname <hostname>] <imagename>"
+	echo "usage: ${0##*/}: [--ssh-key <pubkey>] [--vendor-data <file>] [--user-data <file>] [--uuid <uuid>] [--hostname
+	<hostname>] <imagename>"
 }
 
 ARGS=$(getopt \
@@ -43,6 +44,10 @@ while :; do
 			hostname="$2"
 			shift 2
 			;;
+		-uuid)
+		    uuid="$2"
+		    shift 2
+		    ;;
 		--)	shift
 			break
 			;;
@@ -57,7 +62,10 @@ if [ "$ssh_key" ] && [ -f "$ssh_key" ]; then
 	ssh_key_data=$(cat "$ssh_key")
 fi
 
-uuid=$(uuidgen)
+if ! [ "$uuid" ]; then
+    uuid=$(uuidgen)
+fi
+
 if ! [ "$hostname" ]; then
 	hostname="$uuid"
 fi

@@ -54,14 +54,15 @@ class RuntimeLibVirt(RuntimePlugin):
             entity_uuid = args[4]
             disk_path = str("/opt/fog/%s.qcow2" % entity_uuid)
             cdrom_path = str("/opt/fog/%s_config.iso" % entity_uuid)
-            entity = LibVirtEntity(entity_uuid, args[0], args[2], args[1], disk_path, args[3], cdrom_path, [], args[5])
+            entity = LibVirtEntity(entity_uuid, args[0], args[2], args[1], disk_path, args[3], cdrom_path, [],
+                                   args[5], args[6], args[7])
         elif len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
             disk_path = str("/opt/fog/%s.qcow2" % entity_uuid)
             cdrom_path = str("/opt/fog/%s_config.iso" % entity_uuid)
             entity = LibVirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
-                                   kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'), kwargs.get(
-                    'base_image'))
+                                   kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
+                                   kwargs.get('base_image'), kwargs.get('user-file'), kwargs.get('ssh-key'))
         else:
             return None
 
@@ -110,8 +111,20 @@ class RuntimeLibVirt(RuntimePlugin):
 
             wget_cmd = str('wget %s -O /opt/fog/images/%s' % (entity.image, image_name))
 
-            conf_cmd = str("%s --hostname %s %s" % (os.path.join(sys.path[0], 'plugins', 'RuntimeLibVirt', 'templates',
-                                                                 'create_config_drive.sh'), entity.name, entity.cdrom))
+            conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(sys.path[0], 'plugins', 'RuntimeLibVirt',
+                                                                   'templates',
+                                                                 'create_config_drive.sh'), entity.name, entity_uuid))
+
+            if entity.user_file is not None:
+                data_filename = str("userdata_%s" % entity_uuid)
+                self.agent.getOSPlugin().storeFile(entity.user_file, "/opt/fog/", data_filename)
+                conf_cmd = str(conf_cmd + " --user-data" % data_filename)
+            if entity_uuid.ssh_key is not None:
+                key_filename = str("key_%s.pub" % entity_uuid)
+                self.agent.getOSPlugin().storeFile(entity.ssh_key, "/opt/fog/", key_filename)
+                conf_cmd = str(conf_cmd + " --ssh-key" % key_filename)
+
+            conf_cmd = str(conf_cmd + " %s" % entity.cdrom)
 
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
 
