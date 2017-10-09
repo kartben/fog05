@@ -1,5 +1,5 @@
 from interfaces.Store import *
-import DController
+from DController import *
 import fnmatch
 from threading import Thread
 import json

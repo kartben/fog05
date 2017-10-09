@@ -66,7 +66,7 @@ class Controller(object):
 class Store(object):
 
     def __init__(self):
-        raise NotImplementedError
+        print('init')
 
 
     def put(self,uri,value):
