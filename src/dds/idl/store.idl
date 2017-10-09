@@ -1,29 +1,28 @@
 module fos {
   module dds {
     module types {
-
       
       struct KeyValue {
-	    string key;
-	    string value;
-	    unsigned long long revision;
-	    string store_id;
+	long version;
+	string key;
+	string value;
+	string sid;	
       };
       #pragma keylist KeyValue key
 
-
+      
       struct StoreInfo {
-	    string store_id;
-	    string sroot;
-	    string shome;
+	string sid;
+	string sroot;
+	string shome;
       };
-      #pragma keylist StoreInfo store_id
-
+      #pragma keylist StoreInfo sid
+      
       struct Resolve {
-        string source_store_id;
+        string source_sid;
         string key;
       };
-      #pragma keylist Resolve
+      #pragma keylist Resolve key
 
       
     };
