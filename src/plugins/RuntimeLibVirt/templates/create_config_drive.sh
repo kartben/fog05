@@ -12,7 +12,7 @@ usage () {
 
 ARGS=$(getopt \
 	-o k:u:v:h: \
-	--long help,hostname:,ssh-key:,user-data:,vendor-data: -n ${0##*/} \
+	--long help,hostname:,ssh-key:,user-data:,uuid:,vendor-data: -n ${0##*/} \
 	-- "$@")
 
 if [ $? -ne 0 ]; then
@@ -44,7 +44,7 @@ while :; do
 			hostname="$2"
 			shift 2
 			;;
-		-uuid)
+		--uuid)
 		    uuid="$2"
 		    shift 2
 		    ;;

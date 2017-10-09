@@ -18,15 +18,20 @@ class FogAgent(Agent):
         self.nwPlugins = {}
         self.loadOSPlugin()
         super(FogAgent, self).__init__(self.osPlugin.getUUID())
-        self.store = DStore(100, self.uuid, DDSObserver())
+        sid = str(self.uuid)
+        self.root = "fos://<sys-id>"
+        self.home = str("fos://<sys-id>/%s" % sid)
+        # Notice that a node may have multiple caches, but here we are
+        # giving the same id to the nodew and the cache
+        self.store = DStore(sid, self.root, self.home, 1024)
 
-        val = {'status': 'add', 'version': self.osPlugin.version, 'description': 'linux plugin', 'plugin': self.osPlugin}
+        val = {'status': 'add', 'version': self.osPlugin.version, 'description': 'linux plugin', 'plugin': ''}
         uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, self.osPlugin.name, self.osPlugin.uuid))
-        self.store.put(uri, val)
+        self.store.put(uri, json.dumps(val))
 
         val = {'plugins': [{'name': 'linux', 'version': self.osPlugin.version, 'uuid': str(self.osPlugin.uuid),
                            'type': 'os'}]}
-        uri = uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
+        uri  = str('fos://<sys-id>/%s/plugins' % self.uuid)
         self.store.put(uri, json.dumps(val))
 
         self.populateNodeInformation()
@@ -60,9 +65,9 @@ class FogAgent(Agent):
             rt = rt.run(agent=self)
             self.rtPlugins.update({rt.uuid: rt})
 
-            val = {'status': 'add', 'version': rt.version, 'description': str('runtime %s' % rt.name), 'plugin':rt}
+            val = {'status': 'add', 'version': rt.version, 'description': str('runtime %s' % rt.name), 'plugin': ''}
             uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, rt.name, rt.uuid))
-            self.store.put(uri, val)
+            self.store.put(uri, json.dumps(val))
 
             val = {'plugins': [{'name': rt.name, 'version': rt.version, 'uuid': str(rt.uuid),
                                 'type': 'runtime'}]}
@@ -80,9 +85,9 @@ class FogAgent(Agent):
             net = net.run(agent=self)
             self.rtPlugins.update({net.uuid: net})
 
-            val = {'status': 'add', 'version': net.version, 'description': str('runtime %s' % net.name), 'plugin':net}
+            val = {'status': 'add', 'version': net.version, 'description': str('runtime %s' % net.name), 'plugin': ''}
             uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, net.name, net.uuid))
-            self.store.put(uri, val)
+            self.store.put(uri, json.dumps(val))
 
             val = {'plugins': [{'name': net.name, 'version': net.version, 'uuid': str(net.uuid),
                                 'type': 'network'}]}
@@ -111,42 +116,33 @@ class FogAgent(Agent):
 
         print(self.store)
 
-        self.loadRuntimePlugin('RuntimeLibVirt')
+        kvm = self.loadRuntimePlugin('RuntimeLibVirt')
         self.loadNetworkPlugin('brctl')
 
         print (self.store)
 
-
-
-
-
-
-
-
-
-    #############
-
         uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
-        #print (uri)
-        all_plugins = json.loads(self.store.get(uri)[0].get(uri)).get('plugins')
-        #print(all_plugins)
+        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+        print(all_plugins)
+
+        ''''
 
         runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
 
-        #print (runtimes)
+        print (runtimes)
 
         print("locating kvm plugin")
         kvm = [x for x in runtimes if 'kvm' in x.get('name')][0]
 
         #print(kvm)
         uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, kvm.get('name'), kvm.get('uuid')))
-        kvm = self.store.get(uri)[0].get(uri)
-        #print(kvm)
+        kvm = json.loads(self.store.get(uri))
+        print(kvm)
         kvm = kvm.get('plugin')
-        #print (kvm)
-
+        print (kvm)
+        '''
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.uuid, kvm.uuid))
-        ##self.store.observe(uri, kvm.reactToCache)
+        self.store.observe(uri, kvm.reactToCache)
 
 
         print("Press enter to define a vm")
@@ -163,42 +159,16 @@ class FogAgent(Agent):
         json_data = json.dumps(entity_definition)
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.uuid, kvm.uuid, vm_uuid))
         self.store.put(uri, json_data)
-        #print (self.store)
-
-
-        ##### testing decupling with redis
-        import redis
-        r = redis.StrictRedis(host='localhost', port=6379)  # Connect to local Redis instance
-
-        p = r.pubsub()  # See https://github.com/andymccurdy/redis-py/#publish--subscribe
-
-        print("Starting main scripts...")
-
-        print ("pubishing to %s" % uri)
-
-        r.publish(uri, json_data)
-        ######
-
-
-        #print (kvm.getEntities())
-
+        print (self.store)
 
         print("Press enter to configure the vm")
-
         input()
 
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (self.uuid, kvm.uuid, vm_uuid))
         self.store.dput(uri)
-
-        #### testing decupling with redis
-        r.publish(uri, '{"status":"configure"}')
-        ####
-
-        #print (self.store)
-
+        print (self.store)
 
         print("Press enter to start vm")
-        #exit(0)
         input()
 
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (self.uuid, kvm.uuid, vm_uuid))

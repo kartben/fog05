@@ -52,14 +52,14 @@ class RuntimeLibVirt(RuntimePlugin):
         """
         if len(args) > 0:
             entity_uuid = args[4]
-            disk_path = str("/opt/fog/%s.qcow2" % entity_uuid)
-            cdrom_path = str("/opt/fog/%s_config.iso" % entity_uuid)
+            disk_path = str("/opt/fos/%s.qcow2" % entity_uuid)
+            cdrom_path = str("/opt/fos/%s_config.iso" % entity_uuid)
             entity = LibVirtEntity(entity_uuid, args[0], args[2], args[1], disk_path, args[3], cdrom_path, [],
                                    args[5], args[6], args[7])
         elif len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
-            disk_path = str("/opt/fog/%s.qcow2" % entity_uuid)
-            cdrom_path = str("/opt/fog/%s_config.iso" % entity_uuid)
+            disk_path = str("/opt/fos/%s.qcow2" % entity_uuid)
+            cdrom_path = str("/opt/fos/%s_config.iso" % entity_uuid)
             entity = LibVirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
                                    kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
                                    kwargs.get('base_image'), kwargs.get('user-file'), kwargs.get('ssh-key'))
@@ -109,7 +109,7 @@ class RuntimeLibVirt(RuntimePlugin):
 
             image_name = entity.image.split('/')[-1]
 
-            wget_cmd = str('wget %s -O /opt/fog/images/%s' % (entity.image, image_name))
+            wget_cmd = str('wget %s -O /opt/fos/images/%s' % (entity.image, image_name))
 
             conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(sys.path[0], 'plugins', 'RuntimeLibVirt',
                                                                    'templates',
@@ -117,18 +117,18 @@ class RuntimeLibVirt(RuntimePlugin):
 
             if entity.user_file is not None:
                 data_filename = str("userdata_%s" % entity_uuid)
-                self.agent.getOSPlugin().storeFile(entity.user_file, "/opt/fog/", data_filename)
+                self.agent.getOSPlugin().storeFile(entity.user_file, "/opt/fos/", data_filename)
                 conf_cmd = str(conf_cmd + " --user-data" % data_filename)
-            if entity_uuid.ssh_key is not None:
+            if entity.ssh_key is not None:
                 key_filename = str("key_%s.pub" % entity_uuid)
-                self.agent.getOSPlugin().storeFile(entity.ssh_key, "/opt/fog/", key_filename)
+                self.agent.getOSPlugin().storeFile(entity.ssh_key, "/opt/fos/", key_filename)
                 conf_cmd = str(conf_cmd + " --ssh-key" % key_filename)
 
             conf_cmd = str(conf_cmd + " %s" % entity.cdrom)
 
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
 
-            dd_cmd = str("dd if=/opt/fog/images/%s of=%s" % (image_name, entity.disk))
+            dd_cmd = str("dd if=/opt/fos/images/%s of=%s" % (image_name, entity.disk))
 
             entity.image = image_name
 
@@ -157,7 +157,7 @@ class RuntimeLibVirt(RuntimePlugin):
             # should undefine on libvirt
             self.lookupByUUID(entity_uuid).undefine()
             ## should remove files (disk, conf drive)
-            rm_cmd=str("rm -f %s %s /opt/fog/images/%s" % (entity.cdrom, entity.disk, entity.image))
+            rm_cmd=str("rm -f %s %s /opt/fos/images/%s" % (entity.cdrom, entity.disk, entity.image))
             self.agent.getOSPlugin().executeCommand(rm_cmd)
 
             entity.onClean()
@@ -229,7 +229,7 @@ class RuntimeLibVirt(RuntimePlugin):
             self.currentEntities.update({entity_uuid: entity})
             return True
 
-    def reactToCache(self, key, value):
+    def reactToCache(self, key, value, v):
         '''
         import time
         while True:
