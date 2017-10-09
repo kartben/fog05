@@ -11,11 +11,12 @@ class TestCache():
 
     def __init__(self):
         self.uuid = uuid.uuid4()
-        self.store = DStore(100, self.uuid)
+        self.root = str("fos://<sys-id>/%s" % self.uuid)
+        self.store = DStore(self.root, self.uuid, 1, 100)
 
         osuuid = uuid.uuid4()
 
-        self.root = str("fos://<sys-id>/%s" % self.uuid)
+
 
         val = {'status': 'add', 'version': 1, 'description': 'linux plugin', 'plugin': 'here should be python object'}
         uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, 'linux', osuuid ))
