@@ -39,6 +39,11 @@ Should be agent's work to start the components in the correct order and with cor
 
 ##### Examples
 
+Example of a simple 'complex' application: a Wordpress blog
+
+![graph](../img/example_service.png)
+
+
 Application manifest:
 
     {
@@ -76,7 +81,7 @@ mysql manifest file:
         "name":"myql_v2.foo.bar"
         "description":"mysql db engine"
         "type":"vm",
-        "entity_description":{...},
+        "entity_description":{...},  <- here all information to download and configure the db server
         "accelerators":[]
         "io":[]
     }
