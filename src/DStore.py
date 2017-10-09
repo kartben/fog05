@@ -169,7 +169,7 @@ class DStore(Store):
         if v == None:
             print("this is a miss")
             self.__controller.onMiss()
-            rv= self.__controller.resolve(uri)
+            rv = self.__controller.resolve(uri)
             if rv != None:
                 self.update_value(uri, v[0], v[1])
                 self.notify_observers(uri, v[0], v[1])

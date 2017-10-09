@@ -188,3 +188,28 @@ class DController (Controller, Observer):
         print("Resolving...")
         return None
 
+   def start(self):
+        """
+            This method starts the controller and "connects" the cache to the rest of the system.
+
+        """
+        raise NotImplemented("Not yet...")
+
+    def pause(self):
+        """
+            Pauses the execution of the controller. The incoming updates are not lost.
+        """
+        raise NotImplemented("Not yet...")
+
+    def resume(self):
+        """
+            Resumes the execution of the controller and applies all pending changes received from the network.
+        """
+        raise NotImplemented("Not yet...")
+
+
+    def stop(self):
+        """
+            Stops a controller and releases all resources used to receive/send data on the network.
+        """
+
