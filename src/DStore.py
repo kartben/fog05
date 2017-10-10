@@ -216,24 +216,20 @@ class DStore(Store):
         return ld[-1]
 
     def data_merge(self, base, updates):
-        base_keys = base.keys()
-        for k in updates.keys():
-            v = updates.get(k)
-            if isinstance(v, dict):
-                if k in base_keys:
-                    self.data_merge(base.get(k), v)
-                else:
-                    base.update({k: v})
-            elif isinstance(v, list):
-                if k in base_keys:
-                    if isinstance(base.get(k), list):
-                        base.get(k).extend(v)
+        if base is None or isinstance(base, int) or isinstance(base, str) or isinstance(base, float):
+            base = updates
+        elif isinstance(base, list):
+            if isinstance(updates, list):
+                base.extend(updates)
+            else:
+                base.append(updates)
+        elif isinstance(base, dict):
+            if isinstance(updates, dict):
+                for k in updates.keys():
+                    if k in base.keys():
+                        base.update({k: self.data_merge(base.get(k), updates.get(k))})
                     else:
-                        base.get(k).append(v)
-                else:
-                    base.update({k: v})
-            elif isinstance(v, int) or isinstance(v, str) or isinstance(v, float):
-                base.update({k: v})
+                        base.update({k: updates.get(k)})
         return base
 
 #
