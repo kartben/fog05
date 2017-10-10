@@ -145,7 +145,8 @@ class DStore(Store):
                         data.update({k: v})
                     else:
                         d = self.dot2dict(k, v)
-                        data.update(d)
+                        # @TODO: update in a best way
+                        data.update(d) #not very safe
             else:
                 values = json.loads(values)
                 for k in values.keys():
@@ -200,6 +201,7 @@ class DStore(Store):
 
         return ret
 
+    #convert dot notation to a dict
     def dot2dict(self, dot_notation, value=None):
         ld = []
 
