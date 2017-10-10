@@ -18,6 +18,9 @@ class RuntimeLibVirt(RuntimePlugin):
         self.agent = agent
         self.startRuntime()
 
+
+        ####### HERE SHOULD REGISTER THE OBSERVER ######
+
         '''
         ###### test decupling with redis
         import redis

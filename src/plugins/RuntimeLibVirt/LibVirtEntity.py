@@ -5,11 +5,6 @@ from States import State
 from Entity import Entity
 from jinja2 import Environment
 
-def readFile(filename):
-    with open(filename, 'r') as myfile:
-        data=myfile.read()
-    return data
-
 class LibVirtEntity(Entity):
 
     def __init__(self, uuid, name, cpu, ram, disk, disk_size, cdrom, networks, image, user_file, ssh_key):

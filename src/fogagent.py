@@ -36,22 +36,22 @@ class FogAgent(Agent):
 
         self.populateNodeInformation()
 
-
-
     def loadOSPlugin(self):
         platform = sys.platform
         if platform == 'linux':
             print("I'am on Linux")
             os = self.pl.locatePlugin('linux')
-            if os != None:
+            if os is not None:
                 os = self.pl.loadPlugin(os)
                 self.osPlugin = os.run()
             else:
                 raise RuntimeError("Error on loading OS Plugin")
         elif platform == 'darwin':
             print("I'am on Mac")
+            raise RuntimeError("Mac plugin not yet implemented...")
         elif platform == 'windows':
             print("I'am on Windows")
+            raise RuntimeError("Windows plugin not yet implemented...")
         else:
             raise RuntimeError("Platform not compatible")
 
@@ -64,7 +64,6 @@ class FogAgent(Agent):
             rt = self.pl.loadPlugin(rt)
             rt = rt.run(agent=self)
             self.rtPlugins.update({rt.uuid: rt})
-
             val = {'status': 'add', 'version': rt.version, 'description': str('runtime %s' % rt.name), 'plugin': ''}
             uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, rt.name, rt.uuid))
             self.store.put(uri, json.dumps(val))
@@ -102,8 +101,7 @@ class FogAgent(Agent):
 
         node_info = {}
         node_info.update({'uuid': str(self.uuid)})
-        node_info.update({'name': 'develop node'})
-
+        node_info.update({'name': self.osPlugin.get_hostname()})
         node_info.update({'cpu': self.osPlugin.getProcessorInformation()})
         node_info.update({'ram': self.osPlugin.getMemoryInformation()})
         node_info.update({'disks': self.osPlugin.getDisksInformation()})
@@ -114,6 +112,8 @@ class FogAgent(Agent):
 
     def main(self):
 
+
+
         print(self.store)
 
         kvm = self.loadRuntimePlugin('RuntimeLibVirt')
@@ -121,9 +121,9 @@ class FogAgent(Agent):
 
         print (self.store)
 
-        uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
-        all_plugins = json.loads(self.store.get(uri)).get('plugins')
-        print(all_plugins)
+        #uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
+        #all_plugins = json.loads(self.store.get(uri)).get('plugins')
+        #print(all_plugins)
 
         ''''
 
@@ -147,6 +147,7 @@ class FogAgent(Agent):
 
         print("Press enter to define a vm")
         input()
+
 
         vm_uuid = str(uuid.uuid4())
         vm_name = 'test'

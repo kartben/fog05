@@ -24,6 +24,7 @@ from socket import *
 
 '''
 
+
 class Linux(OSPlugin):
 
     def __init__(self, name, version):
@@ -184,7 +185,31 @@ class Linux(OSPlugin):
 
         return nets
 
+    def getUUID(self):
+        #$ blkid / dev / sda1
+        #/dev/sda1: LABEL = "/"  UUID = "ee7cf0a0-1922-401b-a1ae-6ec9261484c0" SEC_TYPE = "ext2" TYPE = "ext3"
+        # generate uuid from this or from cpuid or mb uuid from /sys/class/dmi/id/product_uuid
 
+        #p = psutil.Popen('cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE) no need of regex
+
+        uuid_regex = r"UUID=\"(.{0,37})\""
+        p = psutil.Popen('sudo blkid /dev/sda1'.split(), stdout=PIPE)
+        res = ""
+        for line in p.stdout:
+            res = str(res+"%s" % line)
+        m = re.search(uuid_regex, res)
+        if m:
+            found = m.group(1)
+        return found
+
+
+    def get_hostname(self):
+        res = ''
+        p = psutil.Popen('hostname', stdout=PIPE)
+        for line in p.stdout:
+            line = line.decode()
+            res = str(res+"%s" % line)
+        return res.strip()
 
 
     def getPositionInformation(self):
@@ -208,3 +233,4 @@ class Linux(OSPlugin):
             if "cpu MHz" in line:
                     return float(re.sub(".*cpu MHz.*:", "", line, 1))
         return 0.0
+
