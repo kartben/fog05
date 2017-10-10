@@ -9,39 +9,39 @@
     <vcpu placement="static">{{ cpu }}</vcpu>
     <os>
         <type>hvm</type>
-        <boot dev="hd" />
+        <boot dev="hd"/>
     </os>
     <features>
-        <acpi />
-        <apic />
-        <pae />
+        <acpi/>
+        <apic/>
+        <pae/>
     </features>
-    <clock offset="utc" />
+    <clock offset="utc"/>
     <on_poweroff>destroy</on_poweroff>
     <on_reboot>restart</on_reboot>
     <on_crash>restart</on_crash>
     <devices>
         <emulator>/usr/bin/qemu-system-x86_64</emulator>
         <disk device="disk" type="file">
-            <driver name="qemu" type="qcow2" />
-            <source file="{{ disk_image }}" />
-            <target dev="hda" />
-            <address bus="0" controller="0" target="0" type="drive" unit="0" />
+            <driver name="qemu" type="qcow2"/>
+            <source file="{{ disk_image }}"/>
+            <target dev="hda"/>
+            <address bus="0" controller="0" target="0" type="drive" unit="0"/>
         </disk>
         <disk device="cdrom" type="file">
-            <source file="{{ iso_image }}" />
-            <driver name="qemu" type="raw" />
-            <target bus="ide" dev="hdc" />
-            <readyonly />
-            <address bus="1" controller="0" target="0" type="drive" unit="0" />
+            <source file="{{ iso_image }}"/>
+            <driver name="qemu" type="raw"/>
+            <target bus="ide" dev="hdc"/>
+            <readyonly/>
+            <address bus="1" controller="0" target="0" type="drive" unit="0"/>
         </disk>
 
-         {% for disk in disks %}
+        {% for disk in disks %}
 
-         <disk device="disk" type="file">
-            <driver name="qemu" type="qcow2" />
-            <source file="{{ disk.path }}" />
-            <target dev="hd{{loop.index}}" />
+        <disk device="disk" type="file">
+            <driver name="qemu" type="qcow2"/>
+            <source file="{{ disk.path }}"/>
+            <target dev="hd{{loop.index}}"/>
             <!-- <address bus="0" controller="0" target="0" type="drive" unit="0" /> -->
         </disk>
         {% endfor %}
@@ -57,16 +57,33 @@
             <!-- <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/> -->
         </interface>
         {% endfor %}
-     <serial type='pty'>
-      <source path='/dev/pts/20'/>
-      <target port='0'/>
-      <alias name='serial0'/>
-    </serial>
-    <console type='pty' tty='/dev/pts/20'>
-      <source path='/dev/pts/20'/>
-      <target type='serial' port='0'/>
-      <alias name='serial0'/>
-    </console>
-    <graphics port="-1" type="vnc" />
+        <serial type='file'>
+            <source path='/opt/fos/logs/{{ uuid }}_log.log'/>
+            <target port='0'/>
+        </serial>
+        <console type='file'>
+            <source path='/opt/fos/logs/{{ uuid }}_log.log'/>
+            <target type='serial' port='0'/>
+        </console>
+
+        <!--<serial type='pty'>
+            <source path='/dev/pts/20'/>
+            <target port='0'/>
+            <alias name='serial0'/>
+        </serial>
+        <serial type='file'>
+            <source path='/opt/fos/{{ name }}_log'/>
+            <target port='1'/>
+        </serial>
+        <console type='pty' tty='/dev/pts/20'>
+            <source path='/dev/pts/20'/>
+            <target type='serial' port='0'/>
+            <alias name='serial0'/>
+        </console>
+        <console type='file'>
+            <source path='/opt/fos/{{ name }}_log'/>
+            <target type='serial' port='1'/>
+        </console> -->
+        <graphics port="-1" type="vnc"/>
     </devices>
 </domain>

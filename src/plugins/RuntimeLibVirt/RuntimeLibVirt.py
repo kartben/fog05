@@ -61,8 +61,8 @@ class RuntimeLibVirt(RuntimePlugin):
                                    args[5], args[6], args[7])
         elif len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
-            disk_path = str("/opt/fos/%s.qcow2" % entity_uuid)
-            cdrom_path = str("/opt/fos/%s_config.iso" % entity_uuid)
+            disk_path = str("/opt/fos/disks/%s.qcow2" % entity_uuid)
+            cdrom_path = str("/opt/fos/disks/%s_config.iso" % entity_uuid)
             entity = LibVirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
                                    kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
                                    kwargs.get('base_image'), kwargs.get('user-file'), kwargs.get('ssh-key'))
@@ -160,7 +160,8 @@ class RuntimeLibVirt(RuntimePlugin):
             # should undefine on libvirt
             self.lookupByUUID(entity_uuid).undefine()
             ## should remove files (disk, conf drive)
-            rm_cmd=str("rm -f %s %s /opt/fos/images/%s" % (entity.cdrom, entity.disk, entity.image))
+            rm_cmd=str("rm -f %s %s /opt/fos/images/%s /opt/fos/logs/%s_log.log" %
+                       (entity.cdrom, entity.disk, entity.image, entity_uuid))
             self.agent.getOSPlugin().executeCommand(rm_cmd)
 
             entity.onClean()
