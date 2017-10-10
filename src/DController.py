@@ -63,33 +63,29 @@ class DController (Controller, Observer):
     # everything is persisted
 
     def handle_remote_put(self, reader):
-        print(">>> Remote Put")
         samples = reader.take(DController.MAX_SAMPLES)
         for (d, i) in samples:
-            # dds_key_value_info.builder.deserialize(d)
-
-            # rsid = ctypes.cast(d.sid, ctypes.c_char_p)
-            # rkey = ctypes.cast(d.key, ctypes.c_char_p)
-            # rvalue = ctypes.cast(d.value, ctypes.c_char_p)
-            # rversion = ctypes.c_int(d.version)
-            # if d.key != self.__store.store_id:
-                # vars = d.get_vars()
-            print(">>>>>>>> Handling remote put for key = ")
-                # r = self.__store.update_value(rkey.value, rvalue.value, rversion.value)
-                # if r:
-                #     print(">> Updated " + vars["key"])
-                # else:
-                #     print(">> Received old version of " + vars["key"])
+            rkey = d.key.decode()
+            rsid = d.sid.decode()
+            rvalue = d.value.decode()
+            rversion = d.version
+            if rsid != self.__store.store_id:
+                print(">>>>>>>> Handling remote put for key = " + rkey)
+                r = self.__store.update_value(rkey, rvalue, rversion)
+                if r:
+                    print(">> Updated " + rkey)
+                    self.__store.notify_observers(rkey, rvalue, rversion)
+                else:
+                    print(">> Received old version of " + rkey)
+            else:
+                print(">>>>>> Ignoring remote put as it is a self-put")
 
 
     def cache_discovered(self,reader):
-        print(">>> Cache Discovered")
         samples = reader.read(DController.MAX_SAMPLES, DDSMaskUtil.new_samples())
         for (d, i) in samples:
-            # dds_store_info.builder.deserialize(d)
-            # rsid = ctypes.cast(d.sid, ctypes.c_char_p)
-            # if d.key != self.__store.store_id:
-            print(">>> Discovered new cache with id: ") # + d.key)
+            rsid = d.sid.decode()
+            print(">>> Discovered new store with id: " +  rsid)
 
 
     def cache_disappeared(self, reader, status):
