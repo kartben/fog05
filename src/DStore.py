@@ -240,24 +240,18 @@ class DStore(Store):
         key = None
 
         try:
-            if base is None or isinstance(base, str) or isinstance(base, int) or isinstance(base,
-                                                                                            float):  # or isinstance(a, long) or isinstance(a, unicode):
-                # border case for first run or if a is a primitive
+            if base is None or isinstance(base, str) or isinstance(base, int) or isinstance(base, float):
                 base = updates
             elif isinstance(base, list):
-                # lists can be only appended
                 if isinstance(updates, list):
-                    # merge lists
                     base.extend(updates)
                 else:
-                    # append to list
                     base.append(updates)
             elif isinstance(base, dict):
-                # dicts must be merged
                 if isinstance(updates, dict):
                     for key in updates:
                         if key in base:
-                            base[key] = data_merge(base[key], updates[key])
+                            base[key] = self.data_merge(base[key], updates[key])
                         else:
                             base[key] = updates[key]
                 else:
