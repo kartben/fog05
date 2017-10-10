@@ -146,9 +146,9 @@ class DStore(Store):
                     else:
                         d = self.dot2dict(k, v)
                         # @TODO: update in a best way
-                        data.update(d) #not very safe
+                        data.update(d) #not very safe # @TODO: should use self.data_merge(data,values)?
             else:
-                values = json.loads(values)
+                values = json.loads(values) # @TODO: should use self.data_merge(data,values)?
                 for k in values.keys():
                     v = values.get(k)
                     if type(v) == list:
@@ -234,6 +234,39 @@ class DStore(Store):
             # print (ld)
         # print (ld)
         return ld[len(ld) - 1]
+
+    def data_merge(self, base, updates):
+        """merges b into a and return merged result"""
+        key = None
+
+        try:
+            if base is None or isinstance(base, str) or isinstance(base, int) or isinstance(base,
+                                                                                            float):  # or isinstance(a, long) or isinstance(a, unicode):
+                # border case for first run or if a is a primitive
+                base = updates
+            elif isinstance(base, list):
+                # lists can be only appended
+                if isinstance(updates, list):
+                    # merge lists
+                    base.extend(updates)
+                else:
+                    # append to list
+                    base.append(updates)
+            elif isinstance(base, dict):
+                # dicts must be merged
+                if isinstance(updates, dict):
+                    for key in updates:
+                        if key in base:
+                            base[key] = data_merge(base[key], updates[key])
+                        else:
+                            base[key] = updates[key]
+                else:
+                    raise Exception('Cannot merge non-dict "%s" into dict "%s"' % (updates, base))
+            else:
+                raise Exception('NOT IMPLEMENTED "%s" into "%s"' % (updates, base))
+        except TypeError as e:
+            raise Exception('TypeError "%s" in key "%s" when merging "%s" into "%s"' % (e, key, updates, base))
+        return base
 
 #
 # class DDSObserver(Observer):
