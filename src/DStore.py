@@ -216,30 +216,24 @@ class DStore(Store):
         return ld[-1]
 
     def data_merge(self, base, updates):
-        """merges b into a and return merged result"""
-        key = None
-
-        try:
-            if base is None or isinstance(base, str) or isinstance(base, int) or isinstance(base, float):
-                base = updates
-            elif isinstance(base, list):
-                if isinstance(updates, list):
-                    base.extend(updates)
+        base_keys = base.keys()
+        for k in updates.keys():
+            v = updates.get(k)
+            if isinstance(v, dict):
+                if k in base_keys:
+                    self.data_merge(base.get(k), v)
                 else:
-                    base.append(updates)
-            elif isinstance(base, dict):
-                if isinstance(updates, dict):
-                    for key in updates:
-                        if key in base:
-                            base[key] = self.data_merge(base[key], updates[key])
-                        else:
-                            base[key] = updates[key]
+                    base.update({k: v})
+            elif isinstance(v, list):
+                if k in base_keys:
+                    if isinstance(base.get(k), list):
+                        base.get(k).extend(v)
+                    else:
+                        base.get(k).append(v)
                 else:
-                    raise Exception('Cannot merge non-dict "%s" into dict "%s"' % (updates, base))
-            else:
-                raise Exception('NOT IMPLEMENTED "%s" into "%s"' % (updates, base))
-        except TypeError as e:
-            raise Exception('TypeError "%s" in key "%s" when merging "%s" into "%s"' % (e, key, updates, base))
+                    base.update({k: v})
+            elif isinstance(v, int) or isinstance(v, str) or isinstance(v, float):
+                base.update({k: v})
         return base
 
 #
