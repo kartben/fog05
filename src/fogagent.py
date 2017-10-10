@@ -152,7 +152,7 @@ class FogAgent(Agent):
         vm_uuid = str(uuid.uuid4())
         vm_name = 'test'
 
-        vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 5, 'base_image':
+        vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 128, 'disk_size': 5, 'base_image':
             'http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img' }
 
         entity_definition = {'status': 'define', 'name': vm_name, 'version': 1, 'entity_data': vm_definition}

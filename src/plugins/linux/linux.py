@@ -104,11 +104,14 @@ class Linux(OSPlugin):
         cpu=[]
         for i in range(0, psutil.cpu_count(logical=False)):
             model = self.get_processor_name()
-            frequency = psutil.cpu_freq(percpu=True)
-            if len(frequency) == 0:
+            try:
+                frequency = psutil.cpu_freq(percpu=True)
+                if len(frequency) == 0:
+                    frequency = self.get_frequency_from_cpuinfo()
+                else:
+                    frequency = frequency[i][2]
+            except AttributeError:
                 frequency = self.get_frequency_from_cpuinfo()
-            else:
-                frequency = frequency[i][2]
             arch = platform.machine()
             cpu.append({'model': model, 'frequency': frequency, 'arch': arch})
         return cpu
