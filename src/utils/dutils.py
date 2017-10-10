@@ -46,6 +46,7 @@ def init_dds_topic_info(dp, info):
 
     info.builder = info.type.get_class(info.type_name)
 
+
 # The info should  be properly initialised
 def init_dds_topic_entities(dp, info, partitions):
 
@@ -56,8 +57,10 @@ def init_dds_topic_entities(dp, info, partitions):
     info.sub = dp.create_subscriber(ps_qos)
 
     # store_info_writer = pub.create_datawriter(store_info_topic, writer_qos)
+    info.listener = DataListener()
+
     info.writer = info.pub.create_datawriter(info.topic, info.dwqos)
-    info.reader = info.sub.create_datareader(info.topic, info.drqos)
+    info.reader = info.sub.create_datareader(info.topic, info.drqos, info.listener)
 
 class Action(object):
 
@@ -73,9 +76,10 @@ class Action(object):
     SAMPLE_LOST = 9
     SAMPLE_REJECTED = 10
     SUBSCRIPTION_MATCHED = 11
-    ACTION_NUM = 12
+    DATA_READERS = 12
+    ACTION_NUM = 13
 
-    def nothing(self):
+    def nothing(self, a = None, b = None, c = None, d = None, e = None):
         return
 
     def __init__(self):
@@ -94,12 +98,52 @@ class Action(object):
 
 
 class DataListener(Listener):
-    def __init__(self, actions):
+    def __init__(self, attachment = None, actions = None):
         Listener.__init__(self)
-        self.actions = actions
+        self.attachment = attachment
+        if actions == None:
+            self.actions = Action()
+        else:
+            self.actions = actions
 
     def on_data_available(self, reader):
-        self.actions[Action.DATA](reader)
+        self.actions[Action.DATA](reader, self.attachment)
+
+    def on_inconsistent_topic(self, entity, status):
+        self.actions[Action.INCONSISTENT_TOPIC](entity, status, self.attachment)
+
+    def on_liveliness_changed(self, entity, status):
+        self.actions[Action.LIVELINESS_CHANGED](entity, status, self.attachment)
+
+    def on_liveliness_lost(self, entity, status):
+        self.actions[Action.LIVELINESS_LOST](entity, status, self.attachment)
+
+    def on_data_readers(self, entity):
+        self.actions[Action.DATA_READERS](entity, self.attachment)
+
+    def on_offered_deadline_missed(self, entity, status):
+        self.actions[Action.OFFERED_DEADLINE_MISSED](entity, status, self.attachment)
+
+    def on_offered_incompatible_qos(self, entity, status):
+        self.actions[Action.OFFERED_INCOMPATIBLE_QOS](entity, status, self.attachment)
+
+    def on_publication_matched(self, entity, status):
+        self.actions[Action.PUBLICATION_MATCHED](entity, status, self.attachment)
+
+    def on_requested_deadline_missed(self, entity, status):
+        self.actions[Action.REQUESTED_DEADLINE_MISSED](entity, status, self.attachment)
+
+    def on_requested_incompatible_qos(self, entity, status):
+        self.actions[Action.REQUESTED_INCOMPATIBLE_QOS](entity, status, self.attachment)
+
+    def on_sample_lost(self, entity, status):
+        self.actions[Action.SAMPLE_LOST](entity, status, self.attachment)
+
+    def on_sample_rejected(self, entity, status):
+        self.actions[Action.SAMPLE_REJECTED](entity, status, self.attachment)
+
+    def on_subscription_matched(self, entity, status):
+        self.actions[Action.SAMPLE_REJECTED](entity, status, self.attachment)
 
 
 

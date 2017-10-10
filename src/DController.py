@@ -4,7 +4,7 @@ from ddsutil import *
 from utils.dutils import *
 import time
 import uuid
-
+import ctypes
 
 
 dds_store_info = DDSTopicInfo()
@@ -37,8 +37,8 @@ dds_resolve_info.drqos = event_qos
 
 
 
-
 class DController (Controller, Observer):
+    MAX_SAMPLES = 64
 
     def __init__(self, store):
         global dds_store_info
@@ -51,9 +51,53 @@ class DController (Controller, Observer):
         init_dds_topic_entities(dp, dds_store_info, [store.root])
         init_dds_topic_entities(dp, dds_key_value_info, [store.root])
 
+        dds_store_info.listener.attachment = self
+        dds_store_info.listener.actions[Action.DATA] = lambda reader, attachment: attachment.cache_discovered(reader)
+        dds_store_info.listener.actions[Action.LIVELINESS_CHANGED] = lambda reader, status, attachment: attachment.cache_disappeared(reader, status)
+
+        dds_key_value_info.listener.attachment = self
+        dds_key_value_info.listener.actions[Action.DATA] = lambda reader, attachment: attachment.handle_remote_put(reader)
+
     # The Store Observer operations have to be updated to consider the version
     # below we also need to properly take into account the semantic of put right now
     # everything is persisted
+
+    def handle_remote_put(self, reader):
+        print(">>> Remote Put")
+        samples = reader.take(DController.MAX_SAMPLES)
+        for (d, i) in samples:
+            # dds_key_value_info.builder.deserialize(d)
+
+            # rsid = ctypes.cast(d.sid, ctypes.c_char_p)
+            # rkey = ctypes.cast(d.key, ctypes.c_char_p)
+            # rvalue = ctypes.cast(d.value, ctypes.c_char_p)
+            # rversion = ctypes.c_int(d.version)
+            # if d.key != self.__store.store_id:
+                # vars = d.get_vars()
+            print(">>>>>>>> Handling remote put for key = ")
+                # r = self.__store.update_value(rkey.value, rvalue.value, rversion.value)
+                # if r:
+                #     print(">> Updated " + vars["key"])
+                # else:
+                #     print(">> Received old version of " + vars["key"])
+
+
+    def cache_discovered(self,reader):
+        print(">>> Cache Discovered")
+        samples = reader.read(DController.MAX_SAMPLES, DDSMaskUtil.new_samples())
+        for (d, i) in samples:
+            # dds_store_info.builder.deserialize(d)
+            # rsid = ctypes.cast(d.sid, ctypes.c_char_p)
+            # if d.key != self.__store.store_id:
+            print(">>> Discovered new cache with id: ") # + d.key)
+
+
+    def cache_disappeared(self, reader, status):
+        print(">>> Cache Disappeared")
+        samples = reader.read(DController.MAX_SAMPLES, DDSMaskUtil.not_alive_instance_samples())
+        for (d, i) in samples:
+            d.print_vars()
+
 
     def onPut(self, uri, val, ver):
         global dds_key_value_info
