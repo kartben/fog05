@@ -143,6 +143,9 @@ class DStore(Store):
                     k = tokens.split('=')[0]
                     if len(k.split('.')) < 2:
                         data.update({k: v})
+                    else:
+                        d = self.dot2dict(k, v)
+                        data.update(d)
             else:
                 values = json.loads(values)
                 for k in values.keys():
@@ -196,6 +199,39 @@ class DStore(Store):
             ret = str('%s%s' % (ret,str("Key: %s - Value: %s\n" % (key, value))))
 
         return ret
+
+    def dot2dict(self, dot_notation, value=None):
+        ld = []
+
+        tokens = dot_notation.split('.')
+        n_tokens = len(tokens)
+        # print(tokens)
+        # print(n_tokens)
+        for i in range(n_tokens, 0, -1):
+            # print(i)
+            # print(tokens[i-1])
+            if i == n_tokens and value is not None:
+                ld.append({tokens[i - 1]: value})
+            else:
+                ld.append({tokens[i - 1]: None})
+
+            '''
+            if i == 0:
+                d.update({tokens[i]:{}})
+            if i < n_tokens and i >0:
+                d.get(tokens[i-1]).update({tokens[i]: {}})
+            if i == n_tokens:
+                d.update({tokens[i]:None})
+            '''
+        # print (ld)
+        for i in range(0, len(ld) - 1):
+            k = list(ld[i + 1].keys())
+            # print (k[0])
+            # print (ld[i])
+            ld[i + 1].update({k[0]: ld[i]})
+            # print (ld)
+        # print (ld)
+        return ld[len(ld) - 1]
 
 #
 # class DDSObserver(Observer):
