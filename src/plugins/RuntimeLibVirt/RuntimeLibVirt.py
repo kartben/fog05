@@ -39,8 +39,8 @@ class RuntimeLibVirt(RuntimePlugin):
 
         import libvirt
         self.conn = libvirt.open("qemu:///system")
-
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.agent.uuid, self.uuid))
+        print("KVM Listening on %s" % uri)
         self.agent.store.observe(uri, self.reactToCache)
         return self.uuid
 
@@ -236,7 +236,7 @@ class RuntimeLibVirt(RuntimePlugin):
             self.currentEntities.update({entity_uuid: entity})
             return True
 
-    def reactToCache(self, key, value, v):
+    def reactToCache(self, uri, value, v):
         '''
         import time
         while True:
@@ -249,7 +249,8 @@ class RuntimeLibVirt(RuntimePlugin):
                 key = message.get('channel').decode()
                 value = message.get('data').decode()
         '''
-        uuid = key.split('/')[-1]
+        print("KVM on React \nURI:%s\nValue:%s\nVersion:%s" % (uri, value, v))
+        uuid = uri.split('/')[-1]
         value = json.loads(value)
         action = value.get('status')
         entity_data = value.get('entity_data')
