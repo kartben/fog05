@@ -110,16 +110,39 @@ class FogAgent(Agent):
         uri = str('fos://<sys-id>/%s/' % self.uuid)
         self.store.put(uri, json.dumps(node_info))
 
+    def reactToCache(self, uri, value, v):
+        print ("###########################")
+        print ("##### I'M an Observer #####")
+        print ("## Key: %s" % uri)
+        print ("## Value: %s" % value)
+        print ("## V: %s" % v)
+        print ("###########################")
+        print ("###########################")
+
     def main(self):
 
 
 
-        print(self.store)
+        #print(self.store)
 
-        kvm = self.loadRuntimePlugin('RuntimeLibVirt')
+        self.loadRuntimePlugin('RuntimeLibVirt')
         self.loadNetworkPlugin('brctl')
 
-        print (self.store)
+        #print (self.store)
+
+        uri = str('fos://<sys-id>/%s/*/' % self.uuid)
+        self.store.observe(uri, self.reactToCache)
+
+        #print (self.store.get('fos://<sys-id>/0aa110af-698b-4297-a7d7-9c0ff1ffc72c/'))
+
+        print("Listening on Store...")
+        while True:
+            time.sleep(100)
+
+
+
+
+
 
         #uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
         #all_plugins = json.loads(self.store.get(uri)).get('plugins')
@@ -141,10 +164,10 @@ class FogAgent(Agent):
         kvm = kvm.get('plugin')
         print (kvm)
         '''
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.uuid, kvm.uuid))
-        self.store.observe(uri, kvm.reactToCache)
 
-
+        '''
+        
+        
         print("Press enter to define a vm")
         input()
 
@@ -198,6 +221,12 @@ class FogAgent(Agent):
         print (self.store)
 
         exit(0)
+        
+        
+        
+        '''
+
+
 
         #################
 

@@ -39,6 +39,9 @@ class RuntimeLibVirt(RuntimePlugin):
 
         import libvirt
         self.conn = libvirt.open("qemu:///system")
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.agent.uuid, self.uuid))
+        self.agent.store.observe(uri, self.reactToCache)
         return self.uuid
 
 

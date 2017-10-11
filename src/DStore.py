@@ -37,7 +37,7 @@ class DStore(Store):
             if uri in self.__local_cache:
                 v = self.__local_cache[uri]
 
-        if v != None:
+        if v is not None:
             version = v[1]
 
         return version
@@ -117,13 +117,13 @@ class DStore(Store):
 
 
     def dput(self, uri, values = None):
-        version = self.next_version(uri)
         if values == None:
             ##status=run&entity_data.memory=2GB
             uri = uri.split('#')
             uri_values = uri[-1]
             uri = uri[0]
 
+        version = self.next_version(uri)
         data = {}
         for key in self.__local_cache:
             if fnmatch.fnmatch(key, uri):

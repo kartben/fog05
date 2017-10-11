@@ -84,15 +84,17 @@ class DController (Controller, Observer):
     def cache_discovered(self,reader):
         samples = reader.read(DController.MAX_SAMPLES, DDSMaskUtil.new_samples())
         for (d, i) in samples:
-            rsid = d.sid.decode()
-            print(">>> Discovered new store with id: " +  rsid)
+            if d is not None:
+                rsid = d.sid.decode()
+                print(">>> Discovered new store with id: " +  rsid)
 
 
     def cache_disappeared(self, reader, status):
         print(">>> Cache Disappeared")
         samples = reader.read(DController.MAX_SAMPLES, DDSMaskUtil.not_alive_instance_samples())
         for (d, i) in samples:
-            d.print_vars()
+            if d is not None:
+                d.print_vars()
 
 
     def onPut(self, uri, val, ver):
