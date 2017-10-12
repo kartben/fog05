@@ -3,6 +3,7 @@
 To deploy a complex application/service the first thing to do is to define a manifest file,
 those file should contain all information needed to correctly deploy the application/service,
 so it should describe all entities and dependencies between these entities that compose the application/service.
+
 ---
 
 ### Application/Service manifest file
