@@ -146,11 +146,11 @@ class DStore(Store):
                         data.update({k: v})
                     else:
                         d = self.dot2dict(k, v)
-                        # @TODO: update in a best way
+
                         data = self.data_merge(data, d)
-                        #data.update(d) #not very safe # @TODO: should use self.data_merge(data,values)?
+                        #data.update(d) #not very safe #
             else:
-                values = json.loads(values) # @TODO: should use self.data_merge(data,values)?
+                values = json.loads(values)
                 data = self.data_merge(data, values)
                 '''
                 for k in values.keys():
