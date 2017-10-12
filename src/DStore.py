@@ -89,7 +89,8 @@ class DStore(Store):
         #     few DDS writes which are non-blocking and thus not so useful to start a separate thread
         for key in self.__observers:
             if fnmatch.fnmatch(uri, key):
-                Thread(target=self.__observers.get(key), args=(uri, value, v)).start()
+                self.__observers.get(key)(uri, value, v)
+                #Thread(target=self.__observers.get(key), args=(uri, value, v)).start()
 
     def put(self, uri, value):
         v = self.get_version(uri)
