@@ -43,6 +43,9 @@ Should be agent's work to start the components in the correct order and with cor
 Example of a simple 'complex' application: a Wordpress blog
 
     @GB: In the case of a service should have some information on how to scale
+     in the 'need' key we now have a dictionary in which the key is the name of the needed
+     component and the value is an int that rappresent the Proximity Class (lower is closer)
+     
 
 ![graph](../img/example_service.png)
 
@@ -55,7 +58,7 @@ Application manifest:
         "components":[
             {
                 "name":"wordpress",
-                "need":["mysql"],
+                "need":[{"mysql":3}],
                 "manifest":"/some/path/to/wordpress_manifest.json"
             },
             {
