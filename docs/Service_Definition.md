@@ -42,6 +42,8 @@ Should be agent's work to start the components in the correct order and with cor
 
 Example of a simple 'complex' application: a Wordpress blog
 
+    @GB: In the case of a service should have some information on how to scale
+
 ![graph](../img/example_service.png)
 
 
