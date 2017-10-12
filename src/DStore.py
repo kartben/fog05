@@ -147,9 +147,12 @@ class DStore(Store):
                     else:
                         d = self.dot2dict(k, v)
                         # @TODO: update in a best way
-                        data.update(d) #not very safe # @TODO: should use self.data_merge(data,values)?
+                        data = self.data_merge(data, d)
+                        #data.update(d) #not very safe # @TODO: should use self.data_merge(data,values)?
             else:
                 values = json.loads(values) # @TODO: should use self.data_merge(data,values)?
+                data = self.data_merge(data, values)
+                '''
                 for k in values.keys():
                     v = values.get(k)
                     if type(v) == list:
@@ -157,6 +160,7 @@ class DStore(Store):
                         v = old_v + v
 
                     data.update({k: v})
+                '''
 
         value = json.dumps(data)
         self.__unchecked_store_value(uri, value , version)
