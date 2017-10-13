@@ -1,0 +1,20 @@
+#cloud-config
+
+packages:
+ - nginx
+runcmd:
+
+ - service nginx start
+ #configure hostname for sudo
+ - wget http://gabrielebaldoni.altervista.org/files/set_hostname.sh -O /tmp/set_hostname.sh
+ - chmod +x /tmp/set_hostname.sh
+ - /tmp/set_hostname.sh
+ #nginx page
+ - wget http://gabrielebaldoni.altervista.org/files/make_html_home.sh -O /tmp/make_home.sh
+ - chmod +x /tmp/make_home.sh
+ - /tmp/make_home.sh
+ #pining to appear in arp table on compute server
+ - ping 8.8.8.8 -c 2
+
+
+final_message: "The system is finally up, after $UPTIME seconds"
