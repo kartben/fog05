@@ -50,8 +50,8 @@
 
         <interface type='bridge'>
             <mac address='{{ net.mac }}'/>
-            <source network='default' bridge='{{ net.br_name }}'/>
-            <target dev='{{ net.name }}0'/>
+            <source network='default' bridge='{{ net.intf_name }}'/>
+            <target dev='{{ name }}0'/>
             <model type='rtl8139'/>
             <alias name='net{{loop.index}}'/>
             <!-- <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/> -->

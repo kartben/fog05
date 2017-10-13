@@ -4,6 +4,7 @@ sys.path.append(os.path.join(sys.path[0],'interfaces'))
 from States import State
 from Entity import Entity
 from jinja2 import Environment
+import json
 
 class KVMLibvirtEntity(Entity):
 

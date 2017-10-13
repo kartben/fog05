@@ -68,7 +68,7 @@ class KVMLibvirt(RuntimePlugin):
             cdrom_path = str("/opt/fos/disks/%s_config.iso" % entity_uuid)
             entity = KVMLibvirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
                                    kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
-                                   kwargs.get('base_image'), kwargs.get('user-file'), kwargs.get('ssh-key'))
+                                   kwargs.get('base_image'), kwargs.get('user-data'), kwargs.get('ssh-key'))
         else:
             return None
 
@@ -111,8 +111,7 @@ class KVMLibvirt(RuntimePlugin):
             vm_xml = Environment().from_string(template_xml)
             vm_xml = vm_xml.render(name=entity.name, uuid=entity_uuid, memory=entity.ram,
                                    cpu=entity.cpu, disk_image=entity.disk,
-                                   iso_image=entity.cdrom)
-
+                                   iso_image=entity.cdrom,networks=entity.networks)
             image_name = entity.image.split('/')[-1]
 
             wget_cmd = str('wget %s -O /opt/fos/images/%s' % (entity.image, image_name))
@@ -124,17 +123,22 @@ class KVMLibvirt(RuntimePlugin):
             if entity.user_file is not None:
                 data_filename = str("userdata_%s" % entity_uuid)
                 self.agent.getOSPlugin().storeFile(entity.user_file, "/opt/fos/", data_filename)
-                conf_cmd = str(conf_cmd + " --user-data" % data_filename)
+                data_filename = str("/opt/fos/%s" % data_filename)
+                conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
             if entity.ssh_key is not None:
                 key_filename = str("key_%s.pub" % entity_uuid)
                 self.agent.getOSPlugin().storeFile(entity.ssh_key, "/opt/fos/", key_filename)
-                conf_cmd = str(conf_cmd + " --ssh-key" % key_filename)
+                key_filename = str("/opt/fos/%s" % key_filename)
+                conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
 
             conf_cmd = str(conf_cmd + " %s" % entity.cdrom)
 
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
 
             dd_cmd = str("dd if=/opt/fos/images/%s of=%s" % (image_name, entity.disk))
+
+
+            #rm_temp_cmd = str("rm %s %s" % (key_filename, data_filename))
 
             entity.image = image_name
 

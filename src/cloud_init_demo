@@ -18,3 +18,7 @@ runcmd:
 
 
 final_message: "The system is finally up, after $UPTIME seconds"
+
+phone_home:
+ url: http://172.16.7.1:8080/$INSTANCE_ID/
+ post: [ instance_id ]

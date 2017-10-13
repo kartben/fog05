@@ -31,6 +31,11 @@ class Controll():
             self.nodes.update({ len(self.nodes)+1 : {value.get('uuid'): value}})
 
 
+    def readFile(self, file_path):
+        with open(file_path,'r') as f:
+            data = f.read()
+        return data
+
 
     def show_nodes(self):
         for k in self.nodes.keys():
@@ -73,6 +78,12 @@ class Controll():
         self.store.dput(uri, json.dumps(val))
 
         time.sleep(1)
+        val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
+                            'type': 'network', 'status': 'add'}]}
+        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
+        self.store.dput(uri, json.dumps(val))
+
+        time.sleep(1)
 
         print("Looking if kvm plugin loaded")
 
@@ -92,8 +103,12 @@ class Controll():
 
         vm_name = 'test'
 
-        vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 128, 'disk_size': 5, 'base_image':
-                            'http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img'}
+        cinit = self.readFile('./cloud_init_demo')
+        sshk = self.readFile('/home/ubuntu/key.pub')
+
+        vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
+                            'http://172.16.7.128/xenial-server-cloudimg-amd64-disk1.img','networks':[{
+            'mac':"d2:e3:ed:6f:e3:ef",'intf_name': "br0"}],"user-data": cinit, "ssh-key": sshk}
 
         entity_definition = {'status': 'define', 'name': vm_name, 'version': 1, 'entity_data': vm_definition}
 
