@@ -87,7 +87,7 @@ class DStore(Store):
     def notify_observers(self, uri, value, v):
         # AC: Should not use a separate thread of each observer... This is going to result in a
         #     few DDS writes which are non-blocking and thus not so useful to start a separate thread
-        for key in self.__observers:
+        for key in list(self.__observers.keys()):
             if fnmatch.fnmatch(uri, key):
                 self.__observers.get(key)(uri, value, v)
                 #Thread(target=self.__observers.get(key), args=(uri, value, v)).start()
@@ -225,7 +225,18 @@ class DStore(Store):
             base = updates
         elif isinstance(base, list):
             if isinstance(updates, list):
-                base.extend(updates)
+                names = [x.get('name') for x in updates]
+                item_same_name = [item for item in base if item.get('name') in [x.get('name') for x in updates]]
+                print (names)
+                print (item_same_name)
+                if all(isinstance(x, dict) for x in updates) and len(
+                        [item for item in base if item.get('name')  in [x.get('name') for x in updates]]) > 0:
+                    for e in base:
+                        for u in updates:
+                            if e.get('name') == u.get('name'):
+                                self.data_merge(e, u)
+                else:
+                    base.extend(updates)
             else:
                 base.append(updates)
         elif isinstance(base, dict):

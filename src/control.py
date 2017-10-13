@@ -64,13 +64,29 @@ class Controll():
         else:
             exit()
 
+
+        print("Make node load kvm plugin")
+
+        val = {'plugins': [{'name': 'KVMLibvirt', 'version': 1, 'uuid': '',
+                            'type': 'runtime', 'status': 'add'}]}
+        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
+        self.store.dput(uri, json.dumps(val))
+
+        time.sleep(1)
+
+        print("Looking if kvm plugin loaded")
+
         uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
         all_plugins = json.loads(self.store.get(uri)).get('plugins')
 
         runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
         print("locating kvm plugin")
-        kvm = [x for x in runtimes if 'kvm' in x.get('name')][0]
-
+        search = [x for x in runtimes if 'KVMLibvirt' in x.get('name')]
+        if len(search) == 0:
+            print ("Plugin was not loaded")
+            exit()
+        else:
+            kvm = search[0]
 
         vm_uuid = str(uuid.uuid4())
 

@@ -5,11 +5,11 @@ from States import State
 from Entity import Entity
 from jinja2 import Environment
 
-class LibVirtEntity(Entity):
+class KVMLibvirtEntity(Entity):
 
     def __init__(self, uuid, name, cpu, ram, disk, disk_size, cdrom, networks, image, user_file, ssh_key):
 
-        super(LibVirtEntity, self).__init__()
+        super(KVMLibvirtEntity, self).__init__()
         self.uuid = uuid
         self.name = name
         self.cpu = cpu

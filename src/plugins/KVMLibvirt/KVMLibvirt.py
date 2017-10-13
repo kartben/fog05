@@ -4,15 +4,15 @@ import uuid
 sys.path.append(os.path.join(sys.path[0],'interfaces'))
 from States import State
 from RuntimePlugin import *
-from LibVirtEntity import LibVirtEntity
+from KVMLibvirtEntity import KVMLibvirtEntity
 from jinja2 import Environment
 import json
 import random
 
-class RuntimeLibVirt(RuntimePlugin):
+class KVMLibvirt(RuntimePlugin):
 
     def __init__(self, name, version, agent):
-        super(RuntimeLibVirt, self).__init__(version)
+        super(KVMLibvirt, self).__init__(version)
         self.uuid = uuid.uuid4()
         self.name = name
         self.agent = agent
@@ -60,13 +60,13 @@ class RuntimeLibVirt(RuntimePlugin):
             entity_uuid = args[4]
             disk_path = str("/opt/fos/%s.qcow2" % entity_uuid)
             cdrom_path = str("/opt/fos/%s_config.iso" % entity_uuid)
-            entity = LibVirtEntity(entity_uuid, args[0], args[2], args[1], disk_path, args[3], cdrom_path, [],
+            entity = KVMLibvirtEntity(entity_uuid, args[0], args[2], args[1], disk_path, args[3], cdrom_path, [],
                                    args[5], args[6], args[7])
         elif len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
             disk_path = str("/opt/fos/disks/%s.qcow2" % entity_uuid)
             cdrom_path = str("/opt/fos/disks/%s_config.iso" % entity_uuid)
-            entity = LibVirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
+            entity = KVMLibvirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
                                    kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
                                    kwargs.get('base_image'), kwargs.get('user-file'), kwargs.get('ssh-key'))
         else:
@@ -105,7 +105,7 @@ class RuntimeLibVirt(RuntimePlugin):
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
 
-            template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', 'RuntimeLibVirt',
+            template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', 'KVMLibvirt',
                                                                           'templates', 'vm.xml'))
 
             vm_xml = Environment().from_string(template_xml)
@@ -117,7 +117,7 @@ class RuntimeLibVirt(RuntimePlugin):
 
             wget_cmd = str('wget %s -O /opt/fos/images/%s' % (entity.image, image_name))
 
-            conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(sys.path[0], 'plugins', 'RuntimeLibVirt',
+            conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(sys.path[0], 'plugins', 'KVMLibvirt',
                                                                    'templates',
                                                                  'create_config_drive.sh'), entity.name, entity_uuid))
 

@@ -64,12 +64,12 @@ class FogAgent(Agent):
             rt = self.pl.loadPlugin(rt)
             rt = rt.run(agent=self)
             self.rtPlugins.update({rt.uuid: rt})
-            val = {'status': 'add', 'version': rt.version, 'description': str('runtime %s' % rt.name), 'plugin': ''}
+            val = {'version': rt.version, 'description': str('runtime %s' % rt.name), 'plugin': ''}
             uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, rt.name, rt.uuid))
             self.store.put(uri, json.dumps(val))
 
             val = {'plugins': [{'name': rt.name, 'version': rt.version, 'uuid': str(rt.uuid),
-                                'type': 'runtime'}]}
+                                'type': 'runtime', 'status': 'loaded'}]}
             uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
             self.store.dput(uri, json.dumps(val))
 
@@ -84,12 +84,13 @@ class FogAgent(Agent):
             net = net.run(agent=self)
             self.rtPlugins.update({net.uuid: net})
 
-            val = {'status': 'add', 'version': net.version, 'description': str('runtime %s' % net.name), 'plugin': ''}
+            val = {'version': net.version, 'description': str('runtime %s' % net.name),
+                   'plugin': ''}
             uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, net.name, net.uuid))
             self.store.put(uri, json.dumps(val))
 
             val = {'plugins': [{'name': net.name, 'version': net.version, 'uuid': str(net.uuid),
-                                'type': 'network'}]}
+                                'type': 'network','status': 'loaded'}]}
             uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
             self.store.dput(uri, json.dumps(val))
 
@@ -119,19 +120,46 @@ class FogAgent(Agent):
         print ("###########################")
         print ("###########################")
 
+
+    def reactToPlugins(self, uri, value, v):
+        print("Received a plugins action")
+        print (value)
+        value = json.loads(value)
+        value = value.get('plugins')
+        for v in value:
+            if v.get('status') == 'add':
+                print (v)
+                print("I should add a plugin")
+                name = v.get('name')
+
+                #@TODO: use a dict with functions instead of if elif else...
+                if v.get('type') == 'runtime':
+                    rt = self.loadRuntimePlugin(name)
+                    self.rtPlugins.update({rt.uuid: rt})
+                elif v.get('type') == 'network':
+                    nw = self.loadNetworkPlugin(name)
+                    self.nwPlugins.update({nw.uuid: nw})
+                else:
+                    print('Plugins of type %s are not yet supported...' % v.get('type'))
+
     def main(self):
 
 
 
         #print(self.store)
 
-        self.loadRuntimePlugin('RuntimeLibVirt')
-        self.loadNetworkPlugin('brctl')
+        #self.loadRuntimePlugin('KVMLibvirt')
+        #self.loadNetworkPlugin('brctl')
 
         #print (self.store)
 
         uri = str('fos://<sys-id>/%s/*/' % self.uuid)
         self.store.observe(uri, self.reactToCache)
+
+        uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
+        self.store.observe(uri, self.reactToPlugins)
+
+
 
 
         print("Listening on Store...")
