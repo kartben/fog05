@@ -41,5 +41,16 @@ implementation defines the following partitions:
 
 
 
+## Meeting Notes
+
+- We need to add a delta-remote
+
+- A cache abstraction is used uniformly and a cache can be backed-up
+  by a store
+
+- We could distinguish between the cache storing desired state and the
+  cache storing the actual state. Only the owner of the data has the
+  rights to update the actual state.
+  
 
 
