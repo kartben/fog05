@@ -67,7 +67,7 @@ Application manifest:
             {
                 "name":"mysql",
                 "need":[],
-                "proximity":{"wp_blog":3},
+                "proximity":{"wp_blog":3} #or maybe can be null?,
                 "manifest":"/some/path/to/mysql_manifest.json"
             }
         ]

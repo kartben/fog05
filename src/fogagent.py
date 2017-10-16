@@ -222,12 +222,22 @@ class FogAgent(Agent):
 
         deploy_order_list = self.resolve_dependencies(value.get('components', None))
 
+        '''
+        With the ordered list of entities the agent should generate the graph of entities
+        eg. using NetworkX lib and looking for loops, if it find a loop should fail the application
+        onboarding, and signal in the proper uri.
+        If no loop are detected then should start instantiate the components
+        It's a MANO job to select the correct nodes, and selection should be based on proximity 
+        After each deploy the agent should collect correct information for the deploy of components that need other
+        components (eg. should retrive the ip address, and then pass in someway to others components)
+        
+        '''
 
-
-    def resolve_dependencies(self,components):
+    def resolve_dependencies(self, components):
         '''
         The return list contains component's name in the order that can be used to deploy
          @TODO: should use less cycle to do this job
+        :rtype: list
         :param components: list like [{'name': 'c1', 'need': ['c2', 'c3']}, {'name': 'c2', 'need': ['c3']}, {'name': 'c3', 'need': ['c4']}, {'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}]
 
         no_dependable_components -> list like [[{'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}], [{'name': 'c3', 'need': []}], [{'name': 'c2', 'need': []}], [{'name': 'c1', 'need': []}], []]
