@@ -194,7 +194,12 @@ class Linux(OSPlugin):
         # generate uuid from this or from cpuid or mb uuid from /sys/class/dmi/id/product_uuid
 
         #p = psutil.Popen('cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE) no need of regex
-
+        p = psutil.Popen('sudo cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE)
+        res = ""
+        for line in p.stdout:
+            res = str(res + "%s" % line)
+        return res.lower()
+        '''
         uuid_regex = r"UUID=\"(.{0,37})\""
         p = psutil.Popen('sudo blkid /dev/sda1'.split(), stdout=PIPE)
         res = ""
@@ -204,6 +209,7 @@ class Linux(OSPlugin):
         if m:
             found = m.group(1)
         return found
+        '''
 
 
     def get_hostname(self):

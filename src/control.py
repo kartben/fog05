@@ -29,6 +29,7 @@ class Controll():
             print ("###########################")
             print ("###########################")
             self.nodes.update({ len(self.nodes)+1 : {value.get('uuid'): value}})
+            self.show_nodes()
 
 
     def readFile(self, file_path):
@@ -43,31 +44,7 @@ class Controll():
             id = list(n.keys())[0]
             print ("%d - %s : %s" % (k, n.get(id).get('name'), id))
 
-
-
-    def main(self):
-
-
-        uri = str('fos://<sys-id>/*/')
-        self.store.observe(uri, self.nodeDiscovered)
-
-
-
-        while len(self.nodes) == 0:
-            time.sleep(2)
-
-
-        self.show_nodes()
-
-        n = int(input("Select node: "))
-
-        node_uuid = self.nodes.get(n)
-        if node_uuid is not None:
-            node_uuid = list(node_uuid.keys())[0]
-            if node_uuid is not None:
-                pass
-        else:
-            exit()
+    def lf_native(self, node_uuid):
 
         print("Make node load native plugin")
 
@@ -139,11 +116,7 @@ class Controll():
                   (node_uuid, native.get('uuid'), app_uuid))
         self.store.dput(uri)
 
-
-        input()
-        exit()
-        #########
-
+    def vm_deploy(self, node_uuid, vm_uuid):
         print("Make node load kvm plugin")
 
         val = {'plugins': [{'name': 'KVMLibvirt', 'version': 1, 'uuid': '',
@@ -173,19 +146,16 @@ class Controll():
         else:
             kvm = search[0]
 
-        vm_uuid = str(uuid.uuid4())
-
         vm_name = 'test'
 
         cinit = self.readFile('./cloud_init_demo')
         sshk = self.readFile('/home/ubuntu/key.pub')
 
         vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
-                            'http://172.16.7.128/xenial-server-cloudimg-amd64-disk1.img','networks':[{
-            'mac':"d2:e3:ed:6f:e3:ef",'intf_name': "br0"}],"user-data": cinit, "ssh-key": sshk}
+            'http://172.16.7.128/xenial-server-cloudimg-amd64-disk1.img', 'networks': [{
+            'mac': "d2:e3:ed:6f:e3:ef", 'intf_name': "br0"}], "user-data": cinit, "ssh-key": sshk}
 
         entity_definition = {'status': 'define', 'name': vm_name, 'version': 1, 'entity_data': vm_definition}
-
 
         json_data = json.dumps(entity_definition)
 
@@ -207,6 +177,21 @@ class Controll():
 
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, kvm.get('uuid'), vm_uuid))
         self.store.dput(uri)
+
+    def vm_destroy(self, node_uuid, vm_uuid):
+
+        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+
+        runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
+        print("locating kvm plugin")
+        search = [x for x in runtimes if 'KVMLibvirt' in x.get('name')]
+        if len(search) == 0:
+            print ("Plugin was not loaded")
+            exit()
+        else:
+            kvm = search[0]
+
 
         print("Press enter to stop vm")
         input()
@@ -230,6 +215,51 @@ class Controll():
         self.store.dput(uri, json_data)
 
 
+    def main(self):
+
+        uri = str('fos://<sys-id>/*/')
+        self.store.observe(uri, self.nodeDiscovered)
+
+        vm_uuid = str(uuid.uuid4())
+
+        while len(self.nodes) < 2:
+            time.sleep(2)
+
+        self.show_nodes()
+
+        n = int(input("Select node for vm deploy: "))
+
+        node_uuid = self.nodes.get(n)
+        if node_uuid is not None:
+            node_uuid = list(node_uuid.keys())[0]
+            if node_uuid is not None:
+                pass
+        else:
+            exit()
+
+        vm_node = node_uuid
+
+        self.vm_deploy(vm_node, vm_uuid)
+
+        self.show_nodes()
+
+        n = int(input("Select node for native app deploy: "))
+
+        node_uuid = self.nodes.get(n)
+        if node_uuid is not None:
+            node_uuid = list(node_uuid.keys())[0]
+            if node_uuid is not None:
+                pass
+        else:
+            exit()
+
+        self.lf_native(node_uuid)
+
+
+        input("Press enter to destroy vm")
+
+        self.vm_destroy(vm_node, vm_uuid)
+        #########
 
         input()
 
