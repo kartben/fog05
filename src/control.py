@@ -214,6 +214,70 @@ class Controll():
                   (node_uuid, kvm.get('uuid'), vm_uuid))
         self.store.dput(uri, json_data)
 
+    def deploy_application(self, node_uuid):
+
+        val = {'plugins': [{'name': 'KVMLibvirt', 'version': 1, 'uuid': '',
+                            'type': 'runtime', 'status': 'add'}]}
+        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
+        self.store.dput(uri, json.dumps(val))
+
+        time.sleep(1)
+
+        val = {'plugins': [{'name': 'native', 'version': 1, 'uuid': '',
+                            'type': 'runtime', 'status': 'add'}]}
+        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
+        self.store.dput(uri, json.dumps(val))
+
+        time.sleep(1)
+
+
+        app_uuid = str(uuid.uuid4())
+
+        cinit = self.readFile('./cloud_init_demo')
+        sshk = self.readFile('/home/ubuntu/key.pub')
+        vm_name = 'nginx'
+        vm_uuid = str(uuid.uuid4())
+        vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
+            'http://172.16.7.128/xenial-server-cloudimg-amd64-disk1.img', 'networks': [{
+            'mac': "d2:e3:ed:6f:e3:ef", 'intf_name': "br0"}], "user-data": cinit, "ssh-key": sshk}
+
+
+
+        vm = {
+            "name":"nginx",
+            "description":"mysql web server",
+            "version" : 3,
+            "type":"kvm",
+            "entity_description":vm_definition,
+            "accelerators":[],
+            "io":[]
+        }
+
+        app_name = 'browser'
+        app_uuid = str(uuid.uuid4())
+        app_definition = {'name': app_name, 'command': 'firefox', 'args': ['172.16.7.131'], 'uuid': app_uuid}
+
+        na = {
+            "name": "browser",
+            "description": "firefox",
+            "version": 3,
+            "type": "native",
+            "entity_description": app_definition,
+            "accelerators": [],
+            "io": []
+        }
+
+        app = {"name":"demo", "description":"simple nginx+web demo",
+        "components":[{ "name":"nginx","need":[],"proximity":{},"manifest":vm},
+                {"name":"browser","need":[],"proximity":{},"manifest":na}]}
+
+        json_data = json.dumps(app)
+
+        uri = str('fos://<sys-id>/%s/applications/%s' %
+                 (node_uuid, app_uuid))
+        self.store.put(uri, json_data)
+
+
 
     def main(self):
 
@@ -222,7 +286,7 @@ class Controll():
 
         vm_uuid = str(uuid.uuid4())
 
-        while len(self.nodes) < 2:
+        while len(self.nodes) < 1:
             time.sleep(2)
 
         self.show_nodes()
@@ -236,6 +300,10 @@ class Controll():
                 pass
         else:
             exit()
+
+        self.deploy_application(node_uuid)
+
+        '''
 
         vm_node = node_uuid
 
@@ -255,11 +323,11 @@ class Controll():
 
         self.lf_native(node_uuid)
 
-
         input("Press enter to destroy vm")
 
         self.vm_destroy(vm_node, vm_uuid)
         #########
+        '''
 
         input()
 

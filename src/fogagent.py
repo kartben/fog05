@@ -171,7 +171,8 @@ class FogAgent(Agent):
         service components:
         {
             "name":"wp_v2.foo.bar"
-            "description":"wordpress blog engine"
+            "description":"wordpress blog engine",
+            "version": 2,
             "type":"container",
             "entity_description":{...},
             "accelerators":[]
@@ -182,7 +183,8 @@ class FogAgent(Agent):
 
         {
             "name":"myql_v2.foo.bar"
-            "description":"mysql db engine"
+            "description":"mysql db engine",
+            "version" : 3,
             "type":"vm",
             "entity_description":{...},  <- here all information to download and configure the db server
             "accelerators":[]
@@ -253,9 +255,12 @@ class FogAgent(Agent):
             '''
             t = mf.get('type')
 
-            if t == "vm":
+            if t == "kvm":
                 print("component is a vm")
-                kvm = self.search_plugin_by_name('kvm')
+                kvm = self.search_plugin_by_name('KVM')
+                if kvm is None:
+                    print ('KVM is NONE!!')
+                    return False
 
                 '''
                 Do stuffs... define, configure and run the vm
@@ -263,41 +268,109 @@ class FogAgent(Agent):
                 eg. {'name':{ information }, 'name2':{}, .... }
                 '''
 
-                node_uuid = self.uuid #@TODO: select deploy node in a smart way
-                vm_uuid = component.get("entity_description").get("uuid")
+                node_uuid = str(self.uuid) #@TODO: select deploy node in a smart way
+                vm_uuid = mf.get("entity_description").get("uuid")
 
                 entity_definition = {'status': 'define', 'name': component.get("name"), 'version': component.get(
-                    'version'), 'entity_data': component.get("entity_description")}
+                    'version'), 'entity_data': mf.get("entity_description")}
                 json_data = json.dumps(entity_definition)
 
                 uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, kvm.get('uuid'), vm_uuid))
                 self.store.put(uri, json_data)
+
+                time.sleep(1)
 
                 uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
                           (node_uuid, kvm.get('uuid'), vm_uuid))
                 self.store.dput(uri)
 
                 # HERE SHOULD WAIT FOR VM TO BE READY TO START
+                input("press to start")
 
-                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=RUN' %
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
                           (node_uuid, kvm.get('uuid'), vm_uuid))
                 self.store.dput(uri)
 
+
+                input("press to continue")
+                #input("press to stop")
+                #uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, kvm.get('uuid'), vm_uuid))
+                #self.store.dput(uri)
+
+                #time.sleep(1)
+
+                #uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
+                #          (node_uuid, kvm.get('uuid'), vm_uuid))
+                #self.store.dput(uri)
+
+                #time.sleep(1)
+                #uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' %
+                #          (node_uuid, kvm.get('uuid'), vm_uuid))
+                #self.store.dput(uri)
+
                 # HERE SHOULD WAIT FOR VM TO BE STARTED BEFORE DEPLOY NEXT ONES
 
-                uri = str('fos://<sys-id>/%s/runime/%s/entity/%s/info' % (node_uuid, kvm.get('uuid'), vm_uuid))
-                informations.update({c: json.loads(self.store.get(uri))})
+                #uri = str('fos://<sys-id>/%s/runime/%s/entity/%s/info' % (node_uuid, kvm.get('uuid'), vm_uuid))
+                #informations.update({c: json.loads(self.store.get(uri))})
+
+
 
             elif t == "container":
                 print("component is a container")
             elif t == "native":
                 print("component is a native application")
+                native = self.search_plugin_by_name('native')
+                if native is None:
+                    print ('native is NONE!!')
+                    return False
+
+                node_uuid = str(self.uuid)  # @TODO: select deploy node in a smart way
+                na_uuid = mf.get("entity_description").get("uuid")
+
+                entity_definition = {'status': 'define', 'name': component.get("name"), 'version': component.get(
+                    'version'), 'entity_data': mf.get("entity_description")}
+                json_data = json.dumps(entity_definition)
+
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, native.get('uuid'), na_uuid))
+                self.store.put(uri, json_data)
+
+                time.sleep(1)
+
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
+                          (node_uuid, native.get('uuid'), na_uuid))
+                self.store.dput(uri)
+
+                # HERE SHOULD WAIT FOR VM TO BE READY TO START
+                input("press to start")
+
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
+                          (node_uuid, native.get('uuid'), vm_uuid))
+                self.store.dput(uri)
+
+                input("press to stop")
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, kvm.get('uuid'), na_uuid))
+                self.store.dput(uri)
+
+                time.sleep(1)
+
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
+                          (node_uuid, native.get('uuid'), na_uuid))
+                self.store.dput(uri)
+
+                time.sleep(1)
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' %
+                          (node_uuid, native.get('uuid'), na_uuid))
+                self.store.dput(uri)
+
+
+
+
             elif t == "ros":
                 print("component is a ros application")
             elif t == "usvc":
                 print("component is a microservice")
             else:
-                raise AssertionError("Component type not recognized")
+                raise AssertionError("Component type not recognized %s" % t)
                 return
 
     def resolve_dependencies(self, components):
@@ -327,8 +400,8 @@ class FogAgent(Agent):
             order.extend(n)
         return order
 
-    def get_manifest(self, manifest_path):
-        return ""
+    def get_manifest(self, manifest_path): #TODO: is nested now
+        return manifest_path
 
     def search_plugin_by_name(self, name):
         uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
@@ -349,6 +422,9 @@ class FogAgent(Agent):
         #self.loadNetworkPlugin('brctl')
 
         #print (self.store)
+        uri = str('fos://<sys-id>/%s/applications/*' % self.uuid)
+        self.store.observe(uri, self.applicationDefinition)
+
 
         uri = str('fos://<sys-id>/%s/*/' % self.uuid)
         self.store.observe(uri, self.reactToCache)

@@ -21,7 +21,7 @@ class Native(RuntimePlugin):
 
     def startRuntime(self):
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.agent.uuid, self.uuid))
-        print("KVM Listening on %s" % uri)
+        print("Native Listening on %s" % uri)
         self.agent.store.observe(uri, self.reactToCache)
         return self.uuid
 

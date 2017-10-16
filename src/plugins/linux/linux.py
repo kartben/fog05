@@ -32,10 +32,13 @@ class Linux(OSPlugin):
         self.uuid = uuid.uuid4()
         self.name = name
 
-    def executeCommand(self, command):
+    def executeCommand(self, command, blocking=False):
         print(command)
         cmd_splitted = command.split()
         p = psutil.Popen(cmd_splitted, stdout=PIPE)
+        if blocking:
+            p.wait()
+
         for line in p.stdout:
             print (line)
 
