@@ -344,7 +344,7 @@ class FogAgent(Agent):
                 input("press to start")
 
                 uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
-                          (node_uuid, native.get('uuid'), vm_uuid))
+                          (node_uuid, native.get('uuid'), na_uuid))
                 self.store.dput(uri)
 
                 input("press to stop")
