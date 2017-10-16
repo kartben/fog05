@@ -9,3 +9,4 @@
 - Network Definition [Here JSON Schema](../json_objects/network_define.schema)
 - Interface Definition [Here JSON Schema](../json_objects/interface_define.schema)
 - Bridge Definition [Here JSON Schema](../json_objects/bridge_define.schema)
+- Native Application Definition [Here JSON Schema](../json_objects/native_define.schema)

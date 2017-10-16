@@ -69,6 +69,80 @@ class Controll():
         else:
             exit()
 
+        print("Make node load native plugin")
+
+        val = {'plugins': [{'name': 'native', 'version': 1, 'uuid': '',
+                            'type': 'runtime', 'status': 'add'}]}
+        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
+        self.store.dput(uri, json.dumps(val))
+
+        time.sleep(1)
+
+        print("Looking if native plugin loaded")
+
+        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+
+        runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
+        print("locating native plugin")
+        search = [x for x in runtimes if 'native' in x.get('name')]
+        if len(search) == 0:
+            print ("Plugin was not loaded")
+            exit()
+        else:
+            native = search[0]
+        app_name = 'Browser'
+        app_uuid = str(uuid.uuid4())
+        app_definition = {'name': app_name, 'command': 'firefox', 'args': ['172.16.7.131'], 'uuid': app_uuid}
+        entity_definition = {'status': 'define', 'name': app_name, 'version': 1, 'entity_data': app_definition}
+
+        json_data = json.dumps(entity_definition)
+
+        print("Press enter to define the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, native.get('uuid'), app_uuid))
+        self.store.put(uri, json_data)
+
+        print("Press enter to configure the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
+                  (node_uuid, native.get('uuid'), app_uuid))
+        self.store.dput(uri)
+
+        print("Press enter to start the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
+                  (node_uuid, native.get('uuid'), app_uuid))
+        self.store.dput(uri)
+
+        print("Press enter to stop the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' %
+                  (node_uuid, native.get('uuid'), app_uuid))
+        self.store.dput(uri)
+
+        print("Press enter to clean the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
+                  (node_uuid, native.get('uuid'), app_uuid))
+        self.store.dput(uri)
+
+        print("Press enter to undefine the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' %
+                  (node_uuid, native.get('uuid'), app_uuid))
+        self.store.dput(uri)
+
+
+        input()
+        exit()
+        #########
 
         print("Make node load kvm plugin")
 

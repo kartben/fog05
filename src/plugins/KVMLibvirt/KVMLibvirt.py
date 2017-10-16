@@ -120,16 +120,19 @@ class KVMLibvirt(RuntimePlugin):
                                                                    'templates',
                                                                  'create_config_drive.sh'), entity.name, entity_uuid))
 
+            rm_temp_cmd = str("rm")
             if entity.user_file is not None:
                 data_filename = str("userdata_%s" % entity_uuid)
                 self.agent.getOSPlugin().storeFile(entity.user_file, "/opt/fos/", data_filename)
                 data_filename = str("/opt/fos/%s" % data_filename)
                 conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
+                rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
             if entity.ssh_key is not None:
                 key_filename = str("key_%s.pub" % entity_uuid)
                 self.agent.getOSPlugin().storeFile(entity.ssh_key, "/opt/fos/", key_filename)
                 key_filename = str("/opt/fos/%s" % key_filename)
                 conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
+                rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
 
             conf_cmd = str(conf_cmd + " %s" % entity.cdrom)
 
@@ -137,15 +140,15 @@ class KVMLibvirt(RuntimePlugin):
 
             dd_cmd = str("dd if=/opt/fos/images/%s of=%s" % (image_name, entity.disk))
 
-
-            #rm_temp_cmd = str("rm %s %s" % (key_filename, data_filename))
-
             entity.image = image_name
 
             self.agent.getOSPlugin().executeCommand(wget_cmd)
             self.agent.getOSPlugin().executeCommand(qemu_cmd)
             self.agent.getOSPlugin().executeCommand(conf_cmd)
             self.agent.getOSPlugin().executeCommand(dd_cmd)
+
+            if entity.ssh_key is not None or entity.user_file is not None:
+                self.agent.getOSPlugin().executeCommand(rm_temp_cmd)
 
             self.conn.defineXML(vm_xml)
             entity.onConfigured(vm_xml)

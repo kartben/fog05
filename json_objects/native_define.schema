@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "title": "Native App Definition",
+  "description": "Native Application definition schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "app name"
+    },
+    "uuid": {
+      "type": "string"
+    },
+    "command": {
+      "type": "string"
+    },
+    "args": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
