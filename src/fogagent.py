@@ -188,7 +188,7 @@ class FogAgent(Agent):
             "io":[]
         }
 
-        Then starting from these the agent should create the rigth entities json and write in the correct uris in the
+        Then starting from these the agent should create the right entities json and write in the correct uris in the
         correct order and in the correct nodes
 
         So in this case should create:
@@ -215,6 +215,33 @@ class FogAgent(Agent):
         :param v:
         :return:
         '''
+
+        print("URI: %s\nValue: %s\nVersion: %s\n" % (uri, value, v))
+
+        value = json.loads(value)
+
+        deploy_order_list = self.resolve_dependencies(value.get('components', None))
+
+
+
+    def resolve_dependencies(self,components):
+        '''
+        The return list should be only a list of name of components in the order the should be deployed
+        :param components: list like [{'name': 'c1', 'need': ['c2', 'c3']}, {'name': 'c2', 'need': ['c3']}, {'name': 'c3', 'need': ['c4']}, {'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}]
+        :return: list like [[{'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}], [{'name': 'c3', 'need': []}], [{'name': 'c2', 'need': []}], [{'name': 'c1', 'need': []}], []]
+        '''
+        c = list(components)
+        no_dependable_components = []
+        for i in range(0, len(components)):
+            no_dependable_components.append([x for x in c if len(x.get('need')) == 0])
+            print (no_dependable_components)
+            c = [x for x in c if x not in no_dependable_components[i]]
+            for y in c:
+                n = y.get('need')
+                n = [x for x in n if x not in [z.get('name') for z in no_dependable_components[i]]]
+                y.update({"need": n})
+
+        return no_dependable_components
 
     def main(self):
 
