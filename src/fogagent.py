@@ -120,7 +120,6 @@ class FogAgent(Agent):
         print ("###########################")
         print ("###########################")
 
-
     def reactToPlugins(self, uri, value, v):
         print("Received a plugins action")
         print (value)
@@ -141,6 +140,81 @@ class FogAgent(Agent):
                     self.nwPlugins.update({nw.uuid: nw})
                 else:
                     print('Plugins of type %s are not yet supported...' % v.get('type'))
+
+    def applicationDefinition(self, uri, value, v):
+        '''
+        This should observe fos://<sys-id>/nodeid/applications/*
+        Where each application is defined like the example in the docs
+        So to add an application someone should always do a dput
+
+        Example service:
+         {
+        "name":"wp_blog"
+        "description":"simple wordpress blog",
+        "components":[
+                {
+                    "name":"wordpress",
+                    "need":["mysql"],
+                    "proximity":{"mysql":3}
+                    "manifest":"/some/path/to/wordpress_manifest.json"
+                },
+                {
+                    "name":"mysql",
+                    "need":[],
+                    "proximity":{"wp_blog":3},
+                    "manifest":"/some/path/to/mysql_manifest.json"
+                }
+            ]
+        }
+
+        service components:
+        {
+            "name":"wp_v2.foo.bar"
+            "description":"wordpress blog engine"
+            "type":"container",
+            "entity_description":{...},
+            "accelerators":[]
+            "io":[]
+        }
+
+
+
+        {
+            "name":"myql_v2.foo.bar"
+            "description":"mysql db engine"
+            "type":"vm",
+            "entity_description":{...},  <- here all information to download and configure the db server
+            "accelerators":[]
+            "io":[]
+        }
+
+        Then starting from these the agent should create the rigth entities json and write in the correct uris in the
+        correct order and in the correct nodes
+
+        So in this case should create:
+
+        for mysql:
+        {'status': 'define', 'name': 'mysql_v2.foo.bar, 'version': 1, 'entity_data': entity_description}
+
+        then write this to
+        fos://sysid/nodeid/runtime/kvmid/this_entity_id
+        and configure and start this vm
+
+        for mysql
+        {'status': 'define', 'name': 'wp_v2.foo.bar, 'version': 1, 'entity_data': entity_description}
+        where entity_description should be populated from information based on previous mysql deployment
+        (eg. server ip)
+        then write this to (nodeid can be the same or another, choice is based on proximity definition in app manifest
+        fos://sysid/nodeid/runtime/lxc_id/wp_entity_id
+        and configure and start this container
+
+        after these steps the service should work and his information should be available in his uri
+
+        :param uri:
+        :param value:
+        :param v:
+        :return:
+        '''
 
     def main(self):
 
