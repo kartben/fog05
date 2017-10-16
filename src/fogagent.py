@@ -226,9 +226,12 @@ class FogAgent(Agent):
 
     def resolve_dependencies(self,components):
         '''
-        The return list should be only a list of name of components in the order the should be deployed
+        The return list contains component's name in the order that can be used to deploy
+         @TODO: should use less cycle to do this job
         :param components: list like [{'name': 'c1', 'need': ['c2', 'c3']}, {'name': 'c2', 'need': ['c3']}, {'name': 'c3', 'need': ['c4']}, {'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}]
-        :return: list like [[{'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}], [{'name': 'c3', 'need': []}], [{'name': 'c2', 'need': []}], [{'name': 'c1', 'need': []}], []]
+
+        no_dependable_components -> list like [[{'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}], [{'name': 'c3', 'need': []}], [{'name': 'c2', 'need': []}], [{'name': 'c1', 'need': []}], []]
+        :return: list like ['c4', 'c5', 'c3', 'c2', 'c1']
         '''
         c = list(components)
         no_dependable_components = []
@@ -241,7 +244,11 @@ class FogAgent(Agent):
                 n = [x for x in n if x not in [z.get('name') for z in no_dependable_components[i]]]
                 y.update({"need": n})
 
-        return no_dependable_components
+        order = []
+        for i in range(0, len(no_dependable_components)):
+            n = [x.get('name') for x in no_dependable_components[i]]
+            order.extend(n)
+        return order
 
     def main(self):
 
