@@ -73,23 +73,30 @@ Application manifest:
         ]
     }
 
+    @GB: Where I can find manifest for components? Node has some http server for providing them of are nested json?
 
 Wordpress manifest:
 
     {
         "name":"wp_v2.foo.bar"
-        "description":"wordpress blog engine"
+        "description":"wordpress blog engine",
+        "version": 2,
         "type":"container",
         "entity_description":{...},
         "accelerators":[]
         "io":[]
     }
 
+    @GB: Should type match the runtime type? eg. kvm -> vm; lxc -> container and so on?
+    In this way should be easy for the agent to lookup if the appropriate plugin in present
+    or to recover and install that
+
 mysql manifest file:
 
     {
         "name":"myql_v2.foo.bar"
-        "description":"mysql db engine"
+        "description":"mysql db engine",
+        "version" : 3,
         "type":"vm",
         "entity_description":{...},  <- here all information to download and configure the db server
         "accelerators":[]

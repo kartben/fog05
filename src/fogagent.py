@@ -5,6 +5,7 @@ import sys
 from DStore import *
 #from RedisLocalCache import RedisCache
 import json
+import networkx as nx
 
 
 class FogAgent(Agent):
@@ -221,6 +222,7 @@ class FogAgent(Agent):
         value = json.loads(value)
 
         deploy_order_list = self.resolve_dependencies(value.get('components', None))
+        informations = {}
 
         '''
         With the ordered list of entities the agent should generate the graph of entities
@@ -230,8 +232,73 @@ class FogAgent(Agent):
         It's a MANO job to select the correct nodes, and selection should be based on proximity 
         After each deploy the agent should collect correct information for the deploy of components that need other
         components (eg. should retrive the ip address, and then pass in someway to others components)
-        
         '''
+
+
+        for c in deploy_order_list:
+            search = [x for x in value.get('components') if x.get('name') == c]
+            if len(search) > 0:
+                component = search[0]
+            else:
+                raise AssertionError("Could not find component in component list WTF?")
+                return
+
+            '''
+            Should recover in some way the component manifest
+            
+            '''
+            mf = self.get_manifest(component.get('manifest'))
+            '''
+            from this manifest generate the correct json 
+            '''
+            t = mf.get('type')
+
+            if t == "vm":
+                print("component is a vm")
+                kvm = self.search_plugin_by_name('kvm')
+
+                '''
+                Do stuffs... define, configure and run the vm
+                get information about the deploy and save them
+                eg. {'name':{ information }, 'name2':{}, .... }
+                '''
+
+                node_uuid = self.uuid #@TODO: select deploy node in a smart way
+                vm_uuid = component.get("entity_description").get("uuid")
+
+                entity_definition = {'status': 'define', 'name': component.get("name"), 'version': component.get(
+                    'version'), 'entity_data': component.get("entity_description")}
+                json_data = json.dumps(entity_definition)
+
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, kvm.get('uuid'), vm_uuid))
+                self.store.put(uri, json_data)
+
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
+                          (node_uuid, kvm.get('uuid'), vm_uuid))
+                self.store.dput(uri)
+
+                # HERE SHOULD WAIT FOR VM TO BE READY TO START
+
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=RUN' %
+                          (node_uuid, kvm.get('uuid'), vm_uuid))
+                self.store.dput(uri)
+
+                # HERE SHOULD WAIT FOR VM TO BE STARTED BEFORE DEPLOY NEXT ONES
+
+                uri = str('fos://<sys-id>/%s/runime/%s/entity/%s/info' % (node_uuid, kvm.get('uuid'), vm_uuid))
+                informations.update({c: json.loads(self.store.get(uri))})
+
+            elif t == "container":
+                print("component is a container")
+            elif t == "native":
+                print("component is a native application")
+            elif t == "ros":
+                print("component is a ros application")
+            elif t == "usvc":
+                print("component is a microservice")
+            else:
+                raise AssertionError("Component type not recognized")
+                return
 
     def resolve_dependencies(self, components):
         '''
@@ -259,6 +326,18 @@ class FogAgent(Agent):
             n = [x.get('name') for x in no_dependable_components[i]]
             order.extend(n)
         return order
+
+    def get_manifest(self, manifest_path):
+        return ""
+
+    def search_plugin_by_name(self, name):
+        uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
+        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+        search = [x for x in all_plugins if name in x.get('name')]
+        if len(search) == 0:
+            return None
+        else:
+            return search[0]
 
     def main(self):
 
