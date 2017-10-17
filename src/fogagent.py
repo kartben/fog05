@@ -350,7 +350,7 @@ class FogAgent(Agent):
                 self.store.dput(uri)
 
                 input("press to stop")
-                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, kvm.get('uuid'), na_uuid))
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, native.get('uuid'), na_uuid))
                 self.store.dput(uri)
 
                 time.sleep(1)
