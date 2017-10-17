@@ -29,6 +29,23 @@ event_qos = Qos([DurabilityQosPolicy(DDSDurabilityKind.VOLATILE),
                  HistoryQosPolicy(DDSHistoryKind.KEEP_ALL)])
 
 
+cache_v_entry_qos = Qos([DurabilityQosPolicy(DDSDurabilityKind.VOLATILE),
+                 ReliabilityQosPolicy(DDSReliabilityKind.RELIABLE, DDSDuration.infinity()),
+                 HistoryQosPolicy(DDSHistoryKind.KEEP_ALL)])
+
+
+cache_tl_entry_qos = Qos([DurabilityQosPolicy(DDSDurabilityKind.TRANSIENT_LOCAL),
+                 ReliabilityQosPolicy(DDSReliabilityKind.RELIABLE, DDSDuration.infinity()),
+                 HistoryQosPolicy(DDSHistoryKind.KEEP_ALL)])
+
+cache_t_entry_qos = Qos([DurabilityQosPolicy(DDSDurabilityKind.TRANSIENT),
+                 ReliabilityQosPolicy(DDSReliabilityKind.RELIABLE, DDSDuration.infinity()),
+                 HistoryQosPolicy(DDSHistoryKind.KEEP_ALL)])
+
+
+cache_p_entry_qos = Qos([DurabilityQosPolicy(DDSDurabilityKind.PERSISTENT),
+                 ReliabilityQosPolicy(DDSReliabilityKind.RELIABLE, DDSDuration.infinity()),
+                 HistoryQosPolicy(DDSHistoryKind.KEEP_ALL)])
 
 class DDSRuntime:
     pass

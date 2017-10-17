@@ -54,7 +54,7 @@ class Controll():
         for i in range(0, 2):
             val = {'test': str("put no: %d" % i)}
             uri = str('fos://<sys-id>/%s/info' % node_uuid)
-            time.sleep(1)
+            # time.sleep(1)
             self.store.put(uri, json.dumps(val))
 
     def main(self, master=True):

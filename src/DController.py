@@ -22,9 +22,9 @@ dds_key_value_info.idl = "/opt/fos/idl/store.idl"
 dds_key_value_info.topic_name = "KeyValue"
 dds_key_value_info.type_name = "fos::dds::types::KeyValue"
 dds_key_value_info.key = "key"
-dds_key_value_info.tqos = t_state_qos
-dds_key_value_info.dwqos = t_state_wqos
-dds_key_value_info.drqos = t_state_qos
+dds_key_value_info.tqos = cache_tl_entry_qos
+dds_key_value_info.dwqos = cache_tl_entry_qos
+dds_key_value_info.drqos = cache_tl_entry_qos
 
 dds_resolve_info = DDSTopicInfo()
 dds_resolve_info.idl = "/opt/fos/idl/store.idl"
