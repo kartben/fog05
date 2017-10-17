@@ -51,7 +51,7 @@ class OSPlugin(Plugin):
     def fileExists(self, file_path):
         raise NotImplementedError
 
-    def readFile(self, file_path):
+    def readFile(self, file_path,root = False):
 
         """
         Read the content from a file in the local disk, maybe can convert from windows dir separator to unix dir separator

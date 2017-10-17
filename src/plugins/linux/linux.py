@@ -7,6 +7,7 @@ from States import State
 from OSPlugin import *
 from jinja2 import Environment
 from subprocess import PIPE
+import subprocess
 import re
 import platform
 import netifaces
@@ -53,10 +54,19 @@ class Linux(OSPlugin):
         f.flush()
         f.close()
 
-    def readFile(self, file_path):
-        with open(file_path,'r') as f:
-            data = f.read()
-        return data
+    def readFile(self, file_path, root = False):
+        if root:
+            data = ""
+            file_path = str("sudo cat %s" % file_path)
+            process = subprocess.Popen(file_path, stdout=subprocess.PIPE)
+            # read one line at a time, as it becomes available
+            for line in iter(process.stdout.readline, ''):
+                data = str(data + "%s" % line)
+            return data
+        else:
+            with open(file_path,'r') as f:
+                data = f.read()
+            return data
 
     def getCPULevel(self):
         return psutil.cpu_percent(interval=1)
