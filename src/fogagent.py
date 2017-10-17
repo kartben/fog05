@@ -157,13 +157,13 @@ class FogAgent(Agent):
                     "name":"wordpress",
                     "need":["mysql"],
                     "proximity":{"mysql":3}
-                    "manifest":"/some/path/to/wordpress_manifest.json"
+                    "manifest":"fos://sys-id/node-id/applications/appuuid/component_name"
                 },
                 {
                     "name":"mysql",
                     "need":[],
                     "proximity":{},
-                    "manifest":"/some/path/to/mysql_manifest.json"
+                    "manifest":"fos://sys-id/node-id/applications/appuuid/component_name"
                 }
             ]
         }
@@ -223,6 +223,8 @@ class FogAgent(Agent):
 
         value = json.loads(value)
 
+        application_uuid = uri.split('/')[-1]
+        print (application_uuid)
         deploy_order_list = self.resolve_dependencies(value.get('components', None))
         informations = {}
 
@@ -400,8 +402,8 @@ class FogAgent(Agent):
             order.extend(n)
         return order
 
-    def get_manifest(self, manifest_path): #TODO: is nested now
-        return manifest_path
+    def get_manifest(self, manifest_path):
+        return json.loads(self.store.get(manifest_path))
 
     def search_plugin_by_name(self, name):
         uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
@@ -422,7 +424,7 @@ class FogAgent(Agent):
         #self.loadNetworkPlugin('brctl')
 
         #print (self.store)
-        uri = str('fos://<sys-id>/%s/applications/*' % self.uuid)
+        uri = str('fos://<sys-id>/%s/applications/*/' % self.uuid)
         self.store.observe(uri, self.applicationDefinition)
 
 

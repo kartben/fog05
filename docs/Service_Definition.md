@@ -52,23 +52,27 @@ Example of a simple 'complex' application: a Wordpress blog
 ![graph](../img/example_service.png)
 
 
+
+To define the application you can do a put to `fos://<sys-id>/nodeid/applications/application_uuid/`
+
 Application manifest:
 
     {
         "name":"wp_blog"
         "description":"simple wordpress blog",
+        "uuid":"application uuid",
         "components":[
             {
                 "name":"wordpress",
                 "need":["mysql"],
                 "proximity":{"mysql":3}
-                "manifest":"/some/path/to/wordpress_manifest.json"
+                "manifest":"fos://sys-id/node-id/applications/appuuid/component_name"
             },
             {
                 "name":"mysql",
                 "need":[],
-                "proximity":{"wp_blog":3} #or maybe can be null?,
-                "manifest":"/some/path/to/mysql_manifest.json"
+                "proximity":{},
+                "manifest":"fos://sys-id/node-id/applications/appuuid/component_name"
             }
         ]
     }

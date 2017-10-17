@@ -267,14 +267,22 @@ class Controll():
             "io": []
         }
 
+        uri_vm = str('fos://<sys-id>/%s/applications/%s/%s' % (node_uuid, app_uuid,"nginx"))
+        uri_na = str('fos://<sys-id>/%s/applications/%s/%s' % (node_uuid, app_uuid, app_name))
+        json_data = json.dumps(na)
+        self.store.put(uri_na, json_data)
+        json_data = json.dumps(vm)
+        self.store.put(uri_vm, json_data)
+
+
+
         app = {"name":"demo", "description":"simple nginx+web demo",
-        "components":[{ "name":"nginx","need":[],"proximity":{},"manifest":vm},
-                {"name":"browser","need":[],"proximity":{},"manifest":na}]}
+        "components":[{ "name":"nginx","need":[],"proximity":{},"manifest":uri_vm},
+                {"name":"browser","need":[],"proximity":{},"manifest":uri_na}]}
 
         json_data = json.dumps(app)
 
-        uri = str('fos://<sys-id>/%s/applications/%s' %
-                 (node_uuid, app_uuid))
+        uri = str('fos://<sys-id>/%s/applications/%s/' % (node_uuid, app_uuid))
         self.store.put(uri, json_data)
 
 
@@ -291,7 +299,7 @@ class Controll():
 
         self.show_nodes()
 
-        n = int(input("Select node for vm deploy: "))
+        n = int(input("Select node for app deploy: "))
 
         node_uuid = self.nodes.get(n)
         if node_uuid is not None:
