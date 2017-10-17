@@ -162,7 +162,7 @@ class FogAgent(Agent):
                 {
                     "name":"mysql",
                     "need":[],
-                    "proximity":{"wp_blog":3},
+                    "proximity":{},
                     "manifest":"/some/path/to/mysql_manifest.json"
                 }
             ]
