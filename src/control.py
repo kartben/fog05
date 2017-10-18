@@ -149,7 +149,7 @@ class Controll():
         vm_name = 'test'
 
         cinit = self.readFile('./cloud_init_demo')
-        sshk = self.readFile('/home/ubuntu/key.pub')
+        sshk = self.readFile('./key.pub')
 
         vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
             'http://172.16.7.128/xenial-server-cloudimg-amd64-disk1.img', 'networks': [{
@@ -294,12 +294,12 @@ class Controll():
 
         vm_uuid = str(uuid.uuid4())
 
-        while len(self.nodes) < 1:
+        while len(self.nodes) < 2:
             time.sleep(2)
 
         self.show_nodes()
 
-        n = int(input("Select node for app deploy: "))
+        n = int(input("Select node for vm deploy: "))
 
         node_uuid = self.nodes.get(n)
         if node_uuid is not None:
@@ -309,9 +309,9 @@ class Controll():
         else:
             exit()
 
-        self.deploy_application(node_uuid)
+        #self.deploy_application(node_uuid)
 
-        '''
+
 
         vm_node = node_uuid
 
@@ -335,7 +335,7 @@ class Controll():
 
         self.vm_destroy(vm_node, vm_uuid)
         #########
-        '''
+
 
         input()
 

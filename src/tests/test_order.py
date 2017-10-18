@@ -76,6 +76,8 @@ class Controll():
                     pass
             else:
                 exit()
+
+            input("Press enter to send")
             self.lot_of_puts(node_uuid)
 
         else:
