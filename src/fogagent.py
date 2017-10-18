@@ -288,7 +288,7 @@ class FogAgent(Agent):
 
                 # HERE SHOULD WAIT FOR VM TO BE READY TO START
                 #input("press to start")
-                time.sleep(1)
+                time.sleep(3)
 
                 uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
                           (node_uuid, kvm.get('uuid'), vm_uuid))
@@ -306,7 +306,7 @@ class FogAgent(Agent):
                 #TODO: atm reading from here, should be done by plugin that then can update the value in the store
 
                 log_filename = str("/opt/fos/logs/%s_log.log" % vm_uuid)
-                self.wait_boot(log_filename)
+                print(self.wait_boot(log_filename))
                 ##
 
 
@@ -435,15 +435,28 @@ class FogAgent(Agent):
 
     def wait_boot(self, filename):
         time.sleep(5)
+        boot_regex = r"\[.+?\].+\[.+?\]:.+Cloud-init.+?v..+running.+'modules:final'.+Up.([0-9]*\.?[0-9]+).+seconds.\n"
         while True:
-            data = self.osPlugin.readFile(filename, root=True)
-            boot_regex = r"\[.+?\].+\[.+?\]:.+Cloud-init.+?v..+running.+'modules:final'.+Up.([0-9]*\.?[0-9]+).+seconds.\n"
-            for line in data:
-                res = str(res + "%s" % line)
-            m = re.search(boot_regex, res)
-            if m:
-                found = m.group(1)
-            return found
+            file = open(filename, 'r')
+            import os
+            # Find the size of the file and move to the end
+            st_results = os.stat(filename)
+            st_size = st_results[6]
+            file.seek(st_size)
+
+            while 1:
+                where = file.tell()
+                line = file.readline()
+                if not line:
+                    time.sleep(1)
+                    file.seek(where)
+                else:
+                    m = re.search(boot_regex, str(line))
+                    if m:
+                        found = m.group(1)
+                        return found
+
+
 
     def main(self):
 

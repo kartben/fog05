@@ -55,18 +55,17 @@ class Linux(OSPlugin):
         f.close()
 
     def readFile(self, file_path, root = False):
+        data = ""
         if root:
-            data = ""
             file_path = str("sudo cat %s" % file_path)
-            process = subprocess.Popen(file_path, stdout=subprocess.PIPE)
+            process = subprocess.Popen(file_path.split(), stdout=subprocess.PIPE)
             # read one line at a time, as it becomes available
             for line in iter(process.stdout.readline, ''):
                 data = str(data + "%s" % line)
-            return data
         else:
-            with open(file_path,'r') as f:
+            with open(file_path, 'r') as f:
                 data = f.read()
-            return data
+        return data
 
     def getCPULevel(self):
         return psutil.cpu_percent(interval=1)
