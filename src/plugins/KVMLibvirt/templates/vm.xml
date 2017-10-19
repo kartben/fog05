@@ -28,6 +28,8 @@
             <target dev="hda"/>
             <address bus="0" controller="0" target="0" type="drive" unit="0"/>
         </disk>
+
+        {% if iso_image is defined%}
         <disk device="cdrom" type="file">
             <source file="{{ iso_image }}"/>
             <driver name="qemu" type="raw"/>
@@ -35,6 +37,7 @@
             <readyonly/>
             <address bus="1" controller="0" target="0" type="drive" unit="0"/>
         </disk>
+        {% endif %}
 
         {% for disk in disks %}
 

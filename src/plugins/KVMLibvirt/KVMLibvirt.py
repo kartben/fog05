@@ -8,6 +8,7 @@ from KVMLibvirtEntity import KVMLibvirtEntity
 from jinja2 import Environment
 import json
 import random
+import time
 
 class KVMLibvirt(RuntimePlugin):
 
@@ -192,6 +193,11 @@ class KVMLibvirt(RuntimePlugin):
         else:
             self.lookupByUUID(entity_uuid).create()
             entity.onStart()
+            log_filename = str("/opt/fos/logs/%s_log.log" % entity_uuid)
+            self.wait_boot(log_filename)
+            '''
+            Then after boot should update the `actual store` with the run status of the vm
+            '''
             self.currentEntities.update({entity_uuid: entity})
             return True
 
@@ -243,19 +249,143 @@ class KVMLibvirt(RuntimePlugin):
             self.currentEntities.update({entity_uuid: entity})
             return True
 
-    def reactToCache(self, uri, value, v):
-        '''
-        import time
-        while True:
-            #print("Waiting for messages on cache...")
-            message = self.p.get_message()  # Checks for message
-            if message is None or message.get('type') != 'pmessage':
-                time.sleep(1)
+
+
+
+    def migrateEntity(self, entity_uuid, fognode_uuid):
+        if type(entity_uuid) == dict:
+            entity_uuid = entity_uuid.get('entity_uuid')
+        entity = self.currentEntities.get(entity_uuid, None)
+        if entity is None:
+            if fognode_uuid == self.agent.uuid:
+                print("I'm the destination node")
+                '''
+                Should wait connection from source node, for cloning disk, and enable libvirt connection
+                '''
+                self.beforeMigrateEntityActions(entity_uuid, fognode_uuid)
+
+                ## should way for finished migration
+                while True:
+                    dom = self.lookupByUUID(entity_uuid)
+                    if dom is None:
+                        print("Domain is non already in this host")
+                    else:
+                        flag = dom.isActive()
+                        if flag is True:
+                            break
+                        else:
+                            print('The domain is not running.')
+
+                self.beforeMigrateEntityActions(entity_uuid, fognode_uuid)
+
             else:
-                print (message)
-                key = message.get('channel').decode()
-                value = message.get('data').decode()
-        '''
+                raise EntityNotExistingException("Enitity not existing",
+                                                 str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
+        elif entity.getState() != State.RUNNING:
+            raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
+                                                     str("Entity %s is not in RUNNING state" % entity_uuid))
+        else:
+                print("I'm the source node")
+                '''
+                Get information about destination node [IP Address] then start live migration
+                '''
+                self.beforeMigrateEntityActions(entity_uuid, fognode_uuid)
+                self.afterMigrateEntityActions(entity_uuid, fognode_uuid)
+
+
+    def beforeMigrateEntityActions(self, entity_uuid, fognode_uuid):
+        if fognode_uuid == self.agent.uuid:
+            print("I'm the destination node before migration")
+            uri = str("fos://<sys-id>/*/runtime/*/entity/%s" % entity_uuid)
+            vm_info = json.loads(self.agent.store.get(uri))
+            disk_path = str("/opt/fos/disks/%s.qcow2" % entity_uuid)
+            cdrom_path = str("/opt/fos/disks/%s_config.iso" % entity_uuid)
+            entity = KVMLibvirtEntity(entity_uuid, vm_info.get('name'), vm_info.get('cpu'), vm_info.get('memory'),
+                                      disk_path,
+                                      vm_info.get('disk_size'), cdrom_path, vm_info.get('networks'),
+                                      vm_info.get('base_image'), vm_info.get('user-data'), vm_info.get('ssh-key'))
+            entity.state = State.LANDING
+            '''
+            Should not use configuration disk
+            '''
+            ##create disks
+            qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
+            conf_cmd = str("qemu-img create -f iso %s %dM" % (entity.cdrom, 250)) #for size should use fstat on real
+
+            self.agent.getOSPlugin().executeCommand(qemu_cmd)
+            self.agent.getOSPlugin().executeCommand(conf_cmd)
+
+            self.currentEntities.update({entity_uuid: entity})
+            # disk image
+            ## create xml template TODO: create method for this and disk creation
+            #template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', 'KVMLibvirt',
+            #                                                              'templates', 'vm.xml'))
+            #
+            #vm_xml = Environment().from_string(template_xml)
+            #vm_xml = vm_xml.render(name=entity.name, uuid=entity_uuid, memory=entity.ram,
+            #                       cpu=entity.cpu, disk_image=entity.disk,
+            #                       iso_image=entity.cdrom, networks=entity.networks)
+            ## This should not be necessary, libvirt migration do all stuff, only need to create the disks,
+
+            return True
+        else:
+            entity = self.currentEntities.get(entity_uuid, None)
+            print("I'm the source node before")
+            entity.state = State.TAKING_OFF
+            uri = str("fos://<sys-id>/%s/" % fognode_uuid)
+            dst_node_info = json.loads(fognode_uuid)
+
+            '''
+            Should wait for destination node to finish disk initialization and then use libvirt for live migration
+            '''
+
+            dom = self.lookupByUUID(entity_uuid)
+            nw = dst_node_info.get('network')
+            dst_ip = [x for x in nw if x.get("inft_configuration").get("ipv4_gateway") != ""]
+            # or x.get("inft_configuration").get("ipv6_gateway") for ip_v6
+            if len(dst_ip) == 0:
+                return False
+
+            dst_ip = dst_ip[0].get("inft_configuration").get("ipv4_address") #as on search should use ipv6
+
+            new_dom = dom.migrateToURI(str('qemu+ssh://%s/system' % dst_ip), libvirt.VIR_MIGRATE_LIVE, None, None, 0)
+            if new_dom is None:
+                print('Could not migrate to the new domain')
+                return False
+
+            print('Domain was migrated successfully.')
+
+            return True
+            
+
+
+
+
+    def afterMigrateEntityActions(self, entity_uuid, fognode_uuid):
+        if type(entity_uuid) == dict:
+            entity_uuid = entity_uuid.get('entity_uuid')
+        entity = self.currentEntities.get(entity_uuid, None)
+        if entity is None:
+            raise EntityNotExistingException("Enitity not existing",
+                                             str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
+        elif entity.getState() != State.RUNNING:
+            raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
+                                                     str("Entity %s is not in RUNNING state" % entity_uuid))
+        else:
+            if fognode_uuid == self.agent.uuid:
+                print("I'm the destination node after migration")
+                entity.state = State.RUNNING
+                self.currentEntities.update({entity_uuid: entity})
+                return True
+            else:
+                print("I'm the source node after migration")
+                entity.state = State.CONFIGURED
+                self.currentEntities.update({entity_uuid: entity})
+                self.cleanEntity(entity_uuid)
+                self.undefineEntity(entity_uuid)
+
+
+    def reactToCache(self, uri, value, v):
         print("KVM on React \nURI:%s\nValue:%s\nVersion:%s" % (uri, value, v))
         uuid = uri.split('/')[-1]
         value = json.loads(value)
@@ -286,6 +416,29 @@ class KVMLibvirt(RuntimePlugin):
                     return domain
         else:
             return None
+
+    def wait_boot(self, filename):
+        time.sleep(5)
+        boot_regex = r"\[.+?\].+\[.+?\]:.+Cloud-init.+?v..+running.+'modules:final'.+Up.([0-9]*\.?[0-9]+).+seconds.\n"
+        while True:
+            file = open(filename, 'r')
+            import os
+            # Find the size of the file and move to the end
+            st_results = os.stat(filename)
+            st_size = st_results[6]
+            file.seek(st_size)
+
+            while 1:
+                where = file.tell()
+                line = file.readline()
+                if not line:
+                    time.sleep(1)
+                    file.seek(where)
+                else:
+                    m = re.search(boot_regex, str(line))
+                    if m:
+                        found = m.group(1)
+                        return found
 
     def react(self, action):
         r = {
