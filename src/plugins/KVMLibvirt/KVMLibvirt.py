@@ -9,6 +9,7 @@ from jinja2 import Environment
 import json
 import random
 import time
+import re
 
 class KVMLibvirt(RuntimePlugin):
 
@@ -112,7 +113,7 @@ class KVMLibvirt(RuntimePlugin):
             vm_xml = Environment().from_string(template_xml)
             vm_xml = vm_xml.render(name=entity.name, uuid=entity_uuid, memory=entity.ram,
                                    cpu=entity.cpu, disk_image=entity.disk,
-                                   iso_image=entity.cdrom,networks=entity.networks)
+                                   iso_image=entity.cdrom, networks=entity.networks)
             image_name = entity.image.split('/')[-1]
 
             wget_cmd = str('wget %s -O /opt/fos/images/%s' % (entity.image, image_name))
@@ -252,23 +253,24 @@ class KVMLibvirt(RuntimePlugin):
 
 
 
-    def migrateEntity(self, entity_uuid, fognode_uuid):
+    def migrateEntity(self, entity_uuid,  dst=False):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         entity = self.currentEntities.get(entity_uuid, None)
         if entity is None:
-            if fognode_uuid == self.agent.uuid:
+            if dst is True:
                 print("I'm the destination node")
                 '''
                 Should wait connection from source node, for cloning disk, and enable libvirt connection
                 '''
-                self.beforeMigrateEntityActions(entity_uuid, fognode_uuid)
+                self.beforeMigrateEntityActions(entity_uuid, True)
 
                 ## should way for finished migration
                 while True:
                     dom = self.lookupByUUID(entity_uuid)
                     if dom is None:
                         print("Domain is non already in this host")
+                        time.sleep(10)
                     else:
                         flag = dom.isActive()
                         if flag is True:
@@ -276,7 +278,7 @@ class KVMLibvirt(RuntimePlugin):
                         else:
                             print('The domain is not running.')
 
-                self.beforeMigrateEntityActions(entity_uuid, fognode_uuid)
+                self.beforeMigrateEntityActions(entity_uuid, True)
 
             else:
                 raise EntityNotExistingException("Enitity not existing",
@@ -289,15 +291,15 @@ class KVMLibvirt(RuntimePlugin):
                 '''
                 Get information about destination node [IP Address] then start live migration
                 '''
-                self.beforeMigrateEntityActions(entity_uuid, fognode_uuid)
-                self.afterMigrateEntityActions(entity_uuid, fognode_uuid)
+                self.beforeMigrateEntityActions(entity_uuid)
+                self.afterMigrateEntityActions(entity_uuid)
 
 
-    def beforeMigrateEntityActions(self, entity_uuid, fognode_uuid):
-        if fognode_uuid == self.agent.uuid:
+    def beforeMigrateEntityActions(self, entity_uuid, dst=False):
+        if dst is True:
             print("I'm the destination node before migration")
-            uri = str("fos://<sys-id>/*/runtime/*/entity/%s" % entity_uuid)
-            vm_info = json.loads(self.agent.store.get(uri))
+            uri = str("fos://<sys-id>/%s/runtime/%s/entity/%s" % (self.agent.uuid, self.uuid, entity_uuid))
+            vm_info = json.loads(self.agent.store.get(uri)).get("entity_data")
             disk_path = str("/opt/fos/disks/%s.qcow2" % entity_uuid)
             cdrom_path = str("/opt/fos/disks/%s_config.iso" % entity_uuid)
             entity = KVMLibvirtEntity(entity_uuid, vm_info.get('name'), vm_info.get('cpu'), vm_info.get('memory'),
@@ -310,7 +312,7 @@ class KVMLibvirt(RuntimePlugin):
             '''
             ##create disks
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
-            conf_cmd = str("qemu-img create -f iso %s %dM" % (entity.cdrom, 250)) #for size should use fstat on real
+            conf_cmd = str("touch %s" % entity.cdrom) #for size should use fstat on real
 
             self.agent.getOSPlugin().executeCommand(qemu_cmd)
             self.agent.getOSPlugin().executeCommand(conf_cmd)
@@ -329,11 +331,15 @@ class KVMLibvirt(RuntimePlugin):
 
             return True
         else:
+            import libvirt
+            time.sleep(5)
             entity = self.currentEntities.get(entity_uuid, None)
             print("I'm the source node before")
+            uri = str("fos://<sys-id>/%s/runtime/%s/entity/%s" % (self.agent.uuid, self.uuid, entity_uuid))
+            fognode_uuid = json.loads(self.agent.store.get(uri)).get("dst")
             entity.state = State.TAKING_OFF
-            uri = str("fos://<sys-id>/%s/" % fognode_uuid)
-            dst_node_info = json.loads(fognode_uuid)
+            uri = str("fos://<sys-id>/%s/" % fognode_uuid)  # TODO: clarify this get
+            dst_node_info = json.loads(self.agent.store.get(uri))
 
             '''
             Should wait for destination node to finish disk initialization and then use libvirt for live migration
@@ -348,7 +354,11 @@ class KVMLibvirt(RuntimePlugin):
 
             dst_ip = dst_ip[0].get("inft_configuration").get("ipv4_address") #as on search should use ipv6
 
-            new_dom = dom.migrateToURI(str('qemu+ssh://%s/system' % dst_ip), libvirt.VIR_MIGRATE_LIVE, None, None, 0)
+
+            print(str('qemu+ssh://%s/system' % dst_ip))
+
+            new_dom = dom.migrateToURI(str('qemu+ssh://%s/system' % dst_ip),
+                                       libvirt.VIR_MIGRATE_LIVE and libvirt.VIR_MIGRATE_PEER2PEER, None, 0)
             if new_dom is None:
                 print('Could not migrate to the new domain')
                 return False
@@ -361,7 +371,7 @@ class KVMLibvirt(RuntimePlugin):
 
 
 
-    def afterMigrateEntityActions(self, entity_uuid, fognode_uuid):
+    def afterMigrateEntityActions(self, entity_uuid, dst=False):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         entity = self.currentEntities.get(entity_uuid, None)
@@ -372,7 +382,7 @@ class KVMLibvirt(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
-            if fognode_uuid == self.agent.uuid:
+            if dst is True:
                 print("I'm the destination node after migration")
                 entity.state = State.RUNNING
                 self.currentEntities.update({entity_uuid: entity})
@@ -399,6 +409,9 @@ class KVMLibvirt(RuntimePlugin):
             if action == 'define':
                 react_func(**entity_data)
             else:
+                if action == 'landing':
+                    react_func(entity_data, dst=True)
+
                 react_func(entity_data)
 
     def randomMAC(self):
@@ -448,7 +461,9 @@ class KVMLibvirt(RuntimePlugin):
             'undefine': self.undefineEntity,
             'stop': self.stopEntity,
             'resume': self.resumeEntity,
-            'run': self.runEntity
+            'run': self.runEntity,
+            'landing': self.migrateEntity,
+            'taking_off': self.migrateEntity
         }
 
         return r.get(action, None)

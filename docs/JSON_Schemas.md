@@ -5,6 +5,7 @@
 - All Plugins Info [Here JSON Schema](../json_objects/plugins_info.schema)
 - Plugin Install [Here JSON Schema](../json_objects/plugin_install.schema)
 - Single Plugin Info [Here JSON Schema](../json_objects/plugin_info.schema)
+- Entity Definition [Here JSON Schema](../json_objects/entity_definition.schema)
 - VM Definition [Here JSON Schema](../json_objects/vm_define.schema)
 - Network Definition [Here JSON Schema](../json_objects/network_define.schema)
 - Interface Definition [Here JSON Schema](../json_objects/interface_define.schema)

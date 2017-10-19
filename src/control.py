@@ -286,6 +286,84 @@ class Controll():
         self.store.put(uri, json_data)
 
 
+    def migrate_vm(self, src, dst, vm_uuid):
+
+        uri = str('fos://<sys-id>/%s/plugins' % src)
+        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+
+        runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
+        print("locating kvm plugin")
+        search = [x for x in runtimes if 'KVMLibvirt' in x.get('name')]
+        if len(search) == 0:
+            print ("Plugin was not loaded")
+            exit()
+        else:
+            kvm_src = search[0]
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (src, kvm_src.get('uuid'), vm_uuid))
+        vm_info = json.loads(self.store.get(uri))
+        print (vm_info)
+
+        input()
+
+        vm_info.update({"status": "taking_off"})
+        vm_info.update({"dst": dst})
+
+        vm_info_dst = vm_info.copy()
+        vm_info_dst.update({"status": "landing"})
+
+        print(vm_info)
+        print(vm_info_dst)
+
+        input()
+
+        print("Make node load kvm plugin")
+
+        val = {'plugins': [{'name': 'KVMLibvirt', 'version': 1, 'uuid': '',
+                            'type': 'runtime', 'status': 'add'}]}
+        uri = str('fos://<sys-id>/%s/plugins' % dst)
+        self.store.dput(uri, json.dumps(val))
+
+        time.sleep(1)
+        val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
+                            'type': 'network', 'status': 'add'}]}
+        uri = str('fos://<sys-id>/%s/plugins' % dst)
+        self.store.dput(uri, json.dumps(val))
+
+        time.sleep(1)
+
+        print("Looking if kvm plugin loaded")
+
+        uri = str('fos://<sys-id>/%s/plugins' % dst)
+        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+
+        runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
+        print("locating kvm plugin")
+        search = [x for x in runtimes if 'KVMLibvirt' in x.get('name')]
+        if len(search) == 0:
+            print ("Plugin was not loaded")
+            exit()
+        else:
+            kvm_dst = search[0]
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (dst, kvm_dst.get('uuid'), vm_uuid))
+
+        json_data = json.dumps(vm_info_dst)
+
+        print("Press enter to migrate a vm")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (dst, kvm_dst.get('uuid'), vm_uuid))
+        self.store.put(uri, json_data)
+
+        json_data = json.dumps(vm_info)
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (src, kvm_src.get('uuid'), vm_uuid))
+        self.store.dput(uri, json_data)
+
+        input()
+
+
+
+
 
     def main(self):
 
@@ -299,6 +377,28 @@ class Controll():
 
         self.show_nodes()
 
+        input()
+
+
+        vm_src_node = self.nodes.get(1)
+        if vm_src_node is not None:
+            vm_src_node = list(vm_src_node.keys())[0]
+
+        vm_dst_node = self.nodes.get(2)
+        if vm_dst_node is not None:
+            vm_dst_node = list(vm_dst_node.keys())[0]
+
+        vm_uuid = str(uuid.uuid4())
+
+        self.vm_deploy(vm_src_node, vm_uuid)
+
+        input()
+
+        self.migrate_vm(vm_src_node, vm_dst_node, vm_uuid)
+
+
+
+        '''
         n = int(input("Select node for vm deploy: "))
 
         node_uuid = self.nodes.get(n)
@@ -335,7 +435,7 @@ class Controll():
 
         self.vm_destroy(vm_node, vm_uuid)
         #########
-
+        '''
 
         input()
 

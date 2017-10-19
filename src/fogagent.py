@@ -5,7 +5,7 @@ import sys
 from DStore import *
 #from RedisLocalCache import RedisCache
 import json
-import networkx as nx
+#import networkx as nx
 import re
 
 class FogAgent(Agent):

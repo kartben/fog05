@@ -1,0 +1,28 @@
+{
+ "$schema": "http://json-schema.org/draft-06/schema#",
+  "title": "VM Definition",
+  "description": "entity definition schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "desciption": "describe the action, so the desidered lifecycle state"
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "int"
+    },
+    "entity_data": {
+      "type":"string",
+      "description":"depends on entity"
+    },
+//    Maybe should have a nested json for migration data, with information about src and dst nodes
+    "dst":{
+      "optional":"true",
+      "type":"string",
+      "description":"in case of taking_off/landing is the destination node uuid"
+    }
+  }
+}

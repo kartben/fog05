@@ -77,7 +77,7 @@ class RuntimePlugin(Plugin):
         """
         raise NotImplementedError("This is and interface!")
 
-    def migrateEntity(self, entity_uuid, fognode_uuid):
+    def migrateEntity(self, entity_uuid, dst=False):
         """
         Migrate the entity identified by entity_uuid to the new FogNode identified by fognode_uuid
         The migration depend to the nature of the entity (native app, µSvc, VM, Container)
@@ -102,7 +102,7 @@ class RuntimePlugin(Plugin):
 
         raise NotImplementedError("This is and interface!")
 
-    def beforeMigrateEntityActions(self, entity_uuid, fognode_uuid):
+    def beforeMigrateEntityActions(self, entity_uuid, dst=False):
         """
         Action to be taken before a migration
         eg. copy disks of vms, save state of µSvc
@@ -114,7 +114,7 @@ class RuntimePlugin(Plugin):
 
         raise NotImplementedError("This is and interface!")
 
-    def afterMigrateEntityActions(self, entity_uuid, ):
+    def afterMigrateEntityActions(self, entity_uuid, dst=False):
 
         """
         Action to be taken after a migration
