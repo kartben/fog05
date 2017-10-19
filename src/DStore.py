@@ -19,6 +19,70 @@ class DStore(Store):
         self.__controller = DController(self)
         self.__controller.start()
 
+        '''
+        @GB: As discussed with Erik and Angelo, maybe can be better to have 2 `store` for local information
+        one with desidered state (that can be written by all nodes and readed only by the owner node)
+        and one with actual state (that can be written only by the owner node and readed by all nodes)
+        
+        This means that plugins and agent works to make the actual state match the desidered state,
+        this is also very useful in the case we want to know if some entity/plugin/whatever state changed.
+        
+        So this means we should have two or more different put,get, dput, and observer
+        
+        
+        +-------------------------------------------------------------------+
+        |                                                  Agent1           |
+        |                                                                   |
+        |    Desidered Store                        Actual Store            |
+        |    +-------+                               +-------+              |
+        |    |       |                               |       |              |
+        |    |       |        +---------------+      |       |              |
+        |    |       +------->| Plugins/Agent |----->+       |              |
+        |    |       |        +---------------+      |       |              |
+        |    |       |                               |       |              |
+        |    |       |                               |       |              |
+        |    +---^---+                               +---+---+              |
+        |        |                                       |                  |
+        |        |                                       |                  |
+        +--------|---------------------------------------|------------------+
+                 |                                       |
+                 | put(fos:/s1/a1/...)                   |   get(fos://s1/a1/....)
+                 |                                       |
+         +-------+---------------------------------------V--------------------+
+         |                                                  Agent2           |
+         |                                                                   |
+         |                                                                   |
+         |    +-------+                               +-------+              |
+         |    |       |                               |       |              |
+         |    |       |        +---------------+      |       |              |
+         |    |       |------->| Plugins/Agent |----->|       |              |
+         |    |       |        +---------------+      |       |              |
+         |    |       |                               |       |              |
+         |    |       |                               |       |              |
+         |    +-------+                               +-------+              |
+         |    Desidered Store                        Actual Store            |
+         |                                                                   |
+         +-------------------------------------------------------------------+
+
+
+        So the data flow should follow this diagram.
+        
+        
+        This semplify a lot waiting for some entity/plugin to state changed
+        eg. someone decide to deploy a vm, so send a define, then a configure
+        during configuring the actual state remain to defined until the configuration is done
+        then the kvm plugin update the state in the `Actual Store`, and so someone that deployed the vm
+        can now be sure that is configured and can send a state transition to run, this is the same case
+        as above, sto the actual state remains to configured until kvm is sure that the vm is 
+        started and ready to serve (so can also populate monitoring information immediately after
+        the state transition.
+        
+        So someone that want to be updated about state transition can simply register an observer
+        or can do a busy wait by doing some get (beacuse in this case get and observer are linked only 
+        to the actual state)
+        
+        '''
+
 
     def is_stored_value(self, uri):
         return fnmatch.fnmatch(uri, self.home)
