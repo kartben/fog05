@@ -47,7 +47,7 @@ class KVMLibvirt(RuntimePlugin):
         self.conn.close()
 
     def getEntities(self):
-        return self.__current_entities
+        return self.current_entities
 
     def defineEntity(self, *args, **kwargs):
         """
@@ -71,14 +71,14 @@ class KVMLibvirt(RuntimePlugin):
             return None
 
         entity.setState(State.DEFINED)
-        self.__current_entities.update({entity_uuid: entity})
+        self.current_entities.update({entity_uuid: entity})
 
         return entity_uuid
 
     def undefineEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.__current_entities.get(entity_uuid, None)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -86,7 +86,7 @@ class KVMLibvirt(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
-            self.__current_entities.pop(entity_uuid,None)
+            self.current_entities.pop(entity_uuid,None)
             return True
 
     def configureEntity(self, entity_uuid):
@@ -94,7 +94,7 @@ class KVMLibvirt(RuntimePlugin):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
 
-        entity = self.__current_entities.get(entity_uuid, None)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -144,14 +144,14 @@ class KVMLibvirt(RuntimePlugin):
 
             self.conn.defineXML(vm_xml)
             entity.onConfigured(vm_xml)
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
             return True
 
     def cleanEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
 
-        entity = self.__current_entities.get(entity_uuid, None)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -164,13 +164,13 @@ class KVMLibvirt(RuntimePlugin):
                        (entity.cdrom, entity.disk, entity.image, entity_uuid))
             self.agent.getOSPlugin().executeCommand(rm_cmd)
             entity.onClean()
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
             return True
 
     def runEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.__current_entities.get(entity_uuid,None)
+        entity = self.current_entities.get(entity_uuid,None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -187,13 +187,13 @@ class KVMLibvirt(RuntimePlugin):
             log_filename = str("/opt/fos/logs/%s_log.log" % entity_uuid)
             self.wait_boot(log_filename)
             '''
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
             return True
 
     def stopEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.__current_entities.get(entity_uuid, None)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -203,13 +203,13 @@ class KVMLibvirt(RuntimePlugin):
         else:
             self.__lookup_by_uuid(entity_uuid).destroy()
             entity.onStop()
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
             return True
 
     def pauseEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.__current_entities.get(entity_uuid, None)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -219,13 +219,13 @@ class KVMLibvirt(RuntimePlugin):
         else:
             self.__lookup_by_uuid(entity_uuid).suspend()
             entity.onPause()
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
             return True
 
     def resumeEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.__current_entities.get(entity_uuid,None)
+        entity = self.current_entities.get(entity_uuid,None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -235,13 +235,13 @@ class KVMLibvirt(RuntimePlugin):
         else:
             self.__lookup_by_uuid(entity_uuid).resume()
             entity.onResume()
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
             return True
 
     def migrateEntity(self, entity_uuid,  dst=False):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.__current_entities.get(entity_uuid, None)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             if dst is True:
                 print("I'm the destination node")
@@ -292,17 +292,17 @@ class KVMLibvirt(RuntimePlugin):
             self.conn.defineXML(vm_xml)
             self.agent.getOSPlugin().executeCommand(qemu_cmd)
             self.agent.getOSPlugin().executeCommand(conf_cmd)
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
 
             return True
         else:
             time.sleep(5) # TODO: should wait information from destination node
-            entity = self.__current_entities.get(entity_uuid, None)
+            entity = self.current_entities.get(entity_uuid, None)
             print("I'm the source node before")
             uri = str("fos://<sys-id>/%s/runtime/%s/entity/%s" % (self.agent.uuid, self.uuid, entity_uuid))
             fognode_uuid = json.loads(self.agent.store.get(uri)).get("dst")
             entity.state = State.TAKING_OFF
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
             uri = str("fos://<sys-id>/%s/" % fognode_uuid)  # TODO: clarify this get
             dst_node_info = json.loads(self.agent.store.get(uri))
 
@@ -349,7 +349,7 @@ class KVMLibvirt(RuntimePlugin):
     def afterMigrateEntityActions(self, entity_uuid, dst=False):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.__current_entities.get(entity_uuid, None)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -364,7 +364,7 @@ class KVMLibvirt(RuntimePlugin):
                 '''
                 print("I'm the destination node after migration")
                 entity.state = State.RUNNING
-                self.__current_entities.update({entity_uuid: entity})
+                self.current_entities.update({entity_uuid: entity})
                 uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.agent.uuid, self.uuid, entity_uuid))
                 vm_info = json.loads(self.agent.store.get(uri))
                 vm_info.pop('dst')
@@ -380,7 +380,7 @@ class KVMLibvirt(RuntimePlugin):
                 '''
                 print("I'm the source node after migration")
                 entity.state = State.CONFIGURED
-                self.__current_entities.update({entity_uuid: entity})
+                self.current_entities.update({entity_uuid: entity})
                 self.cleanEntity(entity_uuid)
                 self.undefineEntity(entity_uuid)
                 uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.agent.uuid, self.uuid, entity_uuid))

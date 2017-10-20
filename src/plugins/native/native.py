@@ -39,14 +39,14 @@ class Native(RuntimePlugin):
             return None
 
         entity.setState(State.DEFINED)
-        self.__current_entities.update({entity_uuid: entity})
+        self.current_entities.update({entity_uuid: entity})
 
         return entity_uuid
 
     def undefineEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.__current_entities.get(entity_uuid, None)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -54,7 +54,7 @@ class Native(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
-            self.__current_entities.pop(entity_uuid, None)
+            self.current_entities.pop(entity_uuid, None)
             return True
 
     def configureEntity(self, entity_uuid):
@@ -62,7 +62,7 @@ class Native(RuntimePlugin):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
 
-        entity = self.__current_entities.get(entity_uuid, None)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -74,14 +74,14 @@ class Native(RuntimePlugin):
             create_file = str("touch %s" % entity.outfile)
             self.agent.getOSPlugin().executeCommand(create_file)
             entity.onConfigured()
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
             return True
 
     def cleanEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
 
-        entity = self.__current_entities.get(entity_uuid, None)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -92,13 +92,13 @@ class Native(RuntimePlugin):
             rm_cmd = str("rm -f %s" % entity.outfile)
             self.agent.getOSPlugin().executeCommand(rm_cmd)
             entity.onClean()
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
             return True
 
     def runEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.__current_entities.get(entity_uuid,None)
+        entity = self.current_entities.get(entity_uuid,None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -110,13 +110,13 @@ class Native(RuntimePlugin):
             cmd = str("%s %s" % (entity.command, ' '.join(str(x) for x in entity.args)))
             process = self.__execute_command(cmd, entity.outfile)
             entity.onStart(process.pid, process)
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
             return True
 
     def stopEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.__current_entities.get(entity_uuid, None)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -127,7 +127,7 @@ class Native(RuntimePlugin):
             p = entity.process
             p.terminate()
             entity.onStop()
-            self.__current_entities.update({entity_uuid: entity})
+            self.current_entities.update({entity_uuid: entity})
             return True
 
     def pauseEntity(self, entity_uuid):

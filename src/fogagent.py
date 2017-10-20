@@ -103,7 +103,7 @@ class FogAgent(Agent):
 
         node_info = {}
         node_info.update({'uuid': str(self.uuid)})
-        node_info.update({'name': self.__osPlugin.__get_hostname()})
+        node_info.update({'name': self.__osPlugin.getHostname()})
         node_info.update({'cpu': self.__osPlugin.getProcessorInformation()})
         node_info.update({'ram': self.__osPlugin.getMemoryInformation()})
         node_info.update({'disks': self.__osPlugin.getDisksInformation()})

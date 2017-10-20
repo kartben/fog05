@@ -225,7 +225,7 @@ class Linux(OSPlugin):
         return found
         '''
 
-    def __get_hostname(self):
+    def getHostname(self):
         res = ''
         p = psutil.Popen('hostname', stdout=PIPE)
         for line in p.stdout:
