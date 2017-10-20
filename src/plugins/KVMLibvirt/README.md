@@ -1,5 +1,18 @@
-KVM Libvirt plugins
+KVM Libvirt plugin
 
+This plugin allow fog05 to manage vm
+
+supported operation:
+- deploy
+- migrate
+- destroy
+- stop
+- pause
+- resume
+
+todo:
+
+- scale of vm
 
 ---
 package dependencies:
@@ -14,6 +27,7 @@ package dependencies:
 python dependencies:
 
 - libvirt-python
+- jinja2 
 
 ---
 

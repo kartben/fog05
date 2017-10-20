@@ -46,7 +46,7 @@ class brctl(NetworkPlugin):
         self.agent.getOSPlugin().executeCommand(brcmd)
 
         if has_dhcp is True:
-            address = self.cird2block(ip_range)
+            address = self.__cird2block(ip_range)
             dhcpq_cmd = str('sudo dnsmasq -d  --interface=%s-net --bind-interfaces  --dhcp-range=%s,'
                             '%s >/opt/fog/dhcp_out/%s.out 2>&1 & echo $! > /opt/fog/dhcp_out/%s.pid' %
                             (network_name, address[0], address[1], network_name, network_name))
@@ -132,7 +132,7 @@ class brctl(NetworkPlugin):
 
         return True
 
-    def cird2block(self, cird):
+    def __cird2block(self, cird):
         (ip, cidr) = cird.split('/')
         cidr = int(cidr)
         host_bits = 32 - cidr
@@ -142,12 +142,12 @@ class brctl(NetworkPlugin):
 
         return inet_ntoa(struct.pack('>I', start+1)), inet_ntoa(struct.pack('>I', end-1))
 
-    def reactToCache(self, key, value):
+    def __react_to_cache(self, key, value):
         uuid = key.split('/')[-1]
         value = json.loads(value)
         action = value.get('status')
         entity_data = value.get('entity_data')
-        react_func = self.react(action)
+        react_func = self.__react(action)
         if react_func is not None and entity_data is None:
             react_func(uuid)
         elif react_func is not None:
@@ -158,7 +158,7 @@ class brctl(NetworkPlugin):
                 react_func(entity_data)
 
 
-    def react(self, action):
+    def __react(self, action):
         r = {
             'define_interface': self.createVirtualInterface,
             'define_network': self.createVirtualNetwork,
