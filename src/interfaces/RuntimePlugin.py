@@ -11,7 +11,7 @@ class RuntimePlugin(Plugin):
         self.pid=-1
         self.uuid="0"
         self.name=""
-        self.currentEntities={}
+        self.__current_entities={}
         
 
 
