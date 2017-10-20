@@ -44,6 +44,10 @@ class Linux(OSPlugin):
             print (line)
 
 
+    def executeOnOS(self,cmd):
+        os.system(cmd)
+
+
     def fileExists(self, file_path):
         return os.path.isfile(file_path)
 

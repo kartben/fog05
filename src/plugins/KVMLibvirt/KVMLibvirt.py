@@ -195,10 +195,12 @@ class KVMLibvirt(RuntimePlugin):
             self.lookupByUUID(entity_uuid).create()
             entity.onStart()
             log_filename = str("/opt/fos/logs/%s_log.log" % entity_uuid)
-            self.wait_boot(log_filename)
+            #self.wait_boot(log_filename)
             '''
             Then after boot should update the `actual store` with the run status of the vm
             '''
+
+            print('booted')
             self.currentEntities.update({entity_uuid: entity})
             return True
 
@@ -277,6 +279,7 @@ class KVMLibvirt(RuntimePlugin):
                             break
                         else:
                             print('The domain is not running.')
+                            time.sleep(10)
 
                 self.beforeMigrateEntityActions(entity_uuid, True)
 
@@ -347,6 +350,9 @@ class KVMLibvirt(RuntimePlugin):
 
             dom = self.lookupByUUID(entity_uuid)
             nw = dst_node_info.get('network')
+
+            dst_hostname = dst_node_info.get('name')
+
             dst_ip = [x for x in nw if x.get("inft_configuration").get("ipv4_gateway") != ""]
             # or x.get("inft_configuration").get("ipv6_gateway") for ip_v6
             if len(dst_ip) == 0:
@@ -354,14 +360,23 @@ class KVMLibvirt(RuntimePlugin):
 
             dst_ip = dst_ip[0].get("inft_configuration").get("ipv4_address") #as on search should use ipv6
 
+            add_to_hosts = str('sudo -- sh -c -e "echo \'%s    %s\' >> /etc/hosts"' % (dst_ip, dst_hostname))
 
-            print(str('qemu+ssh://%s/system' % dst_ip))
+            self.agent.getOSPlugin().executeOnOS(add_to_hosts)
+            # should ask to osplugin to add a know host
 
-            new_dom = dom.migrateToURI(str('qemu+ssh://%s/system' % dst_ip),
-                                       libvirt.VIR_MIGRATE_LIVE and libvirt.VIR_MIGRATE_PEER2PEER, None, 0)
-            if new_dom is None:
+            dst_host = str('qemu+ssh://%s/system' % dst_ip)
+            print(dst_host)
+
+            dest_conn = libvirt.open(dst_host)
+            if dest_conn == None:
+                print('Failed to open connection to %s' % dst)
+                exit(1)
+            #and libvirt.VIR_MIGRATE_PEER2PEER
+            new_dom = dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
+            if new_dom == None:
                 print('Could not migrate to the new domain')
-                return False
+                exit(1)
 
             print('Domain was migrated successfully.')
 
