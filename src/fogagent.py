@@ -11,14 +11,14 @@ import re
 class FogAgent(Agent):
 
     def __init__(self):
-        self.PLUINGDIR ='./plugins'
-        self.pl=PluginLoader(self.PLUINGDIR)
+        self.__PLUINGDIR = './plugins'
+        self.pl=PluginLoader(self.__PLUINGDIR)
         self.pl.getPlugins()
-        self.osPlugin = None
-        self.rtPlugins = {}
-        self.nwPlugins = {}
-        self.loadOSPlugin()
-        super(FogAgent, self).__init__(self.osPlugin.getUUID())
+        self.__osPlugin = None
+        self.__rtPlugins = {}
+        self.__nwPlugins = {}
+        self.__load_os_plugin()
+        super(FogAgent, self).__init__(self.__osPlugin.getUUID())
         sid = str(self.uuid)
         self.root = "fos://<sys-id>"
         self.home = str("fos://<sys-id>/%s" % sid)
@@ -26,25 +26,25 @@ class FogAgent(Agent):
         # giving the same id to the nodew and the cache
         self.store = DStore(sid, self.root, self.home, 1024)
 
-        val = {'status': 'add', 'version': self.osPlugin.version, 'description': 'linux plugin', 'plugin': ''}
-        uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, self.osPlugin.name, self.osPlugin.uuid))
+        val = {'status': 'add', 'version': self.__osPlugin.version, 'description': 'linux plugin', 'plugin': ''}
+        uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, self.__osPlugin.name, self.__osPlugin.uuid))
         self.store.put(uri, json.dumps(val))
 
-        val = {'plugins': [{'name': 'linux', 'version': self.osPlugin.version, 'uuid': str(self.osPlugin.uuid),
+        val = {'plugins': [{'name': 'linux', 'version': self.__osPlugin.version, 'uuid': str(self.__osPlugin.uuid),
                            'type': 'os'}]}
         uri  = str('fos://<sys-id>/%s/plugins' % self.uuid)
         self.store.put(uri, json.dumps(val))
 
-        self.populateNodeInformation()
+        self.__populate_node_information()
 
-    def loadOSPlugin(self):
+    def __load_os_plugin(self):
         platform = sys.platform
         if platform == 'linux':
             print("I'am on Linux")
             os = self.pl.locatePlugin('linux')
             if os is not None:
                 os = self.pl.loadPlugin(os)
-                self.osPlugin = os.run()
+                self.__osPlugin = os.run()
             else:
                 raise RuntimeError("Error on loading OS Plugin")
         elif platform == 'darwin':
@@ -57,14 +57,14 @@ class FogAgent(Agent):
             raise RuntimeError("Platform not compatible")
 
     def getOSPlugin(self):
-        return self.osPlugin
+        return self.__osPlugin
 
-    def loadRuntimePlugin(self, plugin_name):
+    def __load_runtime_plugin(self, plugin_name):
         rt = self.pl.locatePlugin(plugin_name)
         if rt is not None:
             rt = self.pl.loadPlugin(rt)
             rt = rt.run(agent=self)
-            self.rtPlugins.update({rt.uuid: rt})
+            self.__rtPlugins.update({rt.uuid: rt})
             val = {'version': rt.version, 'description': str('runtime %s' % rt.name), 'plugin': ''}
             uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, rt.name, rt.uuid))
             self.store.put(uri, json.dumps(val))
@@ -78,12 +78,12 @@ class FogAgent(Agent):
         else:
             return None
 
-    def loadNetworkPlugin(self, plugin_name):
+    def __load_network_plugin(self, plugin_name):
         net = self.pl.locatePlugin(plugin_name)
         if net is not None:
             net = self.pl.loadPlugin(net)
             net = net.run(agent=self)
-            self.rtPlugins.update({net.uuid: net})
+            self.__rtPlugins.update({net.uuid: net})
 
             val = {'version': net.version, 'description': str('runtime %s' % net.name),
                    'plugin': ''}
@@ -99,20 +99,20 @@ class FogAgent(Agent):
         else:
             return None
 
-    def populateNodeInformation(self):
+    def __populate_node_information(self):
 
         node_info = {}
         node_info.update({'uuid': str(self.uuid)})
-        node_info.update({'name': self.osPlugin.get_hostname()})
-        node_info.update({'cpu': self.osPlugin.getProcessorInformation()})
-        node_info.update({'ram': self.osPlugin.getMemoryInformation()})
-        node_info.update({'disks': self.osPlugin.getDisksInformation()})
-        node_info.update({'network': self.osPlugin.getNetworkInformations()})
+        node_info.update({'name': self.__osPlugin.__get_hostname()})
+        node_info.update({'cpu': self.__osPlugin.getProcessorInformation()})
+        node_info.update({'ram': self.__osPlugin.getMemoryInformation()})
+        node_info.update({'disks': self.__osPlugin.getDisksInformation()})
+        node_info.update({'network': self.__osPlugin.getNetworkInformations()})
 
         uri = str('fos://<sys-id>/%s/' % self.uuid)
         self.store.put(uri, json.dumps(node_info))
 
-    def reactToCache(self, uri, value, v):
+    def __react_to_cache(self, uri, value, v):
         print ("###########################")
         print ("##### I'M an Observer #####")
         print ("## Key: %s" % uri)
@@ -121,7 +121,7 @@ class FogAgent(Agent):
         print ("###########################")
         print ("###########################")
 
-    def reactToPlugins(self, uri, value, v):
+    def __react_to_plugins(self, uri, value, v):
         print("Received a plugins action")
         print (value)
         value = json.loads(value)
@@ -134,15 +134,15 @@ class FogAgent(Agent):
 
                 #@TODO: use a dict with functions instead of if elif else...
                 if v.get('type') == 'runtime':
-                    rt = self.loadRuntimePlugin(name)
-                    self.rtPlugins.update({rt.uuid: rt})
+                    rt = self.__load_runtime_plugin(name)
+                    self.__rtPlugins.update({rt.uuid: rt})
                 elif v.get('type') == 'network':
-                    nw = self.loadNetworkPlugin(name)
-                    self.nwPlugins.update({nw.uuid: nw})
+                    nw = self.__load_network_plugin(name)
+                    self.__nwPlugins.update({nw.uuid: nw})
                 else:
                     print('Plugins of type %s are not yet supported...' % v.get('type'))
 
-    def applicationDefinition(self, uri, value, v):
+    def __application_definition(self, uri, value, v):
         '''
         This should observe fos://<sys-id>/nodeid/applications/*
         Where each application is defined like the example in the docs
@@ -225,7 +225,7 @@ class FogAgent(Agent):
 
         application_uuid = uri.split('/')[-1]
         print (application_uuid)
-        deploy_order_list = self.resolve_dependencies(value.get('components', None))
+        deploy_order_list = self.__resolve_dependencies(value.get('components', None))
         informations = {}
 
         '''
@@ -251,7 +251,7 @@ class FogAgent(Agent):
             Should recover in some way the component manifest
             
             '''
-            mf = self.get_manifest(component.get('manifest'))
+            mf = self.__get_manifest(component.get('manifest'))
             '''
             from this manifest generate the correct json 
             '''
@@ -259,7 +259,7 @@ class FogAgent(Agent):
 
             if t == "kvm":
                 print("component is a vm")
-                kvm = self.search_plugin_by_name('KVM')
+                kvm = self.__search_plugin_by_name('KVM')
                 if kvm is None:
                     print ('KVM is NONE!!')
                     return False
@@ -306,7 +306,7 @@ class FogAgent(Agent):
                 #TODO: atm reading from here, should be done by plugin that then can update the value in the store
 
                 log_filename = str("/opt/fos/logs/%s_log.log" % vm_uuid)
-                print(self.wait_boot(log_filename))
+                print(self.__wait_boot(log_filename))
                 ##
 
 
@@ -337,7 +337,7 @@ class FogAgent(Agent):
                 print("component is a container")
             elif t == "native":
                 print("component is a native application")
-                native = self.search_plugin_by_name('native')
+                native = self.__search_plugin_by_name('native')
                 if native is None:
                     print ('native is NONE!!')
                     return False
@@ -394,7 +394,7 @@ class FogAgent(Agent):
                 raise AssertionError("Component type not recognized %s" % t)
                 return
 
-    def resolve_dependencies(self, components):
+    def __resolve_dependencies(self, components):
         '''
         The return list contains component's name in the order that can be used to deploy
          @TODO: should use less cycle to do this job
@@ -421,10 +421,10 @@ class FogAgent(Agent):
             order.extend(n)
         return order
 
-    def get_manifest(self, manifest_path):
+    def __get_manifest(self, manifest_path):
         return json.loads(self.store.get(manifest_path))
 
-    def search_plugin_by_name(self, name):
+    def __search_plugin_by_name(self, name):
         uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
         all_plugins = json.loads(self.store.get(uri)).get('plugins')
         search = [x for x in all_plugins if name in x.get('name')]
@@ -433,7 +433,7 @@ class FogAgent(Agent):
         else:
             return search[0]
 
-    def wait_boot(self, filename):
+    def __wait_boot(self, filename):
         time.sleep(5)
         boot_regex = r"\[.+?\].+\[.+?\]:.+Cloud-init.+?v..+running.+'modules:final'.+Up.([0-9]*\.?[0-9]+).+seconds.\n"
         while True:
@@ -469,14 +469,14 @@ class FogAgent(Agent):
 
         #print (self.store)
         uri = str('fos://<sys-id>/%s/applications/*/' % self.uuid)
-        self.store.observe(uri, self.applicationDefinition)
+        self.store.observe(uri, self.__application_definition)
 
 
         uri = str('fos://<sys-id>/%s/*/' % self.uuid)
-        self.store.observe(uri, self.reactToCache)
+        self.store.observe(uri, self.__react_to_cache)
 
         uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
-        self.store.observe(uri, self.reactToPlugins)
+        self.store.observe(uri, self.__react_to_plugins)
 
 
 

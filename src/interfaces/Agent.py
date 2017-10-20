@@ -3,16 +3,16 @@ class Agent(object):
     def __init__(self,uuid):
         self.uuid = uuid
 
-    def loadOSPlugin(self):
+    def __load_os_plugin(self):
         raise NotImplementedError
 
-    def loadRuntimePlugin(self, plugin_name):
+    def __load_runtime_plugin(self, plugin_name):
         raise NotImplementedError
 
     def refreshPlugins(self):
         raise NotImplementedError
 
-    def loadNetworkPlugin(self, plugin_name):
+    def __load_network_plugin(self, plugin_name):
         raise NotImplementedError
 
     def getOSPlugin(self):

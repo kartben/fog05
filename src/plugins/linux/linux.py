@@ -43,10 +43,8 @@ class Linux(OSPlugin):
         for line in p.stdout:
             print (line)
 
-
     def executeOnOS(self,cmd):
         os.system(cmd)
-
 
     def fileExists(self, file_path):
         return os.path.isfile(file_path)
@@ -119,15 +117,15 @@ class Linux(OSPlugin):
     def getProcessorInformation(self):
         cpu=[]
         for i in range(0, psutil.cpu_count(logical=False)):
-            model = self.get_processor_name()
+            model = self.__get_processor_name()
             try:
                 frequency = psutil.cpu_freq(percpu=True)
                 if len(frequency) == 0:
-                    frequency = self.get_frequency_from_cpuinfo()
+                    frequency = self.__get_frequency_from_cpuinfo()
                 else:
                     frequency = frequency[i][2]
             except AttributeError:
-                frequency = self.get_frequency_from_cpuinfo()
+                frequency = self.__get_frequency_from_cpuinfo()
             arch = platform.machine()
             cpu.append({'model': model, 'frequency': frequency, 'arch': arch})
         return cpu
@@ -227,8 +225,7 @@ class Linux(OSPlugin):
         return found
         '''
 
-
-    def get_hostname(self):
+    def __get_hostname(self):
         res = ''
         p = psutil.Popen('hostname', stdout=PIPE)
         for line in p.stdout:
@@ -236,12 +233,10 @@ class Linux(OSPlugin):
             res = str(res+"%s" % line)
         return res.strip()
 
-
     def getPositionInformation(self):
         raise NotImplemented
 
-
-    def get_processor_name(self):
+    def __get_processor_name(self):
         command = "cat /proc/cpuinfo".split()
         p = psutil.Popen(command, stdout=PIPE)
         for line in p.stdout:
@@ -250,7 +245,7 @@ class Linux(OSPlugin):
                     return re.sub(".*model name.*:", "", line, 1)
         return ""
 
-    def get_frequency_from_cpuinfo(self):
+    def __get_frequency_from_cpuinfo(self):
         command = "cat /proc/cpuinfo".split()
         p = psutil.Popen(command, stdout=PIPE)
         for line in p.stdout:
@@ -258,4 +253,3 @@ class Linux(OSPlugin):
             if "cpu MHz" in line:
                     return float(re.sub(".*cpu MHz.*:", "", line, 1))
         return 0.0
-

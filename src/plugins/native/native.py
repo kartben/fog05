@@ -22,7 +22,7 @@ class Native(RuntimePlugin):
     def startRuntime(self):
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.agent.uuid, self.uuid))
         print("Native Listening on %s" % uri)
-        self.agent.store.observe(uri, self.reactToCache)
+        self.agent.store.observe(uri, self.__react_to_cache)
         return self.uuid
 
     def stopRuntime(self):
@@ -39,14 +39,14 @@ class Native(RuntimePlugin):
             return None
 
         entity.setState(State.DEFINED)
-        self.currentEntities.update({entity_uuid: entity})
+        self.__current_entities.update({entity_uuid: entity})
 
         return entity_uuid
 
     def undefineEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.currentEntities.get(entity_uuid, None)
+        entity = self.__current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -54,7 +54,7 @@ class Native(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
-            self.currentEntities.pop(entity_uuid, None)
+            self.__current_entities.pop(entity_uuid, None)
             return True
 
     def configureEntity(self, entity_uuid):
@@ -62,7 +62,7 @@ class Native(RuntimePlugin):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
 
-        entity = self.currentEntities.get(entity_uuid, None)
+        entity = self.__current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -74,14 +74,14 @@ class Native(RuntimePlugin):
             create_file = str("touch %s" % entity.outfile)
             self.agent.getOSPlugin().executeCommand(create_file)
             entity.onConfigured()
-            self.currentEntities.update({entity_uuid: entity})
+            self.__current_entities.update({entity_uuid: entity})
             return True
 
     def cleanEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
 
-        entity = self.currentEntities.get(entity_uuid, None)
+        entity = self.__current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -92,13 +92,13 @@ class Native(RuntimePlugin):
             rm_cmd = str("rm -f %s" % entity.outfile)
             self.agent.getOSPlugin().executeCommand(rm_cmd)
             entity.onClean()
-            self.currentEntities.update({entity_uuid: entity})
+            self.__current_entities.update({entity_uuid: entity})
             return True
 
     def runEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.currentEntities.get(entity_uuid,None)
+        entity = self.__current_entities.get(entity_uuid,None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -108,15 +108,15 @@ class Native(RuntimePlugin):
         else:
 
             cmd = str("%s %s" % (entity.command, ' '.join(str(x) for x in entity.args)))
-            process = self.execute_command(cmd, entity.outfile)
+            process = self.__execute_command(cmd, entity.outfile)
             entity.onStart(process.pid, process)
-            self.currentEntities.update({entity_uuid: entity})
+            self.__current_entities.update({entity_uuid: entity})
             return True
 
     def stopEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.currentEntities.get(entity_uuid, None)
+        entity = self.__current_entities.get(entity_uuid, None)
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
@@ -127,7 +127,7 @@ class Native(RuntimePlugin):
             p = entity.process
             p.terminate()
             entity.onStop()
-            self.currentEntities.update({entity_uuid: entity})
+            self.__current_entities.update({entity_uuid: entity})
             return True
 
     def pauseEntity(self, entity_uuid):
@@ -138,19 +138,19 @@ class Native(RuntimePlugin):
         print("Can't resume a native application")
         return False
 
-    def execute_command(self, command, out_file):
+    def __execute_command(self, command, out_file):
         f = open(out_file, 'w')
         cmd_splitted = command.split()
         p = psutil.Popen(cmd_splitted, stdout=f)
         return p
 
-    def reactToCache(self, uri, value, v):
+    def __react_to_cache(self, uri, value, v):
         print("Native on React \nURI:%s\nValue:%s\nVersion:%s" % (uri, value, v))
         uuid = uri.split('/')[-1]
         value = json.loads(value)
         action = value.get('status')
         entity_data = value.get('entity_data')
-        react_func = self.react(action)
+        react_func = self.__react(action)
         if react_func is not None and entity_data is None:
             react_func(uuid)
         elif react_func is not None:
@@ -160,7 +160,7 @@ class Native(RuntimePlugin):
             else:
                 react_func(entity_data)
 
-    def react(self, action):
+    def __react(self, action):
         r = {
             'define': self.defineEntity,
             'configure': self.configureEntity,
