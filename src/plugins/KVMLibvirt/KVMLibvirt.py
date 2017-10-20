@@ -189,6 +189,8 @@ class KVMLibvirt(RuntimePlugin):
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
+        elif entity.getState() == State.RUNNING:
+            print("Entity already running, some strange dput/put happen! eg after migration")
         elif entity.getState() != State.CONFIGURED:
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
@@ -269,10 +271,7 @@ class KVMLibvirt(RuntimePlugin):
 
                 ## should way for finished migration
                 while True:
-                    try:
-                        dom = self.conn.lookupByName(entity.name)
-                    except libvirt.libvirtError as e:
-                        dom = None
+                    dom = self.lookupByUUID(entity_uuid)
                     if dom is None:
                         print("Domain is non already in this host")
                         time.sleep(10)
@@ -284,6 +283,7 @@ class KVMLibvirt(RuntimePlugin):
                             time.sleep(10)
 
                 self.afterMigrateEntityActions(entity_uuid, True)
+                return True
 
             else:
                 raise EntityNotExistingException("Enitity not existing",
@@ -319,6 +319,16 @@ class KVMLibvirt(RuntimePlugin):
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
             conf_cmd = str("touch %s" % entity.cdrom) #for size should use fstat on real
             #qemu_cmd = str("touch %s" % entity.disk)
+
+            template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', 'KVMLibvirt',
+                                                                          'templates', 'vm.xml'))
+
+            vm_xml = Environment().from_string(template_xml)
+            vm_xml = vm_xml.render(name=entity.name, uuid=entity_uuid, memory=entity.ram,
+                                   cpu=entity.cpu, disk_image=entity.disk,
+                                   iso_image=entity.cdrom, networks=entity.networks)
+            self.conn.defineXML(vm_xml)
+
             self.agent.getOSPlugin().executeCommand(qemu_cmd)
             self.agent.getOSPlugin().executeCommand(conf_cmd)
 
@@ -375,7 +385,7 @@ class KVMLibvirt(RuntimePlugin):
                 print('Failed to open connection to %s' % dst)
                 exit(1)
             #and libvirt.VIR_MIGRATE_PEER2PEER
-            new_dom = dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
+            new_dom = dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, entity.name, None, 0)
             if new_dom == None:
                 print('Could not migrate to the new domain')
                 exit(1)
@@ -405,6 +415,14 @@ class KVMLibvirt(RuntimePlugin):
                 print("I'm the destination node after migration")
                 entity.state = State.RUNNING
                 self.currentEntities.update({entity_uuid: entity})
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.agent.uuid, self.uuid, entity_uuid))
+                vm_info = json.loads(self.agent.store.get(uri))
+                vm_info.pop('dst')
+                vm_info.update({"status": "run"})
+                json_data = json.dumps(vm_info)
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.agent.uuid, self.uuid, entity_uuid))
+                self.agent.store.put(uri, json_data)
+
                 return True
             else:
                 print("I'm the source node after migration")
@@ -412,6 +430,8 @@ class KVMLibvirt(RuntimePlugin):
                 self.currentEntities.update({entity_uuid: entity})
                 self.cleanEntity(entity_uuid)
                 self.undefineEntity(entity_uuid)
+                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.agent.uuid, self.uuid, entity_uuid))
+                self.agent.store.remove(uri)
                 return True
 
 
@@ -431,8 +451,8 @@ class KVMLibvirt(RuntimePlugin):
             else:
                 if action == 'landing':
                     react_func(entity_data, dst=True)
-
-                react_func(entity_data)
+                else:
+                    react_func(entity_data)
 
     def randomMAC(self):
         mac = [0x00, 0x16, 0x3e,
