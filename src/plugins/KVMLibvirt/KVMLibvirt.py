@@ -269,7 +269,7 @@ class KVMLibvirt(RuntimePlugin):
 
                 ## should way for finished migration
                 while True:
-                    dom = self.lookupByUUID(entity_uuid)
+                    dom = self.conn.lookupByName(entity.name)
                     if dom is None:
                         print("Domain is non already in this host")
                         time.sleep(10)
@@ -341,6 +341,7 @@ class KVMLibvirt(RuntimePlugin):
             uri = str("fos://<sys-id>/%s/runtime/%s/entity/%s" % (self.agent.uuid, self.uuid, entity_uuid))
             fognode_uuid = json.loads(self.agent.store.get(uri)).get("dst")
             entity.state = State.TAKING_OFF
+            self.currentEntities.update({entity_uuid: entity})
             uri = str("fos://<sys-id>/%s/" % fognode_uuid)  # TODO: clarify this get
             dst_node_info = json.loads(self.agent.store.get(uri))
 
@@ -379,6 +380,7 @@ class KVMLibvirt(RuntimePlugin):
                 exit(1)
 
             print('Domain was migrated successfully.')
+            dest_conn.close()
 
             return True
             
@@ -393,9 +395,10 @@ class KVMLibvirt(RuntimePlugin):
         if entity is None:
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.getState() != State.RUNNING:
-            raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
-                                                     str("Entity %s is not in RUNNING state" % entity_uuid))
+        elif entity.getState() not in (State.TAKING_OFF, State.LANDING, State.RUNNING):
+            print(entity.getState())
+            raise StateTransitionNotAllowedException("Entity is not in correct state",
+                                                     str("Entity %s is not in correct state" % entity.getState()))
         else:
             if dst is True:
                 print("I'm the destination node after migration")
