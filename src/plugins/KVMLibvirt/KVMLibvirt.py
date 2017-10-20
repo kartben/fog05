@@ -10,6 +10,7 @@ import json
 import random
 import time
 import re
+import libvirt
 
 class KVMLibvirt(RuntimePlugin):
 
@@ -39,7 +40,7 @@ class KVMLibvirt(RuntimePlugin):
 
     def startRuntime(self):
 
-        import libvirt
+
         self.conn = libvirt.open("qemu:///system")
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.agent.uuid, self.uuid))
         print("KVM Listening on %s" % uri)
@@ -252,9 +253,6 @@ class KVMLibvirt(RuntimePlugin):
             self.currentEntities.update({entity_uuid: entity})
             return True
 
-
-
-
     def migrateEntity(self, entity_uuid,  dst=False):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
@@ -267,21 +265,25 @@ class KVMLibvirt(RuntimePlugin):
                 '''
                 self.beforeMigrateEntityActions(entity_uuid, True)
 
+                entity = self.currentEntities.get(entity_uuid, None)
+
                 ## should way for finished migration
                 while True:
-                    dom = self.conn.lookupByName(entity.name)
+                    try:
+                        dom = self.conn.lookupByName(entity.name)
+                    except libvirt.libvirtError as e:
+                        dom = None
                     if dom is None:
                         print("Domain is non already in this host")
                         time.sleep(10)
                     else:
-                        flag = dom.isActive()
-                        if flag is True:
+                        if dom.isActive() == 1:
                             break
                         else:
                             print('The domain is not running.')
                             time.sleep(10)
 
-                self.beforeMigrateEntityActions(entity_uuid, True)
+                self.afterMigrateEntityActions(entity_uuid, True)
 
             else:
                 raise EntityNotExistingException("Enitity not existing",
@@ -316,7 +318,7 @@ class KVMLibvirt(RuntimePlugin):
             ##create disks
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
             conf_cmd = str("touch %s" % entity.cdrom) #for size should use fstat on real
-
+            #qemu_cmd = str("touch %s" % entity.disk)
             self.agent.getOSPlugin().executeCommand(qemu_cmd)
             self.agent.getOSPlugin().executeCommand(conf_cmd)
 
@@ -334,7 +336,6 @@ class KVMLibvirt(RuntimePlugin):
 
             return True
         else:
-            import libvirt
             time.sleep(5)
             entity = self.currentEntities.get(entity_uuid, None)
             print("I'm the source node before")
@@ -411,6 +412,7 @@ class KVMLibvirt(RuntimePlugin):
                 self.currentEntities.update({entity_uuid: entity})
                 self.cleanEntity(entity_uuid)
                 self.undefineEntity(entity_uuid)
+                return True
 
 
     def reactToCache(self, uri, value, v):

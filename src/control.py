@@ -364,7 +364,8 @@ class Controll():
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (src, kvm_src.get('uuid'), vm_uuid))
         self.store.dput(uri, json_data)
 
-        input()
+        input("press enter to destroy vm")
+        self.vm_destroy(dst, vm_uuid)
 
 
 
