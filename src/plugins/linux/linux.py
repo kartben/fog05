@@ -241,7 +241,7 @@ class Linux(OSPlugin):
         # generate uuid from this or from cpuid or mb uuid from /sys/class/dmi/id/product_uuid
 
         # p = psutil.Popen('cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE) no need of regex
-        p = psutil.Popen('sudo cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE)
+        p = psutil.Popen('sudo cat '.split(), stdout=PIPE)
         res = ""
         for line in p.stdout:
             res = str(res + "%s" % line.decode("utf-8"))
@@ -344,6 +344,14 @@ class Linux(OSPlugin):
             cmd = str("sudo apt update && sudo apt purge %s" % pkg_name)
             os.system(cmd)
 
+        def packages_list(self):
+            cmd = "apt list --installed"
+            p = psutil.Popen(cmd.split(), stdout=PIPE)
+            p.wait()
+            pkgs = []
+            for l in p.stdout:
+                pkgs.append(l.split(b'/')[0].decode('utf-8'))
+            return pkgs
 
     class YumWrapper(object):
         def __init__(self):
@@ -364,3 +372,12 @@ class Linux(OSPlugin):
         def purge_package(self, pkg_name):
             cmd = str("sudo yum remove %s" % pkg_name)
             os.system(cmd)
+
+        def packages_list(self):
+            cmd = "yum list installed"
+            p = psutil.Popen(cmd.split(), stdout=PIPE)
+            p.wait()
+            pkgs = []
+            for l in p.stdout:
+                pkgs.append(l.split()[0].split(b'.')[0].decode('utf-8'))
+            return pkgs
