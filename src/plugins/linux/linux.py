@@ -64,6 +64,22 @@ class Linux(OSPlugin):
                                     hostname))
         self.executeCommand(del_cmd, True)
 
+    def dirExists(self, path):
+        return os.path.isdir(path)
+
+    def createDir(self, path):
+        return os.makedirs(path)
+
+    def createFile(self, path):
+        with open(path, 'a'):
+            os.utime(path, None)
+
+    def removeDir(self, path):
+        return os.rmdir(path)
+
+    def removeFile(self, path):
+        return os.remote(path)
+
     def fileExists(self, file_path):
         return os.path.isfile(file_path)
 

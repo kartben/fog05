@@ -21,19 +21,10 @@ class KVMLibvirt(RuntimePlugin):
         self.agent = agent
         self.startRuntime()
 
-        '''
-        ###### test decupling with redis
-        import redis
-        r = redis.StrictRedis(host='localhost', port=6379)  # Connect to local Redis instance
-        self.p = r.pubsub(ignore_subscribe_messages=True)  # See https://github.com/andymccurdy/redis-py/#publish--subscribe
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (agent.uuid, self.uuid))
-        print ("subscribed to %s" % uri)
-
-        self.p.psubscribe(uri)
-        import threading
-        threading.Thread(target=self.reactToCache, args=(None, None)).start()
-        ######
-        '''
+        self.BASE_DIR = "/opt/fos"
+        self.DISK_DIR = "disks"
+        self.IMAGE_DIR = "images"
+        self.LOG_DIR = "logs"
 
     def startRuntime(self):
 
@@ -41,6 +32,22 @@ class KVMLibvirt(RuntimePlugin):
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.agent.uuid, self.uuid))
         print("KVM Listening on %s" % uri)
         self.agent.store.observe(uri, self.__react_to_cache)
+
+        '''check if dirs exists if not exists create'''
+        if self.agent.getOSPlugin().dirExists(self.BASE_DIR):
+            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR)):
+                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR))
+            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR)):
+                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR))
+            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR)):
+                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
+        else:
+            self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
+            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR))
+            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR))
+            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
+
+
         return self.uuid
 
     def stopRuntime(self):
@@ -56,14 +63,14 @@ class KVMLibvirt(RuntimePlugin):
         """
         if len(args) > 0:
             entity_uuid = args[4]
-            disk_path = str("/opt/fos/%s.qcow2" % entity_uuid)
-            cdrom_path = str("/opt/fos/%s_config.iso" % entity_uuid)
+            disk_path = str("%s/%s/%s.qcow2" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
+            cdrom_path = str("%s/%s/%s_config.iso" % (self.BASE_DIR, self.DISK_DIR,entity_uuid))
             entity = KVMLibvirtEntity(entity_uuid, args[0], args[2], args[1], disk_path, args[3], cdrom_path, [],
                                    args[5], args[6], args[7])
         elif len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
-            disk_path = str("/opt/fos/disks/%s.qcow2" % entity_uuid)
-            cdrom_path = str("/opt/fos/disks/%s_config.iso" % entity_uuid)
+            disk_path = str("%s/%s/%s.qcow2" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
+            cdrom_path = str("%s/%s/%s_config.iso" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
             entity = KVMLibvirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
                                    kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
                                    kwargs.get('base_image'), kwargs.get('user-data'), kwargs.get('ssh-key'))
@@ -106,7 +113,7 @@ class KVMLibvirt(RuntimePlugin):
             vm_xml = self.__generate_dom_xml(entity)
             image_name = entity.image.split('/')[-1]
 
-            wget_cmd = str('wget %s -O /opt/fos/images/%s' % (entity.image, image_name))
+            wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
 
             conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(sys.path[0], 'plugins', self.name,
                                                                    'templates',
@@ -115,32 +122,36 @@ class KVMLibvirt(RuntimePlugin):
             rm_temp_cmd = str("rm")
             if entity.user_file is not None:
                 data_filename = str("userdata_%s" % entity_uuid)
-                self.agent.getOSPlugin().storeFile(entity.user_file, "/opt/fos/", data_filename)
-                data_filename = str("/opt/fos/%s" % data_filename)
+                self.agent.getOSPlugin().storeFile(entity.user_file, self.BASE_DIR, data_filename)
+                data_filename = str("/%s/%s" % (self.BASE_DIR, data_filename))
                 conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
-                rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
+                #rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
             if entity.ssh_key is not None:
                 key_filename = str("key_%s.pub" % entity_uuid)
-                self.agent.getOSPlugin().storeFile(entity.ssh_key, "/opt/fos/", key_filename)
-                key_filename = str("/opt/fos/%s" % key_filename)
+                self.agent.getOSPlugin().storeFile(entity.ssh_key, self.BASE_DIR, key_filename)
+                key_filename = str("%s/%s" % (self.BASE_DI, key_filename))
                 conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
-                rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
+                #rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
 
             conf_cmd = str(conf_cmd + " %s" % entity.cdrom)
 
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
 
-            dd_cmd = str("dd if=/opt/fos/images/%s of=%s" % (image_name, entity.disk))
+            dd_cmd = str("dd if=%s/%s/%s of=%s" % (self.BASE_DIR, self.IMAGE_DIR, image_name, entity.disk))
 
             entity.image = image_name
 
-            self.agent.getOSPlugin().executeCommand(wget_cmd)
-            self.agent.getOSPlugin().executeCommand(qemu_cmd)
-            self.agent.getOSPlugin().executeCommand(conf_cmd)
-            self.agent.getOSPlugin().executeCommand(dd_cmd)
+            self.agent.getOSPlugin().executeCommand(wget_cmd, True)
+            self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
+            self.agent.getOSPlugin().executeCommand(conf_cmd, True)
+            self.agent.getOSPlugin().executeCommand(dd_cmd, True)
 
-            if entity.ssh_key is not None or entity.user_file is not None:
-                self.agent.getOSPlugin().executeCommand(rm_temp_cmd)
+            if entity.ssh_key is not None:
+                self.agent.getOSPlugin().removeFile(key_filename)
+            if entity.user_file is not None:
+                self.agent.getOSPlugin().removeFile(data_filename)
+
+                #self.agent.getOSPlugin().executeCommand(rm_temp_cmd)
 
             self.conn.defineXML(vm_xml)
             entity.onConfigured(vm_xml)
@@ -160,9 +171,15 @@ class KVMLibvirt(RuntimePlugin):
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
             self.__lookup_by_uuid(entity_uuid).undefine()
-            rm_cmd=str("rm -f %s %s /opt/fos/images/%s /opt/fos/logs/%s_log.log" %
-                       (entity.cdrom, entity.disk, entity.image, entity_uuid))
-            self.agent.getOSPlugin().executeCommand(rm_cmd)
+            #rm_cmd = str("rm -f %s %s /opt/fos/images/%s /opt/fos/logs/%s_log.log" %
+            #           (entity.cdrom, entity.disk, entity.image, entity_uuid))
+            #self.agent.getOSPlugin().executeCommand(rm_cmd)
+            self.agent.getOSPlugin().removeFile(entity.cdrom)
+            self.agent.getOSPlugin().removeFile(entity.disk)
+            self.agent.getOSPlugin().removeFile(str("%s/%s/%s") % (self.BASE_DIR, self.IMAGE_DIR, entity.image))
+            self.agent.getOSPlugin().removeFile(str("%s/%s/%s_log.log") % (self.BASE_DIR, self.IMAGE_DIR, entity_uuid))
+
+
             entity.onClean()
             self.current_entities.update({entity_uuid: entity})
             return True
@@ -185,7 +202,7 @@ class KVMLibvirt(RuntimePlugin):
             '''
             Then after boot should update the `actual store` with the run status of the vm  
             '''
-            log_filename = str("/opt/fos/logs/%s_log.log" % entity_uuid)
+            log_filename = str("%s/%s/%s_log.log" % (self.BASE_DIR,self.LOG_DIR, entity_uuid))
             if entity.user_file is not None:
                 self.__wait_boot(log_filename, True)
             else:
@@ -291,19 +308,18 @@ class KVMLibvirt(RuntimePlugin):
             print("I'm the destination node before migration")
             uri = str("fos://<sys-id>/%s/runtime/%s/entity/%s" % (self.agent.uuid, self.uuid, entity_uuid))
             vm_info = json.loads(self.agent.store.get(uri)).get("entity_data")
-            disk_path = str("/opt/fos/disks/%s.qcow2" % entity_uuid)
-            cdrom_path = str("/opt/fos/disks/%s_config.iso" % entity_uuid)
+            disk_path = str("%s/%s/%s.qcow2" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
+            cdrom_path = str("%s/%s/%s_config.iso" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
             entity = KVMLibvirtEntity(entity_uuid, vm_info.get('name'), vm_info.get('cpu'), vm_info.get('memory'),
                                       disk_path,
                                       vm_info.get('disk_size'), cdrom_path, vm_info.get('networks'),
                                       vm_info.get('base_image'), vm_info.get('user-data'), vm_info.get('ssh-key'))
             entity.state = State.LANDING
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
-            conf_cmd = str("touch %s" % entity.cdrom)
             vm_xml = self.__generate_dom_xml(entity)
             self.conn.defineXML(vm_xml)
             self.agent.getOSPlugin().executeCommand(qemu_cmd)
-            self.agent.getOSPlugin().executeCommand(conf_cmd)
+            self.agent.getOSPlugin().createFile(entity.cdrom)
             self.current_entities.update({entity_uuid: entity})
 
             return True

@@ -51,6 +51,21 @@ class OSPlugin(Plugin):
     def fileExists(self, file_path):
         raise NotImplementedError
 
+    def dirExists(self, path):
+        raise NotImplemented
+
+    def createDir(self, path):
+        raise NotImplemented
+
+    def createFile(self, path):
+        raise NotImplemented
+
+    def removeDir(self, path):
+        raise NotImplemented
+
+    def removeFile(self, path):
+        raise NotImplemented
+
     def readFile(self, file_path,root = False):
 
         """
