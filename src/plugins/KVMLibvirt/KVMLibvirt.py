@@ -108,7 +108,7 @@ class KVMLibvirt(RuntimePlugin):
 
             wget_cmd = str('wget %s -O /opt/fos/images/%s' % (entity.image, image_name))
 
-            conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(sys.path[0], 'plugins', 'KVMLibvirt',
+            conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(sys.path[0], 'plugins', self.name,
                                                                    'templates',
                                                                  'create_config_drive.sh'), entity.name, entity_uuid))
 
