@@ -184,6 +184,12 @@ class OSPlugin(Plugin):
     def getPositionInformation(self):
         raise NotImplemented
 
+    def addKnowHost(self, hostname, ip):
+        raise NotImplemented
+
+    def removeKnowHost(self, hostname):
+        raise NotImplemented
+
 class ProcessNotExistingException(Exception):
     def __init__(self, message, errors):
 

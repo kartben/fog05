@@ -43,8 +43,15 @@ class Linux(OSPlugin):
         for line in p.stdout:
             print (line)
 
-    def executeOnOS(self,cmd):
-        os.system(cmd)
+    def addKnowHost(self, hostname, ip):
+        add_cmd = str("%s -a %s %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts', 'manage_hosts.sh'),
+                                       hostname, ip))
+        self.executeCommand(add_cmd, True)
+
+    def removeKnowHost(self, hostname):
+        del_cmd = str("%s -d %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts', 'manage_hosts.sh'),
+                                       hostname))
+        self.executeCommand(del_cmd, True)
 
     def fileExists(self, file_path):
         return os.path.isfile(file_path)

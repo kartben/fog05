@@ -322,27 +322,28 @@ class KVMLibvirt(RuntimePlugin):
 
             dst_ip = dst_ip[0].get("inft_configuration").get("ipv4_address") # TODO: as on search should use ipv6
 
-            #### TODO: adding to hosts file should be done by OSPluing
-            add_to_hosts = str('sudo -- sh -c -e "echo \'%s    %s\' >> /etc/hosts"' % (dst_ip, dst_hostname))
-            self.agent.getOSPlugin().executeOnOS(add_to_hosts)
-            ####
+            # ## ADDING TO /etc/hosts otherwise migration can fail
+            self.agent.getOSPlugin().addKnowHost(dst_hostname, dst_ip)
+            ###
 
             # ## ACTUAL MIGRATIION ##################
             dst_host = str('qemu+ssh://%s/system' % dst_ip)
             print(dst_host)
             dest_conn = libvirt.open(dst_host)
-            if dest_conn == None:
+            if dest_conn is None:
                 print('Failed to open connection to %s' % dst)
                 exit(1)
-            #and libvirt.VIR_MIGRATE_PEER2PEER
             new_dom = dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, entity.name, None, 0)
-            if new_dom == None:
+            if new_dom is None:
                 print('Could not migrate to the new domain')
                 exit(1)
 
             print('Domain was migrated successfully.')
             dest_conn.close()
             # #######################################
+
+            # ## REMOVING AFTER MIGRATION
+            self.agent.getOSPlugin().removeKnowHost(dst_hostname)
 
             return True
 
@@ -446,7 +447,7 @@ class KVMLibvirt(RuntimePlugin):
                         return found
 
     def __generate_dom_xml(self, entity):
-        template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', 'KVMLibvirt',
+        template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
                                                                       'templates', 'vm.xml'))
         vm_xml = Environment().from_string(template_xml)
         vm_xml = vm_xml.render(name=entity.name, uuid=entity.uuid, memory=entity.ram,
