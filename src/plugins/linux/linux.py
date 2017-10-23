@@ -54,12 +54,13 @@ class Linux(OSPlugin):
             print (line)
 
     def addKnowHost(self, hostname, ip):
-        add_cmd = str("%s -a %s %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts', 'manage_hosts.sh'),
+        add_cmd = str("sudo %s -a %s %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts',
+                                                        'manage_hosts.sh'),
                                        hostname, ip))
         self.executeCommand(add_cmd, True)
 
     def removeKnowHost(self, hostname):
-        del_cmd = str("%s -d %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts', 'manage_hosts.sh'),
+        del_cmd = str("sudo %s -d %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts', 'manage_hosts.sh'),
                                     hostname))
         self.executeCommand(del_cmd, True)
 
@@ -330,7 +331,7 @@ class Linux(OSPlugin):
 
     class YumWrapper(object):
         def __init__(self):
-            self.name = "apt"
+            self.name = "yum"
 
         def update_packages(self):
             cmd = "sudo yum update -y && sudo yum autoremove"
