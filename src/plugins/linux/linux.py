@@ -228,7 +228,7 @@ class Linux(OSPlugin):
         p = psutil.Popen('sudo cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE)
         res = ""
         for line in p.stdout:
-            res = str(res + "%s" % line)
+            res = str(res + "%s" % line.decode("utf-8"))
         return res.lower()
         '''
         uuid_regex = r"UUID=\"(.{0,37})\""
