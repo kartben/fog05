@@ -12,12 +12,11 @@ supported operation:
 - get hostname
 - send signal
 - check if a pid exists
-
+- install packages
+- remove packages
 
 todo:
 
-- install packages
-- remove packages
 - get detailed i/o informations
 - get hw accelerators informations
 - get pid from process name

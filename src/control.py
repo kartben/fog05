@@ -378,10 +378,10 @@ class Controll():
 
         vm_uuid = str(uuid.uuid4())
 
-        while len(self.nodes) < 2:
-            time.sleep(2)
+        #while len(self.nodes) < 2:
+        #    time.sleep(2)
 
-        self.show_nodes()
+        #self.show_nodes()
 
         input()
 
@@ -390,9 +390,12 @@ class Controll():
         if vm_src_node is not None:
             vm_src_node = list(vm_src_node.keys())[0]
 
-        vm_dst_node = self.nodes.get(2)
-        if vm_dst_node is not None:
-            vm_dst_node = list(vm_dst_node.keys())[0]
+
+
+
+        #vm_dst_node = self.nodes.get(2)
+        #if vm_dst_node is not None:
+        #    vm_dst_node = list(vm_dst_node.keys())[0]
 
         vm_uuid = str(uuid.uuid4())
 
@@ -400,7 +403,7 @@ class Controll():
 
         input()
 
-        self.migrate_vm(vm_src_node, vm_dst_node, vm_uuid)
+        #self.migrate_vm(vm_src_node, vm_dst_node, vm_uuid)
 
 
 

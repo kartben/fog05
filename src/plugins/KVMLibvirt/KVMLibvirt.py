@@ -183,13 +183,16 @@ class KVMLibvirt(RuntimePlugin):
             self.__lookup_by_uuid(entity_uuid).create()
             entity.onStart()
             '''
-            Then after boot should update the `actual store` with the run status of the vm   
+            Then after boot should update the `actual store` with the run status of the vm  
+            '''
             log_filename = str("/opt/fos/logs/%s_log.log" % entity_uuid)
             if entity.user_file is not None:
                 self.__wait_boot(log_filename, True)
             else:
                 self.__wait_boot(log_filename)
-            
+
+            print ("booted!")
+            '''
             vm_info = .... load vm info from desidered store, update and save to actual store
             json_data = json.dumps(vm_info)
             uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.agent.uuid, self.uuid, entity_uuid))
@@ -437,7 +440,7 @@ class KVMLibvirt(RuntimePlugin):
         if configured:
             boot_regex = r"\[.+?\].+\[.+?\]:.+Cloud-init.+?v..+running.+'modules:final'.+Up.([0-9]*\.?[0-9]+).+seconds.\n"
         else:
-            boot_regex = r" .+?login:"
+            boot_regex = r".+?login:()"
         while True:
             file = open(filename, 'r')
             import os
