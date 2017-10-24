@@ -39,6 +39,7 @@ dds_resolve_info.drqos = event_qos
 
 class DController (Controller, Observer):
     MAX_SAMPLES = 64
+    DISPOSED_INSTANCE = 32
 
     def __init__(self, store):
         global dds_store_info
@@ -62,23 +63,30 @@ class DController (Controller, Observer):
     # below we also need to properly take into account the semantic of put right now
     # everything is persisted
 
+
+    def handle_remove(self, uri):
+        self.__store.remote_remove(uri)
+
     def handle_remote_put(self, reader):
         samples = reader.take(DController.MAX_SAMPLES)
         for (d, i) in samples:
-            rkey = d.key.decode()
-            rsid = d.sid.decode()
-            rvalue = d.value.decode()
-            rversion = d.version
-            if rsid != self.__store.store_id:
-                print(">>>>>>>> Handling remote put for key = " + rkey)
-                r = self.__store.update_value(rkey, rvalue, rversion)
-                if r:
-                    print(">> Updated " + rkey)
-                    self.__store.notify_observers(rkey, rvalue, rversion)
-                else:
-                    print(">> Received old version of " + rkey)
+            if i.instance_state == DDSStatusKind.NOT_ALIVE_DISPOSED_INSTANCE_STATE.value:
+                self.handle_remove(d.key.decode())
             else:
-                print(">>>>>> Ignoring remote put as it is a self-put")
+                rkey = d.key.decode()
+                rsid = d.sid.decode()
+                rvalue = d.value.decode()
+                rversion = d.version
+                if rsid != self.__store.store_id:
+                    print(">>>>>>>> Handling remote put for key = " + rkey)
+                    r = self.__store.update_value(rkey, rvalue, rversion)
+                    if r:
+                        print(">> Updated " + rkey)
+                        self.__store.notify_observers(rkey, rvalue, rversion)
+                    else:
+                        print(">> Received old version of " + rkey)
+                else:
+                    print(">>>>>> Ignoring remote put as it is a self-put")
 
 
     def cache_discovered(self,reader):
@@ -123,7 +131,9 @@ class DController (Controller, Observer):
         print("onGet Not yet...")
 
     def onRemove(self, uri):
-        print("onRemove Not yet...")
+        v = dds_key_value_info.builder(key=uri, value=uri, sid=self.__store.store_id, version=0)
+        dds_key_value_info.writer.dispose_instance(v)
+
 
     def onObserve(self, uri, action):
         print("onObserve Not yet...")

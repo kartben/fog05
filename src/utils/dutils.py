@@ -2,7 +2,6 @@ from dds import *
 from ddsutil import *
 
 
-
 # Notice that the current Python API as an issue in dealing with keep_last
 v_state_qos = Qos([DurabilityQosPolicy(DDSDurabilityKind.VOLATILE),
                    ReliabilityQosPolicy(DDSReliabilityKind.BEST_EFFORT, DDSDuration.infinity())])
@@ -12,11 +11,13 @@ t_state_qos= Qos([DurabilityQosPolicy(DDSDurabilityKind.TRANSIENT),
 
 t_state_wqos= Qos([DurabilityQosPolicy(DDSDurabilityKind.TRANSIENT),
                    ReliabilityQosPolicy(DDSReliabilityKind.  RELIABLE, DDSDuration.infinity()),
-                   HistoryQosPolicy(DDSHistoryKind.KEEP_ALL)])
+                   HistoryQosPolicy(DDSHistoryKind.KEEP_ALL),
+                  WriterDataLifecycleQosPolicy(False)])
 
 tl_state_wqos = Qos([DurabilityQosPolicy(DDSDurabilityKind.TRANSIENT_LOCAL),
                      ReliabilityQosPolicy(DDSReliabilityKind.RELIABLE, DDSDuration.infinity()),
-                     HistoryQosPolicy(DDSHistoryKind.KEEP_ALL)])
+                     HistoryQosPolicy(DDSHistoryKind.KEEP_ALL),
+                     WriterDataLifecycleQosPolicy(False)])
 
 tl_state_rqos = Qos([DurabilityQosPolicy(DDSDurabilityKind.TRANSIENT_LOCAL),
                      ReliabilityQosPolicy(DDSReliabilityKind.RELIABLE, DDSDuration.infinity())])

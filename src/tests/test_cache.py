@@ -51,6 +51,9 @@ class TestCache():
         print ("###########################")
         print ("###########################")
 
+    def test_remove(self, key):
+        self.store.remove(key)
+
     def main(self):
 
         print(self.store)
@@ -68,7 +71,8 @@ class TestCache():
         val = {'status': 'add', 'version': 1, 'description': 'test runtime', 'plugin': 'python obj'}
         uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, 'test runtime', rt_uuid))
         self.store.put(uri, json.dumps(val))
-
+        
+        self.store.put(uri, json.dumps(val))
         val = {'plugins': [{'name': 'runtime', 'version': 1, 'uuid': str(rt_uuid),
                             'type': 'runtime'}]}
         uri = str('fos://<sys-id>/%s/plugins' % self.uuid)

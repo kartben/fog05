@@ -242,6 +242,13 @@ class DStore(Store):
         self.__controller.onRemove(uri)
         self.__local_cache.pop(uri)
 
+    def remote_remove(self, uri):
+        try:
+            self.__local_cache.pop(uri)
+            self.notify_observers(uri, None, None)
+        except:
+            pass
+
     def get(self, uri):
         v = self.get_value(uri)
         if v == None:
