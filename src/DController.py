@@ -77,7 +77,7 @@ class DController (Controller, Observer):
                 rsid = d.sid.decode()
                 rvalue = d.value.decode()
                 rversion = d.version
-                if rsid != self.__store.store_id and rkey.startswith(self.__store.root):
+                if rsid != self.__store.store_id:
                     print(">>>>>>>> Handling remote put for key = " + rkey)
                     r = self.__store.update_value(rkey, rvalue, rversion)
                     if r:
