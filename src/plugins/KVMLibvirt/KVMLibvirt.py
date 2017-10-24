@@ -19,14 +19,17 @@ class KVMLibvirt(RuntimePlugin):
         self.uuid = uuid.uuid4()
         self.name = name
         self.agent = agent
-        self.startRuntime()
 
         self.BASE_DIR = "/opt/fos"
         self.DISK_DIR = "disks"
         self.IMAGE_DIR = "images"
         self.LOG_DIR = "logs"
-
         self.HOME = str("runtime/%s/entity" % self.uuid)
+
+
+        self.startRuntime()
+
+
 
     def startRuntime(self):
 
@@ -82,7 +85,7 @@ class KVMLibvirt(RuntimePlugin):
         entity.setState(State.DEFINED)
         self.current_entities.update({entity_uuid: entity})
         uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-        vm_info = json.loads(self.agent.store.get(uri))
+        vm_info = json.loads(self.agent.dstore.get(uri))
         vm_info.update({"status": "defined"})
         self.__update_actual_store(entity_uuid, vm_info)
 
@@ -136,7 +139,7 @@ class KVMLibvirt(RuntimePlugin):
             if entity.ssh_key is not None:
                 key_filename = str("key_%s.pub" % entity_uuid)
                 self.agent.getOSPlugin().storeFile(entity.ssh_key, self.BASE_DIR, key_filename)
-                key_filename = str("%s/%s" % (self.BASE_DI, key_filename))
+                key_filename = str("%s/%s" % (self.BASE_DIR, key_filename))
                 conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
                 #rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
 
@@ -165,7 +168,7 @@ class KVMLibvirt(RuntimePlugin):
             self.current_entities.update({entity_uuid: entity})
 
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.store.get(uri))
+            vm_info = json.loads(self.agent.dstore.get(uri))
             vm_info.update({"status": "configured"})
             self.__update_actual_store(entity_uuid, vm_info)
 
@@ -197,7 +200,7 @@ class KVMLibvirt(RuntimePlugin):
             self.current_entities.update({entity_uuid: entity})
 
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.store.get(uri))
+            vm_info = json.loads(self.agent.dstore.get(uri))
             vm_info.update({"status": "cleaned"})
             self.__update_actual_store(entity_uuid, vm_info)
 
@@ -229,7 +232,7 @@ class KVMLibvirt(RuntimePlugin):
 
             print ("booted!")
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.store.get(uri))
+            vm_info = json.loads(self.agent.dstore.get(uri))
             vm_info.update({"status": "run"})
             self.__update_actual_store(entity_uuid, vm_info)
             '''
@@ -258,7 +261,7 @@ class KVMLibvirt(RuntimePlugin):
             self.current_entities.update({entity_uuid: entity})
 
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.store.get(uri))
+            vm_info = json.loads(self.agent.dstore.get(uri))
             vm_info.update({"status": "stop"})
             self.__update_actual_store(entity_uuid, vm_info)
 
@@ -279,7 +282,7 @@ class KVMLibvirt(RuntimePlugin):
             entity.onPause()
             self.current_entities.update({entity_uuid: entity})
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.store.get(uri))
+            vm_info = json.loads(self.agent.dstore.get(uri))
             vm_info.update({"status": "pause"})
             self.__update_actual_store(entity_uuid, vm_info)
             return True
@@ -300,7 +303,7 @@ class KVMLibvirt(RuntimePlugin):
             self.current_entities.update({entity_uuid: entity})
 
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.store.get(uri))
+            vm_info = json.loads(self.agent.dstore.get(uri))
             vm_info.update({"status": "run"})
             self.__update_actual_store(entity_uuid, vm_info)
             return True
@@ -344,8 +347,9 @@ class KVMLibvirt(RuntimePlugin):
     def beforeMigrateEntityActions(self, entity_uuid, dst=False):
         if dst is True:
             print("I'm the destination node before migration")
-            uri = str("fos://<sys-id>/%s/runtime/%s/entity/%s" % (self.agent.uuid, self.uuid, entity_uuid))
-            vm_info = json.loads(self.agent.store.get(uri)).get("entity_data")
+            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+            entity_info = json.loads(self.agent.dstore.get(uri))
+            vm_info = entity_info.get("entity_data")
             disk_path = str("%s/%s/%s.qcow2" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
             cdrom_path = str("%s/%s/%s_config.iso" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
             entity = KVMLibvirtEntity(entity_uuid, vm_info.get('name'), vm_info.get('cpu'), vm_info.get('memory'),
@@ -360,9 +364,7 @@ class KVMLibvirt(RuntimePlugin):
             self.agent.getOSPlugin().createFile(entity.cdrom)
             self.current_entities.update({entity_uuid: entity})
 
-            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.store.get(uri))
-            vm_info.update({"status": "landing"})
+            entity_info.update({"status": "landing"})
             self.__update_actual_store(entity_uuid, vm_info)
 
             return True
@@ -371,12 +373,12 @@ class KVMLibvirt(RuntimePlugin):
             entity = self.current_entities.get(entity_uuid, None)
             print("I'm the source node before")
             uri = str("%s/%s/%s" % (self.agent.dhome, self.HOME, entity_uuid))
-            fognode_uuid = json.loads(self.agent.store.get(uri)).get("dst")
+            fognode_uuid = json.loads(self.agent.dstore.get(uri)).get("dst")
 
             print("Looking if kvm plugin loaded in destination node")
 
             uri = str('afos://<sys-id>/%s/plugins' % fognode_uuid)
-            all_plugins = json.loads(self.store.get(uri)).get('plugins')
+            all_plugins = json.loads(self.agent.astore.get(uri)).get('plugins')
 
             runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
             print("locating kvm plugin")
@@ -395,7 +397,7 @@ class KVMLibvirt(RuntimePlugin):
                 print("Waiting destination node to be ready...")
                 time.sleep(1)
                 uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (dst, kvm.get('uuid'), entity_uuid))
-                vm_info = json.loads(self.agent.store.get(uri))
+                vm_info = json.loads(self.agent.astore.get(uri))
                 if vm_info is not None:
                     if vm_info.get("status") == "landing":
                         flag = True
@@ -403,11 +405,7 @@ class KVMLibvirt(RuntimePlugin):
             entity.state = State.TAKING_OFF
             self.current_entities.update({entity_uuid: entity})
             uri = str("afos://<sys-id>/%s/" % fognode_uuid)  # TODO: clarify this get
-            dst_node_info = json.loads(self.agent.store.get(uri))
-
-            '''
-            Should wait for destination node to finish disk initialization and then use libvirt for live migration
-            '''
+            dst_node_info = json.loads(self.agent.astore.get(uri))
 
             dom = self.__lookup_by_uuid(entity_uuid)
             nw = dst_node_info.get('network')
@@ -467,7 +465,7 @@ class KVMLibvirt(RuntimePlugin):
                 self.current_entities.update({entity_uuid: entity})
 
                 uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-                vm_info = json.loads(self.agent.store.get(uri))
+                vm_info = json.loads(self.agent.dstore.get(uri))
                 vm_info.pop('dst')
                 vm_info.update({"status": "run"})
                 self.__update_actual_store(entity_uuid, vm_info)

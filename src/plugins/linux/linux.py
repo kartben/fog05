@@ -78,7 +78,7 @@ class Linux(OSPlugin):
         return os.rmdir(path)
 
     def removeFile(self, path):
-        return os.remote(path)
+        return os.remove(path)
 
     def fileExists(self, file_path):
         return os.path.isfile(file_path)

@@ -82,7 +82,7 @@ class FogAgent(Agent):
 
             val = {'plugins': [{'name': rt.name, 'version': rt.version, 'uuid': str(rt.uuid),
                                 'type': 'runtime', 'status': 'loaded'}]}
-            uri = str('%s/%s/plugins' % self.ahome)
+            uri = str('%s/plugins' % self.ahome)
             self.astore.dput(uri, json.dumps(val))
 
             return rt

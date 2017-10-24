@@ -132,13 +132,13 @@ class Controll():
         print(uri)
         #print(self.dstore.get(uri))
 
-        self.dstore.put(uri, json.dumps(val))
+        self.dstore.dput(uri, json.dumps(val))
 
         time.sleep(1)
         val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
                             'type': 'network', 'status': 'add'}]}
         uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
-        self.dstore.put(uri, json.dumps(val))
+        self.dstore.dput(uri, json.dumps(val))
 
         time.sleep(1)
 
@@ -181,36 +181,33 @@ class Controll():
         self.dstore.put(uri, json_data)
 
         while True:
-            print("Waiting destination node to be ready...")
+            print("Waiting vm defined...")
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.uuid, vm_uuid))
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
             vm_info = json.loads(self.astore.get(uri))
             if vm_info is not None and vm_info.get("status") == "defined":
                     break
 
-
-
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
-                  (node_uuid, kvm.get('uuid'), vm_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (node_uuid, kvm.get('uuid'), vm_uuid))
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting destination node to be ready...")
+            print("Waiting vm configured...")
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.uuid, vm_uuid))
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
             vm_info = json.loads(self.astore.get(uri))
             if vm_info is not None and vm_info.get("status") == "configured":
                     break
 
 
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, kvm.get('uuid'), vm_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, kvm.get('uuid'), vm_uuid))
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting destination node to be ready...")
+            print("Waiting vm to boot...")
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.uuid, vm_uuid))
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
             vm_info = json.loads(self.astore.get(uri))
             if vm_info is not None and vm_info.get("status") == "run":
                     break
@@ -239,9 +236,9 @@ class Controll():
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting destination node to be ready...")
+            print("Waiting vm to be stopped...")
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.uuid, vm_uuid))
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
             vm_info = json.loads(self.astore.get(uri))
             if vm_info is not None and vm_info.get("status") == "stop":
                 break
@@ -251,9 +248,9 @@ class Controll():
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting destination node to be ready...")
+            print("Waiting cleaned...")
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.uuid, vm_uuid))
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
             vm_info = json.loads(self.astore.get(uri))
             if vm_info is not None and vm_info.get("status") == "cleaned":
                 break
@@ -268,8 +265,8 @@ class Controll():
 
         val = {'plugins': [{'name': 'KVMLibvirt', 'version': 1, 'uuid': '',
                             'type': 'runtime', 'status': 'add'}]}
-        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
-        self.store.dput(uri, json.dumps(val))
+        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        self.dstore.dput(uri, json.dumps(val))
 
         time.sleep(1)
 
@@ -339,7 +336,7 @@ class Controll():
     def migrate_vm(self, src, dst, vm_uuid):
 
         uri = str('afos://<sys-id>/%s/plugins' % src)
-        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
 
         runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
         print("locating kvm plugin")
@@ -429,13 +426,13 @@ class Controll():
         self.show_nodes()
 
 
-        print("###################################### Desidered Store ######################################")
-        print(self.dstore)
-        print("#############################################################################################")
-
-        print("###################################### Actual Store #########################################")
-        print(self.astore)
-        print("#############################################################################################")
+        # print("###################################### Desidered Store ######################################")
+        # print(self.dstore)
+        # print("#############################################################################################")
+        #
+        # print("###################################### Actual Store #########################################")
+        # print(self.astore)
+        # print("#############################################################################################")
 
         input()
 
