@@ -5,18 +5,26 @@ import sys
 from DStore import *
 # from RedisLocalCache import RedisCache
 import json
+import time
 
 
 class Controll():
     def __init__(self):
         self.uuid = uuid.uuid4()
         sid = str(self.uuid)
-        self.root = "fos://<sys-id>"
-        self.home = str("fos://<sys-id>/%s" % sid)
+
+        self.droot = "dfos://<sys-id>"
+        self.dhome = str("dfos://<sys-id>/%s" % sid)
+        self.dstore = DStore(sid, self.droot, self.dhome, 1024)
+
+        self.aroot = "afos://<sys-id>"
+        self.ahome = str("afos://<sys-id>/%s" % sid)
+        self.astore = DStore(sid, self.aroot, self.ahome, 1024)
+
         self.nodes = {}
-        # Notice that a node may have multiple caches, but here we are
-        # giving the same id to the nodew and the cache
-        self.store = DStore(sid, self.root, self.home, 1024)
+
+
+
 
     def nodeDiscovered(self, uri, value, v = None):
         value = json.loads(value)
@@ -29,7 +37,6 @@ class Controll():
             print ("###########################")
             print ("###########################")
             self.nodes.update({ len(self.nodes)+1 : {value.get('uuid'): value}})
-            self.show_nodes()
 
 
     def readFile(self, file_path):
@@ -42,7 +49,7 @@ class Controll():
         for k in self.nodes.keys():
             n = self.nodes.get(k)
             id = list(n.keys())[0]
-            print ("%d - %s : %s" % (k, n.get(id).get('name'), id))
+            print("%d - %s : %s" % (k, n.get(id).get('name'), id))
 
     def lf_native(self, node_uuid):
 
@@ -121,21 +128,24 @@ class Controll():
 
         val = {'plugins': [{'name': 'KVMLibvirt', 'version': 1, 'uuid': '',
                             'type': 'runtime', 'status': 'add'}]}
-        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
-        self.store.dput(uri, json.dumps(val))
+        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        print(uri)
+        print(self.dstore.get(uri))
+
+        self.dstore.dput(uri, json.dumps(val))
 
         time.sleep(1)
         val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
                             'type': 'network', 'status': 'add'}]}
-        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
-        self.store.dput(uri, json.dumps(val))
+        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        self.dstore.dput(uri, json.dumps(val))
 
         time.sleep(1)
 
         print("Looking if kvm plugin loaded")
 
-        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
-        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
 
         runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
         print("locating kvm plugin")
@@ -167,26 +177,50 @@ class Controll():
         print("Press enter to define a vm")
         input()
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, kvm.get('uuid'), vm_uuid))
-        self.store.put(uri, json_data)
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, kvm.get('uuid'), vm_uuid))
+        self.dstore.put(uri, json_data)
 
-        print("Press enter to configure the vm")
-        input()
+        while True:
+            print("Waiting destination node to be ready...")
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.uuid, vm_uuid))
+            vm_info = json.loads(self.astore.get(uri))
+            if vm_info is not None and vm_info.get("status") == "defined":
+                    break
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
+
+
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
                   (node_uuid, kvm.get('uuid'), vm_uuid))
-        self.store.dput(uri)
+        self.dstore.dput(uri)
 
-        print("Press enter to start vm")
-        input()
+        while True:
+            print("Waiting destination node to be ready...")
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.uuid, vm_uuid))
+            vm_info = json.loads(self.astore.get(uri))
+            if vm_info is not None and vm_info.get("status") == "configured":
+                    break
+
+
 
         uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, kvm.get('uuid'), vm_uuid))
-        self.store.dput(uri)
+        self.dstore.dput(uri)
+
+        while True:
+            print("Waiting destination node to be ready...")
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.uuid, vm_uuid))
+            vm_info = json.loads(self.astore.get(uri))
+            if vm_info is not None and vm_info.get("status") == "run":
+                    break
+
+        print("vm is running on node")
 
     def vm_destroy(self, node_uuid, vm_uuid):
 
-        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
-        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
 
         runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
         print("locating kvm plugin")
@@ -201,23 +235,34 @@ class Controll():
         print("Press enter to stop vm")
         input()
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, kvm.get('uuid'), vm_uuid))
-        self.store.dput(uri)
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, kvm.get('uuid'), vm_uuid))
+        self.dstore.dput(uri)
 
-        print("Press enter to clean the vm")
-        input()
+        while True:
+            print("Waiting destination node to be ready...")
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.uuid, vm_uuid))
+            vm_info = json.loads(self.astore.get(uri))
+            if vm_info is not None and vm_info.get("status") == "stop":
+                break
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
                   (node_uuid, kvm.get('uuid'), vm_uuid))
-        self.store.dput(uri)
+        self.dstore.dput(uri)
 
-        print("Press enter to undefine the vm")
-        input()
+        while True:
+            print("Waiting destination node to be ready...")
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.uuid, vm_uuid))
+            vm_info = json.loads(self.astore.get(uri))
+            if vm_info is not None and vm_info.get("status") == "cleaned":
+                break
 
         json_data = json.dumps({'status': 'undefine'})
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' %
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' %
                   (node_uuid, kvm.get('uuid'), vm_uuid))
-        self.store.dput(uri, json_data)
+        self.dstore.dput(uri, json_data)
+
 
     def deploy_application(self, node_uuid):
 
@@ -293,7 +338,7 @@ class Controll():
 
     def migrate_vm(self, src, dst, vm_uuid):
 
-        uri = str('fos://<sys-id>/%s/plugins' % src)
+        uri = str('afos://<sys-id>/%s/plugins' % src)
         all_plugins = json.loads(self.store.get(uri)).get('plugins')
 
         runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
@@ -304,8 +349,8 @@ class Controll():
             exit()
         else:
             kvm_src = search[0]
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (src, kvm_src.get('uuid'), vm_uuid))
-        vm_info = json.loads(self.store.get(uri))
+        uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (src, kvm_src.get('uuid'), vm_uuid))
+        vm_info = json.loads(self.astore.get(uri))
         print (vm_info)
 
         input()
@@ -325,21 +370,21 @@ class Controll():
 
         val = {'plugins': [{'name': 'KVMLibvirt', 'version': 1, 'uuid': '',
                             'type': 'runtime', 'status': 'add'}]}
-        uri = str('fos://<sys-id>/%s/plugins' % dst)
-        self.store.dput(uri, json.dumps(val))
+        uri = str('dfos://<sys-id>/%s/plugins' % dst)
+        self.dstore.dput(uri, json.dumps(val))
 
         time.sleep(1)
         val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
                             'type': 'network', 'status': 'add'}]}
-        uri = str('fos://<sys-id>/%s/plugins' % dst)
-        self.store.dput(uri, json.dumps(val))
+        uri = str('dfos://<sys-id>/%s/plugins' % dst)
+        self.dstore.dput(uri, json.dumps(val))
 
         time.sleep(1)
 
         print("Looking if kvm plugin loaded")
 
-        uri = str('fos://<sys-id>/%s/plugins' % dst)
-        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+        uri = str('afos://<sys-id>/%s/plugins' % dst)
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
 
         runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
         print("locating kvm plugin")
@@ -357,12 +402,12 @@ class Controll():
         print("Press enter to migrate a vm")
         input()
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (dst, kvm_dst.get('uuid'), vm_uuid))
-        self.store.put(uri, json_data)
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (dst, kvm_dst.get('uuid'), vm_uuid))
+        self.dstore.put(uri, json_data)
 
         json_data = json.dumps(vm_info)
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (src, kvm_src.get('uuid'), vm_uuid))
-        self.store.dput(uri, json_data)
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (src, kvm_src.get('uuid'), vm_uuid))
+        self.dstore.dput(uri, json_data)
 
         input("press enter to destroy vm")
         self.vm_destroy(dst, vm_uuid)
@@ -373,18 +418,26 @@ class Controll():
 
     def main(self):
 
-        uri = str('fos://<sys-id>/*/')
-        self.store.observe(uri, self.nodeDiscovered)
+        uri = str('afos://<sys-id>/*/')
+        self.astore.observe(uri, self.nodeDiscovered)
 
         vm_uuid = str(uuid.uuid4())
 
-        #while len(self.nodes) < 2:
-        #    time.sleep(2)
+        while len(self.nodes) < 2:
+            time.sleep(2)
 
-        #self.show_nodes()
+        self.show_nodes()
+
+
+        print("###################################### Desidered Store ######################################")
+        print(self.dstore)
+        print("#############################################################################################")
+
+        print("###################################### Actual Store #########################################")
+        print(self.astore)
+        print("#############################################################################################")
 
         input()
-
 
         vm_src_node = self.nodes.get(1)
         if vm_src_node is not None:
@@ -393,9 +446,9 @@ class Controll():
 
 
 
-        #vm_dst_node = self.nodes.get(2)
-        #if vm_dst_node is not None:
-        #    vm_dst_node = list(vm_dst_node.keys())[0]
+        vm_dst_node = self.nodes.get(2)
+        if vm_dst_node is not None:
+            vm_dst_node = list(vm_dst_node.keys())[0]
 
         vm_uuid = str(uuid.uuid4())
 
@@ -403,7 +456,7 @@ class Controll():
 
         input()
 
-        #self.migrate_vm(vm_src_node, vm_dst_node, vm_uuid)
+        self.migrate_vm(vm_src_node, vm_dst_node, vm_uuid)
 
 
 

@@ -20,20 +20,29 @@ class FogAgent(Agent):
         self.__load_os_plugin()
         super(FogAgent, self).__init__(self.__osPlugin.getUUID())
         sid = str(self.uuid)
-        self.root = "fos://<sys-id>"
-        self.home = str("fos://<sys-id>/%s" % sid)
-        # Notice that a node may have multiple caches, but here we are
-        # giving the same id to the nodew and the cache
-        self.store = DStore(sid, self.root, self.home, 1024)
+
+        # Desidered Store. containing the desidered state
+        self.droot = "dfos://<sys-id>"
+        self.dhome = str("dfos://<sys-id>/%s" % sid)
+        self.dstore = DStore(sid, self.droot, self.dhome, 1024)
+
+        # Actual Store, containing the Actual State
+        self.aroot = "afos://<sys-id>"
+        self.ahome = str("afos://<sys-id>/%s" % sid)
+        self.astore = DStore(sid, self.aroot, self.ahome, 1024)
 
         val = {'status': 'add', 'version': self.__osPlugin.version, 'description': 'linux plugin', 'plugin': ''}
-        uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, self.__osPlugin.name, self.__osPlugin.uuid))
-        self.store.put(uri, json.dumps(val))
+        uri = str('%s/plugins/%s/%s' % (self.ahome, self.__osPlugin.name, self.__osPlugin.uuid))
+        self.astore.put(uri, json.dumps(val))
 
         val = {'plugins': [{'name': 'linux', 'version': self.__osPlugin.version, 'uuid': str(self.__osPlugin.uuid),
                            'type': 'os'}]}
-        uri  = str('fos://<sys-id>/%s/plugins' % self.uuid)
-        self.store.put(uri, json.dumps(val))
+        uri = str('%s/plugins' % self.ahome)
+        self.astore.put(uri, json.dumps(val))
+
+        val = {'plugins': []}
+        uri = str('%s/plugins' % self.dhome)
+        self.dstore.put(uri, json.dumps(val))
 
         self.__populate_node_information()
 
@@ -56,6 +65,8 @@ class FogAgent(Agent):
         else:
             raise RuntimeError("Platform not compatible")
 
+
+
     def getOSPlugin(self):
         return self.__osPlugin
 
@@ -66,13 +77,13 @@ class FogAgent(Agent):
             rt = rt.run(agent=self)
             self.__rtPlugins.update({rt.uuid: rt})
             val = {'version': rt.version, 'description': str('runtime %s' % rt.name), 'plugin': ''}
-            uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, rt.name, rt.uuid))
-            self.store.put(uri, json.dumps(val))
+            uri = str('%s/plugins/%s/%s' % (self.ahome, rt.name, rt.uuid))
+            self.astore.put(uri, json.dumps(val))
 
             val = {'plugins': [{'name': rt.name, 'version': rt.version, 'uuid': str(rt.uuid),
                                 'type': 'runtime', 'status': 'loaded'}]}
-            uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
-            self.store.dput(uri, json.dumps(val))
+            uri = str('%s/%s/plugins' % self.ahome)
+            self.astore.dput(uri, json.dumps(val))
 
             return rt
         else:
@@ -87,13 +98,13 @@ class FogAgent(Agent):
 
             val = {'version': net.version, 'description': str('runtime %s' % net.name),
                    'plugin': ''}
-            uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, net.name, net.uuid))
-            self.store.put(uri, json.dumps(val))
+            uri = str('%s/plugins/%s/%s' % (self.ahome, net.name, net.uuid))
+            self.astore.put(uri, json.dumps(val))
 
             val = {'plugins': [{'name': net.name, 'version': net.version, 'uuid': str(net.uuid),
                                 'type': 'network','status': 'loaded'}]}
-            uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
-            self.store.dput(uri, json.dumps(val))
+            uri = str('%s/plugins' % self.ahome)
+            self.astore.dput(uri, json.dumps(val))
 
             return net
         else:
@@ -109,8 +120,8 @@ class FogAgent(Agent):
         node_info.update({'disks': self.__osPlugin.getDisksInformation()})
         node_info.update({'network': self.__osPlugin.getNetworkInformations()})
 
-        uri = str('fos://<sys-id>/%s/' % self.uuid)
-        self.store.put(uri, json.dumps(node_info))
+        uri = str('%s/' % self.ahome)
+        self.astore.put(uri, json.dumps(node_info))
 
     def __react_to_cache(self, uri, value, v):
         print ("###########################")
@@ -123,7 +134,7 @@ class FogAgent(Agent):
 
     def __react_to_plugins(self, uri, value, v):
         print("Received a plugins action")
-        print (value)
+        print(value)
         value = json.loads(value)
         value = value.get('plugins')
         for v in value:
@@ -468,18 +479,17 @@ class FogAgent(Agent):
         #self.loadNetworkPlugin('brctl')
 
         #print (self.store)
-        uri = str('fos://<sys-id>/%s/applications/*/' % self.uuid)
-        self.store.observe(uri, self.__application_definition)
+        uri = str('%s/applications/*/' % self.dhome)
+        print("Applications URI: %s" % uri)
+        self.dstore.observe(uri, self.__application_definition)
 
+        uri = str('%s/*/' % self.dhome)
+        print("Home URI: %s" % uri)
+        self.dstore.observe(uri, self.__react_to_cache)
 
-        uri = str('fos://<sys-id>/%s/*/' % self.uuid)
-        self.store.observe(uri, self.__react_to_cache)
-
-        uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
-        self.store.observe(uri, self.__react_to_plugins)
-
-
-
+        uri = str('%s/plugins' % self.dhome)
+        print("Plugins URI: %s" %uri)
+        self.dstore.observe(uri, self.__react_to_plugins)
 
         print("Listening on Store...")
         while True:

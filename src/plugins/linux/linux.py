@@ -240,12 +240,12 @@ class Linux(OSPlugin):
         # /dev/sda1: LABEL = "/"  UUID = "ee7cf0a0-1922-401b-a1ae-6ec9261484c0" SEC_TYPE = "ext2" TYPE = "ext3"
         # generate uuid from this or from cpuid or mb uuid from /sys/class/dmi/id/product_uuid
 
-        # p = psutil.Popen('cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE) no need of regex
-        p = psutil.Popen('sudo cat '.split(), stdout=PIPE)
+        p = psutil.Popen('sudo cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE)
+        #p = psutil.Popen('sudo cat '.split(), stdout=PIPE)
         res = ""
         for line in p.stdout:
             res = str(res + "%s" % line.decode("utf-8"))
-        return res.lower()
+        return res.lower().strip()
         '''
         uuid_regex = r"UUID=\"(.{0,37})\""
         p = psutil.Popen('sudo blkid /dev/sda1'.split(), stdout=PIPE)
