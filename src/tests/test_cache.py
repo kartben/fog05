@@ -5,7 +5,7 @@ import uuid
 from DStore import *
 from DController import *
 import json
-
+import time
 
 class TestCache():
 
@@ -77,11 +77,11 @@ class TestCache():
         uri = str('afos://<sys-id>/*/')
         self.astore.observe(uri, self.nodeDiscovered)
 
-        uri = str('dfos://<sys-id>/*')
-        self.dstore.observe(uri, self.test_observer_desidered)
+        #uri = str('dfos://<sys-id>/*')
+        #self.dstore.observe(uri, self.test_observer_desidered)
 
-        uri = str('afos://<sys-id>/*')
-        self.astore.observe(uri, self.test_observer_actual)
+        #uri = str('afos://<sys-id>/*')
+        #self.astore.observe(uri, self.test_observer_actual)
 
         print("Putting on dstore")
         val = {'value': "some value"}

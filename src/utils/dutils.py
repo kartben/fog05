@@ -71,8 +71,10 @@ def init_dds_topic_entities(dp, info, partitions):
     ps_qos = Qos([PresentationQosPolicy(DDSPresentationAccessScopeKind.TOPIC, True, True),
                 PartitionQosPolicy(partitions)])
 
-    info.pub = dp.create_publisher(ps_qos)
-    info.sub = dp.create_subscriber(ps_qos)
+    info.pub = dp.create_publisher()    #ps_qos)
+    info.sub = dp.create_subscriber()    #ps_qos)
+
+    # COMMENTED BEACUSE SEEM THAT THERE IS A BUG IN PARTITION MANAGMENT
 
     # store_info_writer = pub.create_datawriter(store_info_topic, writer_qos)
     info.listener = DataListener()
