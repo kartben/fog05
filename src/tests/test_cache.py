@@ -18,18 +18,17 @@ class TestCache():
         # giving the same id to the nodew and the cache
         self.store = DStore(sid, self.root, self.home, 1024)
 
-        osuuid = uuid.uuid4()
+        # Desidered Store. containing the desidered state
+        self.droot = "dfos://<sys-id>"
+        self.dhome = str("dfos://<sys-id>/%s" % sid)
+        self.dstore = DStore(sid, self.droot, self.dhome, 1024)
 
+        # Actual Store, containing the Actual State
+        self.aroot = "afos://<sys-id>"
+        self.ahome = str("afos://<sys-id>/%s" % sid)
+        self.astore = DStore(sid, self.aroot, self.ahome, 1024)
 
-
-        val = {'status': 'add', 'version': 1, 'description': 'linux plugin', 'plugin': 'here should be python object'}
-        uri = str('fos://<sys-id>/%s/plugins/%s/%s' % (self.uuid, 'linux', osuuid ))
-        self.store.put(uri, json.dumps(val))
-
-        val = {'plugins': [{'name': 'linux', 'version': 1, 'uuid': str(osuuid),
-                           'type': 'os'}]}
-        uri = uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
-        self.store.put(uri, json.dumps(val))
+        self.nodes = {}
 
         self.populateNodeInformation()
 
@@ -39,8 +38,8 @@ class TestCache():
         node_info = {}
 
         node_info.update({'name': 'develop node'})
-        uri = str('fos://<sys-id>/%s/' % self.uuid)
-        self.store.put(uri, json.dumps(node_info))
+        uri = str('%s/' % self.ahome)
+        self.astore.put(uri, json.dumps(node_info))
 
     def test_observer(self, key, value,v):
         print ("###########################")
@@ -51,12 +50,78 @@ class TestCache():
         print ("###########################")
         print ("###########################")
 
-    def test_remove(self, key):
-        self.store.remove(key)
+
+    def nodeDiscovered(self, uri, value, v = None):
+        value = json.loads(value)
+        if uri != str('fos://<sys-id>/%s/' % self.uuid):
+            print ("###########################")
+            print ("###########################")
+            print ("### New Node discovered ###")
+            print ("UUID: %s" % value.get('uuid'))
+            print ("Name: %s" % value.get('name'))
+            print ("###########################")
+            print ("###########################")
+            self.nodes.update({ len(self.nodes)+1 : {value.get('uuid'): value}})
+
+    def show_nodes(self):
+        for k in self.nodes.keys():
+            n = self.nodes.get(k)
+            id = list(n.keys())[0]
+            print("%d - %s : %s" % (k, n.get(id).get('name'), id))
 
     def main(self):
+        uri = str('afos://<sys-id>/*/')
+        self.astore.observe(uri, self.nodeDiscovered)
 
-        print(self.store)
+        print("Putting on dstore")
+        val = {'value': "some value"}
+        uri = str('%s/test1' % self.dhome)
+        self.dstore.put(uri, json.dumps(val))
+
+        val = {'value2': "some value2"}
+        uri = str('%s/test2' % self.dhome)
+        self.dstore.put(uri, json.dumps(val))
+
+        val = {'value3': "some value3"}
+        uri = str('%s/test3' % self.dhome)
+        self.dstore.put(uri, json.dumps(val))
+
+        print("Putting on astore")
+
+        val = {'actual value': "some value"}
+        uri = str('%s/test1' % self.ahome)
+        self.astore.put(uri, json.dumps(val))
+
+        val = {'actual value2': "some value2"}
+        uri = str('%s/test2' % self.ahome)
+        self.astore.put(uri, json.dumps(val))
+
+        val = {'actual value32': "some value3"}
+        uri = str('%s/test3' % self.ahome)
+        self.astore.put(uri, json.dumps(val))
+
+        while len(self.nodes) < 1:
+            time.sleep(2)
+
+        self.show_nodes()
+
+        print("My UUID is %s" % self.uuid)
+
+        print("###################################### Desidered Store ######################################")
+        print(self.dstore)
+        print("#############################################################################################")
+
+        print("###################################### Actual Store #########################################")
+        print(self.astore)
+        print("#############################################################################################")
+
+
+
+
+
+
+
+        '''        print(self.store)
 
 
         uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
@@ -141,6 +206,8 @@ class TestCache():
         self.store.put(uri, json_data)
         print (self.store)
 
+        '''
+        input()
         exit(0)
 
         #################
