@@ -130,15 +130,15 @@ class Controll():
                             'type': 'runtime', 'status': 'add'}]}
         uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
         print(uri)
-        print(self.dstore.get(uri))
+        #print(self.dstore.get(uri))
 
-        self.dstore.dput(uri, json.dumps(val))
+        self.dstore.put(uri, json.dumps(val))
 
         time.sleep(1)
         val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
                             'type': 'network', 'status': 'add'}]}
         uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
-        self.dstore.dput(uri, json.dumps(val))
+        self.dstore.put(uri, json.dumps(val))
 
         time.sleep(1)
 
@@ -371,13 +371,13 @@ class Controll():
         val = {'plugins': [{'name': 'KVMLibvirt', 'version': 1, 'uuid': '',
                             'type': 'runtime', 'status': 'add'}]}
         uri = str('dfos://<sys-id>/%s/plugins' % dst)
-        self.dstore.dput(uri, json.dumps(val))
+        self.dstore.put(uri, json.dumps(val))
 
         time.sleep(1)
         val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
                             'type': 'network', 'status': 'add'}]}
         uri = str('dfos://<sys-id>/%s/plugins' % dst)
-        self.dstore.dput(uri, json.dumps(val))
+        self.dstore.put(uri, json.dumps(val))
 
         time.sleep(1)
 

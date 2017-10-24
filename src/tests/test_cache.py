@@ -12,11 +12,7 @@ class TestCache():
     def __init__(self):
         self.uuid = uuid.uuid4()
         sid = str(self.uuid)
-        self.root = "fos://<sys-id>"
-        self.home = str("fos://<sys-id>/%s" % sid)
-        # Notice that a node may have multiple caches, but here we are
-        # giving the same id to the nodew and the cache
-        self.store = DStore(sid, self.root, self.home, 1024)
+
 
         # Desidered Store. containing the desidered state
         self.droot = "dfos://<sys-id>"
@@ -32,7 +28,6 @@ class TestCache():
 
         self.populateNodeInformation()
 
-
     def populateNodeInformation(self):
 
         node_info = {}
@@ -41,14 +36,23 @@ class TestCache():
         uri = str('%s/' % self.ahome)
         self.astore.put(uri, json.dumps(node_info))
 
-    def test_observer(self, key, value,v):
-        print ("###########################")
-        print ("##### I'M an Observer #####")
+    def test_observer_actual(self, key, value,v):
+        print ("##################################")
+        print ("##### I'M an Observer ACTUAL #####")
         print ("## Key: %s" % key)
         print ("## Value: %s" % value)
         print ("## V: %s" % v)
-        print ("###########################")
-        print ("###########################")
+        print("##################################")
+        print("##################################")
+
+    def test_observer_desidered(self, key, value,v):
+        print ("#####################################")
+        print ("##### I'M an Observer DESIDERED #####")
+        print ("## Key: %s" % key)
+        print ("## Value: %s" % value)
+        print ("## V: %s" % v)
+        print("#####################################")
+        print("#####################################")
 
 
     def nodeDiscovered(self, uri, value, v = None):
@@ -72,6 +76,12 @@ class TestCache():
     def main(self):
         uri = str('afos://<sys-id>/*/')
         self.astore.observe(uri, self.nodeDiscovered)
+
+        uri = str('dfos://<sys-id>/*')
+        self.dstore.observe(uri, self.test_observer_desidered)
+
+        uri = str('afos://<sys-id>/*')
+        self.astore.observe(uri, self.test_observer_actual)
 
         print("Putting on dstore")
         val = {'value': "some value"}
