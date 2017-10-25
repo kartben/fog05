@@ -103,7 +103,7 @@ class KVMLibvirt(RuntimePlugin):
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             self.current_entities.pop(entity_uuid, None)
-            self.__pop_actual_store(entity_uuid)
+            #self.__pop_actual_store(entity_uuid)
             return True
 
     def configureEntity(self, entity_uuid):
@@ -356,6 +356,7 @@ class KVMLibvirt(RuntimePlugin):
                                       disk_path,
                                       vm_info.get('disk_size'), cdrom_path, vm_info.get('networks'),
                                       vm_info.get('base_image'), vm_info.get('user-data'), vm_info.get('ssh-key'))
+
             entity.state = State.LANDING
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
             vm_xml = self.__generate_dom_xml(entity)

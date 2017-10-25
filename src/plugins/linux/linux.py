@@ -78,7 +78,11 @@ class Linux(OSPlugin):
         return os.rmdir(path)
 
     def removeFile(self, path):
-        return os.remove(path)
+        try:
+            return os.remove(path)
+        except FileNotFoundError as e:
+            print("File Not Found %s so don't need to remove" % e.strerror)
+            return
 
     def fileExists(self, file_path):
         return os.path.isfile(file_path)
