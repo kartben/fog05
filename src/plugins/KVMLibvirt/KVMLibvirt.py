@@ -193,7 +193,7 @@ class KVMLibvirt(RuntimePlugin):
             self.agent.getOSPlugin().removeFile(entity.cdrom)
             self.agent.getOSPlugin().removeFile(entity.disk)
             self.agent.getOSPlugin().removeFile(str("%s/%s/%s") % (self.BASE_DIR, self.IMAGE_DIR, entity.image))
-            self.agent.getOSPlugin().removeFile(str("%s/%s/%s_log.log") % (self.BASE_DIR, self.IMAGE_DIR, entity_uuid))
+            self.agent.getOSPlugin().removeFile(str("%s/%s/%s_log.log") % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
 
 
             entity.onClean()

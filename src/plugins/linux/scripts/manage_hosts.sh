@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # PATH TO YOUR HOSTS FILE
-ETC_HOSTS=/etc/hosts
+hostsFile=/etc/hosts
 
 # IP FOR HOSTNAME
 #IP=$2
@@ -15,31 +15,35 @@ usage () {
     exit 1
 }
 
+
+yell() { echo "$0: $*" >&2; }
+die() { yell "$*"; exit 111; }
+try() { "$@" || die "cannot $*"; }
+
+
 removehost () {
-    if [ -n "$(grep $HOSTNAME /etc/hosts)" ]
-    then
-        echo "$HOSTNAME Found in your $ETC_HOSTS, Removing now...";
-        sudo sed -i".bak" "/$HOSTNAME/d" $ETC_HOSTS
+    if [ -n "$(grep -w "$hostname$" /etc/hosts)" ]; then
+        echo "$hostname found in $hostsFile. Removing now...";
+        try sudo sed -ie "/.$hostname$/d" "$hostsFile";
     else
-        echo "$HOSTNAME was not found in your $ETC_HOSTS";
+        yell "$hostname was not found in $hostsFile";
     fi
+
 }
 
 addhost () {
-    HOSTS_LINE="$IP\t$HOSTNAME"
-    if [ -n "$(grep $HOSTNAME /etc/hosts)" ]
-        then
-            echo "$HOSTNAME already exists : $(grep $HOSTNAME $ETC_HOSTS)"
-        else
-            echo "Adding $HOSTNAME to your $ETC_HOSTS";
-            sudo -- sh -c -e "echo '$HOSTS_LINE' >> /etc/hosts";
+    if [ -n "$(grep -w "$hostname$" /etc/hosts)" ]; then
+        yell "$hostname, already exists: $(grep $hostname $hostsFile)";
+    else
+        echo "Adding $hostname to $hostsFile...";
+        try printf "%s\t%s\n" "$ip" "$hostname" | sudo tee -a "$hostsFile" > /dev/null;
 
-            if [ -n "$(grep $HOSTNAME /etc/hosts)" ]
-                then
-                    echo "$HOSTNAME was added succesfully: $(grep $HOSTNAME /etc/hosts)";
-                else
-                    echo "Failed to Add $HOSTNAME, Try again!";
-            fi
+        if [ -n "$(grep -w "$hostname$" /etc/hosts)" ]; then
+            echo "$hostname was added succesfully:";
+            echo "$(grep -w "$hostname$" /etc/hosts)";
+        else
+            die "Failed to add $hostname";
+        fi
     fi
 }
 
@@ -54,14 +58,14 @@ fi
 
 case $1 in
     -d)
-        HOSTNAME=$2
+        hostname=$2
         removehost
         exit 0
     ;;
     -a)
         if [ $# -eq 3 ]; then
-            HOSTNAME=$2
-                IP=$3
+            hostname=$2
+                ip=$3
                 addhost
                 exit 0
             else
