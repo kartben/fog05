@@ -88,7 +88,8 @@ Application manifest:
         ]
     }
 
-    @GB: Where I can find manifest for components? Node has some http server for providing them of are nested json?
+    @GB: Manifest of the components are simply entity definition jsons, so you can nest application inside applications,
+         or you can link application with simple entity
 
 Wordpress manifest:
 
