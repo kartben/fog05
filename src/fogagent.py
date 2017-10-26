@@ -7,6 +7,8 @@ from DStore import *
 import json
 #import networkx as nx
 import re
+import time
+
 
 class FogAgent(Agent):
 
@@ -153,92 +155,22 @@ class FogAgent(Agent):
                 else:
                     print('Plugins of type %s are not yet supported...' % v.get('type'))
 
-    def __application_definition(self, uri, value, v):
-        '''
-        This should observe fos://<sys-id>/nodeid/applications/*
-        Where each application is defined like the example in the docs
-        So to add an application someone should always do a dput
 
-        Example service:
-         {
-        "name":"wp_blog"
-        "description":"simple wordpress blog",
-        "components":[
-                {
-                    "name":"wordpress",
-                    "need":["mysql"],
-                    "proximity":{"mysql":3}
-                    "manifest":"fos://sys-id/node-id/applications/appuuid/component_name"
-                },
-                {
-                    "name":"mysql",
-                    "need":[],
-                    "proximity":{},
-                    "manifest":"fos://sys-id/node-id/applications/appuuid/component_name"
-                }
-            ]
-        }
-
-        service components:
-        {
-            "name":"wp_v2.foo.bar"
-            "description":"wordpress blog engine",
-            "version": 2,
-            "type":"container",
-            "entity_description":{...},
-            "accelerators":[]
-            "io":[]
-        }
-
-
-
-        {
-            "name":"myql_v2.foo.bar"
-            "description":"mysql db engine",
-            "version" : 3,
-            "type":"vm",
-            "entity_description":{...},  <- here all information to download and configure the db server
-            "accelerators":[]
-            "io":[]
-        }
-
-        Then starting from these the agent should create the right entities json and write in the correct uris in the
-        correct order and in the correct nodes
-
-        So in this case should create:
-
-        for mysql:
-        {'status': 'define', 'name': 'mysql_v2.foo.bar, 'version': 1, 'entity_data': entity_description}
-
-        then write this to
-        fos://sysid/nodeid/runtime/kvmid/this_entity_id
-        and configure and start this vm
-
-        for mysql
-        {'status': 'define', 'name': 'wp_v2.foo.bar, 'version': 1, 'entity_data': entity_description}
-        where entity_description should be populated from information based on previous mysql deployment
-        (eg. server ip)
-        then write this to (nodeid can be the same or another, choice is based on proximity definition in app manifest
-        fos://sysid/nodeid/runtime/lxc_id/wp_entity_id
-        and configure and start this container
-
-        after these steps the service should work and his information should be available in his uri
-
-        :param uri:
-        :param value:
-        :param v:
-        :return:
-        '''
-
+    def __react_to_onboarding(self, uri, value, v):
         print("URI: %s\nValue: %s\nVersion: %s\n" % (uri, value, v))
-
         value = json.loads(value)
-
         application_uuid = uri.split('/')[-1]
-        print (application_uuid)
+        self.__application_onboarding(application_uuid,value)
+
+
+    def __application_onboarding(self,application_uuid, value):
+
+
+
+
+        print(application_uuid)
         deploy_order_list = self.__resolve_dependencies(value.get('components', None))
         informations = {}
-
         '''
         With the ordered list of entities the agent should generate the graph of entities
         eg. using NetworkX lib and looking for loops, if it find a loop should fail the application
@@ -248,7 +180,6 @@ class FogAgent(Agent):
         After each deploy the agent should collect correct information for the deploy of components that need other
         components (eg. should retrive the ip address, and then pass in someway to others components)
         '''
-
 
         for c in deploy_order_list:
             search = [x for x in value.get('components') if x.get('name') == c]
@@ -282,65 +213,49 @@ class FogAgent(Agent):
                 '''
 
                 node_uuid = str(self.uuid) #@TODO: select deploy node in a smart way
+
                 vm_uuid = mf.get("entity_description").get("uuid")
 
                 entity_definition = {'status': 'define', 'name': component.get("name"), 'version': component.get(
                     'version'), 'entity_data': mf.get("entity_description")}
                 json_data = json.dumps(entity_definition)
 
-                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, kvm.get('uuid'), vm_uuid))
-                self.store.put(uri, json_data)
+                uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, kvm.get('uuid'), vm_uuid))
+                self.dstore.put(uri, json_data)
 
-                time.sleep(1)
+                while True:
+                    print("Waiting vm defined...")
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
+                    vm_info = json.loads(self.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "defined":
+                        break
 
-                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
-                          (node_uuid, kvm.get('uuid'), vm_uuid))
-                self.store.dput(uri)
+                uri = str(
+                    'dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (node_uuid, kvm.get('uuid'), vm_uuid))
+                self.dstore.dput(uri)
 
-                # HERE SHOULD WAIT FOR VM TO BE READY TO START
-                #input("press to start")
-                time.sleep(3)
+                while True:
+                    print("Waiting vm configured...")
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
+                    vm_info = json.loads(self.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "configured":
+                        break
 
-                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
-                          (node_uuid, kvm.get('uuid'), vm_uuid))
-                self.store.dput(uri)
+                uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, kvm.get('uuid'), vm_uuid))
+                self.dstore.dput(uri)
 
-                '''
-                Using regex it is possible to read from log file if the vm in ready thanks to cloudinit
-                
-                regex: \[.+?\].+\[.+?\]:.+Cloud-init.+?v..+running.+'modules:final'.+Up.([0-9]*\.?[0-9]+).+seconds.\n
-                
-                using this is possible to get the time that the vm taken to boot
-                
-                '''
+                while True:
+                    print("Waiting vm to boot...")
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
+                    vm_info = json.loads(self.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "run":
+                        break
 
-                #TODO: atm reading from here, should be done by plugin that then can update the value in the store
+                print("vm is running on node")
 
-                log_filename = str("/opt/fos/logs/%s_log.log" % vm_uuid)
-                print(self.__wait_boot(log_filename))
-                ##
-
-
-
-                #input("press to stop")
-                #uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, kvm.get('uuid'), vm_uuid))
-                #self.store.dput(uri)
-
-                #time.sleep(1)
-
-                #uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
-                #          (node_uuid, kvm.get('uuid'), vm_uuid))
-                #self.store.dput(uri)
-
-                #time.sleep(1)
-                #uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' %
-                #          (node_uuid, kvm.get('uuid'), vm_uuid))
-                #self.store.dput(uri)
-
-                # HERE SHOULD WAIT FOR VM TO BE STARTED BEFORE DEPLOY NEXT ONES
-
-                #uri = str('fos://<sys-id>/%s/runime/%s/entity/%s/info' % (node_uuid, kvm.get('uuid'), vm_uuid))
-                #informations.update({c: json.loads(self.store.get(uri))})
 
 
 
@@ -360,40 +275,43 @@ class FogAgent(Agent):
                     'version'), 'entity_data': mf.get("entity_description")}
                 json_data = json.dumps(entity_definition)
 
-                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, native.get('uuid'), na_uuid))
-                self.store.put(uri, json_data)
+                uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, native.get('uuid'), na_uuid))
+                self.sdtore.put(uri, json_data)
 
-                time.sleep(1)
+                while True:
+                    print("Waiting native to defined...")
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
+                    vm_info = json.loads(self.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "defined":
+                        break
 
-                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
+                uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
                           (node_uuid, native.get('uuid'), na_uuid))
-                self.store.dput(uri)
+                self.dstore.dput(uri)
 
-                # ASSUME THE NATIVE APP START
-
-                #input("press to start")
+                while True:
+                    print("Waiting native to configure...")
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
+                    vm_info = json.loads(self.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "configured":
+                        break
 
                 uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
                           (node_uuid, native.get('uuid'), na_uuid))
                 self.store.dput(uri)
-                '''
-                input("press to stop")
-                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, native.get('uuid'), na_uuid))
-                self.store.dput(uri)
 
-                time.sleep(1)
-
-                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
-                          (node_uuid, native.get('uuid'), na_uuid))
-                self.store.dput(uri)
-
-                time.sleep(1)
-                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' %
-                          (node_uuid, native.get('uuid'), na_uuid))
-                self.store.dput(uri)
-                '''
+                while True:
+                    print("Waiting native to start...")
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
+                    vm_info = json.loads(self.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "run":
+                        break
 
 
+                print ("native started")
 
 
 
@@ -401,6 +319,10 @@ class FogAgent(Agent):
                 print("component is a ros application")
             elif t == "usvc":
                 print("component is a microservice")
+
+            elif t == "application":
+                self.__application_onboarding(mf.get("uuid"),mf.get("entity_description"))
+
             else:
                 raise AssertionError("Component type not recognized %s" % t)
                 return
@@ -436,7 +358,7 @@ class FogAgent(Agent):
         return json.loads(self.store.get(manifest_path))
 
     def __search_plugin_by_name(self, name):
-        uri = str('fos://<sys-id>/%s/plugins' % self.uuid)
+        uri = str('%s/plugins' % self.ahome)
         all_plugins = json.loads(self.store.get(uri)).get('plugins')
         search = [x for x in all_plugins if name in x.get('name')]
         if len(search) == 0:
@@ -479,9 +401,9 @@ class FogAgent(Agent):
         #self.loadNetworkPlugin('brctl')
 
         #print (self.store)
-        uri = str('%s/applications/*/' % self.dhome)
+        uri = str('%s/onboard/*/' % self.dhome)
         print("Applications URI: %s" % uri)
-        self.dstore.observe(uri, self.__application_definition)
+        self.dstore.observe(uri, self.__application_onboarding)
 
         uri = str('%s/*/' % self.dhome)
         print("Home URI: %s" % uri)

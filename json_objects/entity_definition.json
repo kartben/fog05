@@ -11,6 +11,9 @@
     "name": {
       "type": "string"
     },
+    "uuid":{
+      "type":"string"
+    }
     "type": {
       "type": "string",
       "desciption": "describe the type, can be an entity (vm, uk, be, us, ros....) or an application"

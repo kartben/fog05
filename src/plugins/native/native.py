@@ -17,12 +17,13 @@ class Native(RuntimePlugin):
         self.uuid = uuid.uuid4()
         self.name = name
         self.agent = agent
+        self.HOME = str("runtime/%s/entity" % self.uuid)
         self.startRuntime()
 
     def startRuntime(self):
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/*' % (self.agent.uuid, self.uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/*' % (self.agent.uuid, self.uuid))
         print("Native Listening on %s" % uri)
-        self.agent.store.observe(uri, self.__react_to_cache)
+        self.agent.dstore.observe(uri, self.__react_to_cache)
         return self.uuid
 
     def stopRuntime(self):
@@ -40,6 +41,10 @@ class Native(RuntimePlugin):
 
         entity.setState(State.DEFINED)
         self.current_entities.update({entity_uuid: entity})
+        uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+        na_info = json.loads(self.agent.dstore.get(uri))
+        na_info.update({"status": "defined"})
+        self.__update_actual_store(entity_uuid, na_info)
 
         return entity_uuid
 
@@ -71,10 +76,14 @@ class Native(RuntimePlugin):
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
 
-            create_file = str("touch %s" % entity.outfile)
-            self.agent.getOSPlugin().executeCommand(create_file)
+
+            self.agent.getOSPlugin().createFile(entity.outfile)
             entity.onConfigured()
             self.current_entities.update({entity_uuid: entity})
+            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+            na_info = json.loads(self.agent.dstore.get(uri))
+            na_info.update({"status": "configured"})
+            self.__update_actual_store(entity_uuid, na_info)
             return True
 
     def cleanEntity(self, entity_uuid):
@@ -89,10 +98,16 @@ class Native(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
-            rm_cmd = str("rm -f %s" % entity.outfile)
-            self.agent.getOSPlugin().executeCommand(rm_cmd)
+
+            self.agent.getOSPlugin().eremoveFile(entity.outfile)
             entity.onClean()
             self.current_entities.update({entity_uuid: entity})
+
+            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+            na_info = json.loads(self.agent.dstore.get(uri))
+            na_info.update({"status": "cleaned"})
+            self.__update_actual_store(entity_uuid, na_info)
+
             return True
 
     def runEntity(self, entity_uuid):
@@ -111,6 +126,10 @@ class Native(RuntimePlugin):
             process = self.__execute_command(cmd, entity.outfile)
             entity.onStart(process.pid, process)
             self.current_entities.update({entity_uuid: entity})
+            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+            na_info = json.loads(self.agent.dstore.get(uri))
+            na_info.update({"status": "run"})
+            self.__update_actual_store(entity_uuid, na_info)
             return True
 
     def stopEntity(self, entity_uuid):
@@ -128,6 +147,10 @@ class Native(RuntimePlugin):
             p.terminate()
             entity.onStop()
             self.current_entities.update({entity_uuid: entity})
+            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+            na_info = json.loads(self.agent.dstore.get(uri))
+            na_info.update({"status": "stop"})
+            self.__update_actual_store(entity_uuid, na_info)
             return True
 
     def pauseEntity(self, entity_uuid):
@@ -137,6 +160,18 @@ class Native(RuntimePlugin):
     def resumeEntity(self, entity_uuid):
         print("Can't resume a native application")
         return False
+
+
+
+    def __update_actual_store(self, uri, value):
+        uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, uri))
+        value = json.dumps(value)
+        self.agent.astore.put(uri, value)
+
+    def __pop_actual_store(self, uri,):
+        uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, uri))
+        self.agent.astore.remove(uri)
+
 
     def __execute_command(self, command, out_file):
         f = open(out_file, 'w')

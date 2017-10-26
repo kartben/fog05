@@ -53,7 +53,7 @@ Example of a simple 'complex' application: a Wordpress blog
 
 
 
-To define the application you can do a put to `dfos://<sys-id>/nodeid/applications/application_uuid/`
+To define the application you can do a put to ~`dfos://<sys-id>/nodeid/applications/application_uuid/`~
 
 
     @GB: to have a more generic architecture during the definition we can do a put to
@@ -77,13 +77,13 @@ Application manifest:
                 "name":"wordpress",
                 "need":["mysql"],
                 "proximity":{"mysql":3}
-                "manifest":"fos://sys-id/node-id/applications/appuuid/component_name"
+                "manifest":"fos://sys-id/node-id/onboard/appuuid/component_name"
             },
             {
                 "name":"mysql",
                 "need":[],
                 "proximity":{},
-                "manifest":"fos://sys-id/node-id/applications/appuuid/component_name"
+                "manifest":"fos://sys-id/node-id/onboard/appuuid/component_name"
             }
         ]
     }
