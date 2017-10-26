@@ -1,9 +1,8 @@
-from interfaces.Agent import Agent
-from PluginLoader import PluginLoader
 import uuid
 import sys
+import os
+sys.path.append(os.path.join(sys.path[0].rstrip("examples")))
 from DStore import *
-# from RedisLocalCache import RedisCache
 import json
 import time
 
@@ -272,8 +271,8 @@ class Controll():
 
         val = {'plugins': [{'name': 'native', 'version': 1, 'uuid': '',
                             'type': 'runtime', 'status': 'add'}]}
-        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
-        self.store.dput(uri, json.dumps(val))
+        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        self.dstore.dput(uri, json.dumps(val))
 
         time.sleep(1)
 
@@ -314,23 +313,23 @@ class Controll():
             "io": []
         }
 
-        uri_vm = str('fos://<sys-id>/%s/applications/%s/%s' % (node_uuid, app_uuid,"nginx"))
-        uri_na = str('fos://<sys-id>/%s/applications/%s/%s' % (node_uuid, app_uuid, app_name))
+        uri_vm = str('dfos://<sys-id>/%s/onboard/%s/%s' % (node_uuid, app_uuid,"nginx"))
+        uri_na = str('dfos://<sys-id>/%s/onboard/%s/%s' % (node_uuid, app_uuid, app_name))
         json_data = json.dumps(na)
-        self.store.put(uri_na, json_data)
+        self.dstore.put(uri_na, json_data)
         json_data = json.dumps(vm)
-        self.store.put(uri_vm, json_data)
+        self.dstore.put(uri_vm, json_data)
 
 
 
         app = {"name":"demo", "description":"simple nginx+web demo",
         "components":[{ "name":"nginx","need":[],"proximity":{},"manifest":uri_vm},
-                {"name":"browser","need":[],"proximity":{},"manifest":uri_na}]}
+                {"name":"browser","need":["nginx"],"proximity":{},"manifest":uri_na}]}
 
         json_data = json.dumps(app)
 
-        uri = str('fos://<sys-id>/%s/applications/%s/' % (node_uuid, app_uuid))
-        self.store.put(uri, json_data)
+        uri = str('dfos://<sys-id>/%s/onboard/%s/' % (node_uuid, app_uuid))
+        self.dstore.put(uri, json_data)
 
 
     def migrate_vm(self, src, dst, vm_uuid):
@@ -420,10 +419,15 @@ class Controll():
 
         vm_uuid = str(uuid.uuid4())
 
-        while len(self.nodes) < 2:
+        while len(self.nodes) < 1:
             time.sleep(2)
 
         self.show_nodes()
+
+        vm_src_node = self.nodes.get(1)
+        if vm_src_node is not None:
+            vm_src_node = list(vm_src_node.keys())[0]
+
 
 
         # print("###################################### Desidered Store ######################################")

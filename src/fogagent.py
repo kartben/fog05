@@ -298,9 +298,9 @@ class FogAgent(Agent):
                     if vm_info is not None and vm_info.get("status") == "configured":
                         break
 
-                uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
+                uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
                           (node_uuid, native.get('uuid'), na_uuid))
-                self.store.dput(uri)
+                self.dstore.dput(uri)
 
                 while True:
                     print("Waiting native to start...")
@@ -355,7 +355,7 @@ class FogAgent(Agent):
         return order
 
     def __get_manifest(self, manifest_path):
-        return json.loads(self.store.get(manifest_path))
+        return json.loads(self.dstore.get(manifest_path))
 
     def __search_plugin_by_name(self, name):
         uri = str('%s/plugins' % self.ahome)
@@ -403,7 +403,7 @@ class FogAgent(Agent):
         #print (self.store)
         uri = str('%s/onboard/*/' % self.dhome)
         print("Applications URI: %s" % uri)
-        self.dstore.observe(uri, self.__application_onboarding)
+        self.dstore.observe(uri, self.__react_to_onboarding)
 
         uri = str('%s/*/' % self.dhome)
         print("Home URI: %s" % uri)

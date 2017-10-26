@@ -121,7 +121,7 @@ class brctl(NetworkPlugin):
 
         dhcp_pid_file = str('/opt/fog/dhcp_out/%s.pid' % net.get('network_name'))
         if self.agent.getOSPlugin().fileExists(dhcp_pid_file):
-            pid = self.agent.getOSPlugin().readFile(dhcp_pid_file)
+            pid = self.agent.getOSPlugin().read_file(dhcp_pid_file)
             self.agent.getOSPlugin().sendSigKill(pid)
 
 
