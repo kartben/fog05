@@ -53,9 +53,20 @@ Example of a simple 'complex' application: a Wordpress blog
 
 
 
-To define the application you can do a put to `fos://<sys-id>/nodeid/applications/application_uuid/`
+To define the application you can do a put to `dfos://<sys-id>/nodeid/applications/application_uuid/`
 
+
+    @GB: to have a more generic architecture during the definition we can do a put to
+         dfos://<sys-id>/nodeid/onboard/application_uuid/
+         The use the same [entity definition json](../json_objects/entity_definition.schema)
+         And inside entity_data we can have that contains the manifest, in this
+         way is very easy to define application/entity/systems (graph of applications)
+
+ 
 Application manifest:
+
+    @GB: updated this with new definition, this is inside an entity definition json, with type application
+    
 
     {
         "name":"wp_blog"
