@@ -228,7 +228,17 @@ class ROS2(RuntimePlugin):
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
             p = entity.process
-            self.agent.getOSPlugin().sendSigKill(p.pid)
+
+            p.terminate()  #process don't die
+            #os.kill(p.pid, 9)
+            #####
+            os.system(str("kill -9 %d" % p.pid ))
+            p.wait()
+
+            print(p.pid)    ## is different from the one in ps -ax why????
+            print(p.ppid()) ##
+
+            ####
             entity.onStop()
             self.current_entities.update({entity_uuid: entity})
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
