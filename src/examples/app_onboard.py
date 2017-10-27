@@ -98,7 +98,7 @@ class Controll():
             "io": []
         }
 
-        uri_vm = str('dfos://<sys-id>/%s/onboard/%s/%s' % (node_uuid, app_uuid,"nginx"))
+        uri_vm = str('dfos://<sys-id>/%s/onboard/%s/%s' % (node_uuid, app_uuid, "nginx"))
         uri_na = str('dfos://<sys-id>/%s/onboard/%s/%s' % (node_uuid, app_uuid, app_name))
         json_data = json.dumps(na)
         self.dstore.put(uri_na, json_data)
@@ -112,6 +112,8 @@ class Controll():
                 {"name":"browser","need":["nginx"],"proximity":{},"manifest":uri_na}]}
 
         json_data = json.dumps(app)
+
+        time.sleep(1)
 
         uri = str('dfos://<sys-id>/%s/onboard/%s/' % (node_uuid, app_uuid))
         self.dstore.put(uri, json_data)

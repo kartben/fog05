@@ -67,8 +67,6 @@ class FogAgent(Agent):
         else:
             raise RuntimeError("Platform not compatible")
 
-
-
     def getOSPlugin(self):
         return self.__osPlugin
 
@@ -136,13 +134,13 @@ class FogAgent(Agent):
 
     def __react_to_plugins(self, uri, value, v):
         print("Received a plugins action")
-        print(value)
+        #print(value)
         value = json.loads(value)
         value = value.get('plugins')
         for v in value:
             if v.get('status') == 'add':
-                print (v)
-                print("I should add a plugin")
+                #print (v)
+                #print("I should add a plugin")
                 name = v.get('name')
 
                 #@TODO: use a dict with functions instead of if elif else...
@@ -256,9 +254,6 @@ class FogAgent(Agent):
 
                 print("vm is running on node")
 
-
-
-
             elif t == "container":
                 print("component is a container")
             elif t == "native":
@@ -276,7 +271,7 @@ class FogAgent(Agent):
                 json_data = json.dumps(entity_definition)
 
                 uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, native.get('uuid'), na_uuid))
-                self.sdtore.put(uri, json_data)
+                self.dstore.put(uri, json_data)
 
                 while True:
                     print("Waiting native to defined...")
@@ -310,10 +305,7 @@ class FogAgent(Agent):
                     if vm_info is not None and vm_info.get("status") == "run":
                         break
 
-
                 print ("native started")
-
-
 
             elif t == "ros":
                 print("component is a ros application")
@@ -341,7 +333,7 @@ class FogAgent(Agent):
         no_dependable_components = []
         for i in range(0, len(components)):
             no_dependable_components.append([x for x in c if len(x.get('need')) == 0])
-            print (no_dependable_components)
+            #print (no_dependable_components)
             c = [x for x in c if x not in no_dependable_components[i]]
             for y in c:
                 n = y.get('need')
@@ -359,48 +351,15 @@ class FogAgent(Agent):
 
     def __search_plugin_by_name(self, name):
         uri = str('%s/plugins' % self.ahome)
-        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
         search = [x for x in all_plugins if name in x.get('name')]
         if len(search) == 0:
             return None
         else:
             return search[0]
 
-    def __wait_boot(self, filename):
-        time.sleep(5)
-        boot_regex = r"\[.+?\].+\[.+?\]:.+Cloud-init.+?v..+running.+'modules:final'.+Up.([0-9]*\.?[0-9]+).+seconds.\n"
-        while True:
-            file = open(filename, 'r')
-            import os
-            # Find the size of the file and move to the end
-            st_results = os.stat(filename)
-            st_size = st_results[6]
-            file.seek(st_size)
-
-            while 1:
-                where = file.tell()
-                line = file.readline()
-                if not line:
-                    time.sleep(1)
-                    file.seek(where)
-                else:
-                    m = re.search(boot_regex, str(line))
-                    if m:
-                        found = m.group(1)
-                        return found
-
-
-
     def main(self):
 
-
-
-        #print(self.store)
-
-        #self.loadRuntimePlugin('KVMLibvirt')
-        #self.loadNetworkPlugin('brctl')
-
-        #print (self.store)
         uri = str('%s/onboard/*/' % self.dhome)
         print("Applications URI: %s" % uri)
         self.dstore.observe(uri, self.__react_to_onboarding)
