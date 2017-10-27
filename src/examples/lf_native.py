@@ -50,6 +50,78 @@ class Controll():
             id = list(n.keys())[0]
             print("%d - %s : %s" % (k, n.get(id).get('name'), id))
 
+    def lf_native(self, node_uuid):
+
+        print("Make node load native plugin")
+
+        val = {'plugins': [{'name': 'native', 'version': 1, 'uuid': '',
+                            'type': 'runtime', 'status': 'add'}]}
+        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
+        self.store.dput(uri, json.dumps(val))
+
+        time.sleep(1)
+
+        print("Looking if native plugin loaded")
+
+        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+
+        runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
+        print("locating native plugin")
+        search = [x for x in runtimes if 'native' in x.get('name')]
+        if len(search) == 0:
+            print ("Plugin was not loaded")
+            exit()
+        else:
+            native = search[0]
+        app_name = 'Browser'
+        app_uuid = str(uuid.uuid4())
+        app_definition = {'name': app_name, 'command': 'firefox', 'args': ['172.16.7.131'], 'uuid': app_uuid}
+        entity_definition = {'status': 'define', 'name': app_name, 'version': 1, 'entity_data': app_definition}
+
+        json_data = json.dumps(entity_definition)
+
+        print("Press enter to define the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, native.get('uuid'), app_uuid))
+        self.store.put(uri, json_data)
+
+        print("Press enter to configure the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
+                  (node_uuid, native.get('uuid'), app_uuid))
+        self.store.dput(uri)
+
+        print("Press enter to start the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
+                  (node_uuid, native.get('uuid'), app_uuid))
+        self.store.dput(uri)
+
+        print("Press enter to stop the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' %
+                  (node_uuid, native.get('uuid'), app_uuid))
+        self.store.dput(uri)
+
+        print("Press enter to clean the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
+                  (node_uuid, native.get('uuid'), app_uuid))
+        self.store.dput(uri)
+
+        print("Press enter to undefine the native")
+        input()
+
+        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' %
+                  (node_uuid, native.get('uuid'), app_uuid))
+        self.store.dput(uri)
+
     def vm_deploy(self, node_uuid, vm_uuid):
         print("Make node load kvm plugin")
 
@@ -264,6 +336,9 @@ class Controll():
         self.vm_destroy(dst, vm_uuid)
 
 
+
+
+
     def main(self):
 
         uri = str('afos://<sys-id>/*/')
@@ -280,11 +355,24 @@ class Controll():
         if vm_src_node is not None:
             vm_src_node = list(vm_src_node.keys())[0]
 
+
+
+        # print("###################################### Desidered Store ######################################")
+        # print(self.dstore)
+        # print("#############################################################################################")
+        #
+        # print("###################################### Actual Store #########################################")
+        # print(self.astore)
+        # print("#############################################################################################")
+
         input()
 
         vm_src_node = self.nodes.get(1)
         if vm_src_node is not None:
             vm_src_node = list(vm_src_node.keys())[0]
+
+
+
 
         vm_dst_node = self.nodes.get(2)
         if vm_dst_node is not None:
@@ -297,6 +385,47 @@ class Controll():
         input()
 
         self.migrate_vm(vm_src_node, vm_dst_node, vm_uuid)
+
+
+
+        '''
+        n = int(input("Select node for vm deploy: "))
+
+        node_uuid = self.nodes.get(n)
+        if node_uuid is not None:
+            node_uuid = list(node_uuid.keys())[0]
+            if node_uuid is not None:
+                pass
+        else:
+            exit()
+
+        #self.deploy_application(node_uuid)
+
+
+
+        vm_node = node_uuid
+
+        self.vm_deploy(vm_node, vm_uuid)
+
+        self.show_nodes()
+
+        n = int(input("Select node for native app deploy: "))
+
+        node_uuid = self.nodes.get(n)
+        if node_uuid is not None:
+            node_uuid = list(node_uuid.keys())[0]
+            if node_uuid is not None:
+                pass
+        else:
+            exit()
+
+        self.lf_native(node_uuid)
+
+        input("Press enter to destroy vm")
+
+        self.vm_destroy(vm_node, vm_uuid)
+        #########
+        '''
 
         input()
 
