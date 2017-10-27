@@ -271,7 +271,7 @@ class Controll():
 
         vm_uuid = str(uuid.uuid4())
 
-        while len(self.nodes) < 1:
+        while len(self.nodes) < 2:
             time.sleep(2)
 
         self.show_nodes()

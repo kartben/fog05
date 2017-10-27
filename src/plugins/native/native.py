@@ -99,7 +99,7 @@ class Native(RuntimePlugin):
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
 
-            self.agent.getOSPlugin().eremoveFile(entity.outfile)
+            self.agent.getOSPlugin().removeFile(entity.outfile)
             entity.onClean()
             self.current_entities.update({entity_uuid: entity})
 

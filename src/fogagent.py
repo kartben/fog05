@@ -313,7 +313,7 @@ class FogAgent(Agent):
                 print("component is a microservice")
 
             elif t == "application":
-                self.__application_onboarding(mf.get("uuid"),mf.get("entity_description"))
+                self.__application_onboarding(mf.get("uuid"), mf.get("entity_description"))
 
             else:
                 raise AssertionError("Component type not recognized %s" % t)

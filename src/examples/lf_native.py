@@ -56,15 +56,15 @@ class Controll():
 
         val = {'plugins': [{'name': 'native', 'version': 1, 'uuid': '',
                             'type': 'runtime', 'status': 'add'}]}
-        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
-        self.store.dput(uri, json.dumps(val))
+        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        self.dstore.dput(uri, json.dumps(val))
 
         time.sleep(1)
 
         print("Looking if native plugin loaded")
 
-        uri = str('fos://<sys-id>/%s/plugins' % node_uuid)
-        all_plugins = json.loads(self.store.get(uri)).get('plugins')
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
 
         runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
         print("locating native plugin")
@@ -76,267 +76,76 @@ class Controll():
             native = search[0]
         app_name = 'Browser'
         app_uuid = str(uuid.uuid4())
-        app_definition = {'name': app_name, 'command': 'firefox', 'args': ['172.16.7.131'], 'uuid': app_uuid}
+        app_definition = {'name': app_name, 'command': 'firefox', 'args': ['www.adlinktech.com'], 'uuid': app_uuid}
         entity_definition = {'status': 'define', 'name': app_name, 'version': 1, 'entity_data': app_definition}
 
         json_data = json.dumps(entity_definition)
 
-        print("Press enter to define the native")
-        input()
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, native.get('uuid'), app_uuid))
+        self.dstore.put(uri, json_data)
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, native.get('uuid'), app_uuid))
-        self.store.put(uri, json_data)
+        while True:
+            print("Waiting native to defined...")
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
+            vm_info = json.loads(self.astore.get(uri))
+            if vm_info is not None and vm_info.get("status") == "defined":
+                break
 
-        print("Press enter to configure the native")
-        input()
-
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
                   (node_uuid, native.get('uuid'), app_uuid))
-        self.store.dput(uri)
+        self.dstore.dput(uri)
 
-        print("Press enter to start the native")
-        input()
+        while True:
+            print("Waiting native to defined...")
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
+            vm_info = json.loads(self.astore.get(uri))
+            if vm_info is not None and vm_info.get("status") == "configured":
+                break
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
                   (node_uuid, native.get('uuid'), app_uuid))
-        self.store.dput(uri)
+        self.dstore.dput(uri)
+
+        while True:
+            print("Waiting native to defined...")
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
+            vm_info = json.loads(self.astore.get(uri))
+            if vm_info is not None and vm_info.get("status") == "run":
+                break
 
         print("Press enter to stop the native")
         input()
 
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' %
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' %
                   (node_uuid, native.get('uuid'), app_uuid))
-        self.store.dput(uri)
-
-        print("Press enter to clean the native")
-        input()
-
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
-                  (node_uuid, native.get('uuid'), app_uuid))
-        self.store.dput(uri)
-
-        print("Press enter to undefine the native")
-        input()
-
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' %
-                  (node_uuid, native.get('uuid'), app_uuid))
-        self.store.dput(uri)
-
-    def vm_deploy(self, node_uuid, vm_uuid):
-        print("Make node load kvm plugin")
-
-        val = {'plugins': [{'name': 'KVMLibvirt', 'version': 1, 'uuid': '',
-                            'type': 'runtime', 'status': 'add'}]}
-        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
-        print(uri)
-        #print(self.dstore.get(uri))
-
-        self.dstore.dput(uri, json.dumps(val))
-
-        time.sleep(1)
-        val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
-                            'type': 'network', 'status': 'add'}]}
-        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
-        self.dstore.dput(uri, json.dumps(val))
-
-        time.sleep(1)
-
-        print("Looking if kvm plugin loaded")
-
-        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
-        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
-
-        runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
-        print("locating kvm plugin")
-        search = [x for x in runtimes if 'KVMLibvirt' in x.get('name')]
-        if len(search) == 0:
-            print ("Plugin was not loaded")
-            exit()
-        else:
-            kvm = search[0]
-
-        vm_name = 'test'
-
-        cinit = None  #self.readFile('./cloud_init_demo')
-        sshk = self.readFile('./key.pub')
-
-
-        #virt-cirros-0.3.4-x86_64-disk.img
-        #cirros-0.3.5-x86_64-disk.img
-        #xenial-server-cloudimg-amd64-disk1.img
-
-        vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
-            'http://172.16.7.128/virt-cirros-0.3.4-x86_64-disk.img', 'networks': [{
-            'mac': "d2:e3:ed:6f:e3:ef", 'intf_name': "br0"}], "user-data": cinit, "ssh-key": sshk}
-
-        entity_definition = {'status': 'define', 'name': vm_name, 'version': 1, 'entity_data': vm_definition}
-
-        json_data = json.dumps(entity_definition)
-
-        print("Press enter to define a vm")
-        input()
-
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, kvm.get('uuid'), vm_uuid))
-        self.dstore.put(uri, json_data)
-
-        while True:
-            print("Waiting vm defined...")
-            time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
-            vm_info = json.loads(self.astore.get(uri))
-            if vm_info is not None and vm_info.get("status") == "defined":
-                    break
-
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (node_uuid, kvm.get('uuid'), vm_uuid))
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting vm configured...")
+            print("Waiting native to defined...")
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
-            vm_info = json.loads(self.astore.get(uri))
-            if vm_info is not None and vm_info.get("status") == "configured":
-                    break
-
-
-
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, kvm.get('uuid'), vm_uuid))
-        self.dstore.dput(uri)
-
-        while True:
-            print("Waiting vm to boot...")
-            time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
-            vm_info = json.loads(self.astore.get(uri))
-            if vm_info is not None and vm_info.get("status") == "run":
-                    break
-
-        print("vm is running on node")
-
-    def vm_destroy(self, node_uuid, vm_uuid):
-
-        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
-        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
-
-        runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
-        print("locating kvm plugin")
-        search = [x for x in runtimes if 'KVMLibvirt' in x.get('name')]
-        if len(search) == 0:
-            print ("Plugin was not loaded")
-            exit()
-        else:
-            kvm = search[0]
-
-
-        print("Press enter to stop vm")
-        input()
-
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, kvm.get('uuid'), vm_uuid))
-        self.dstore.dput(uri)
-
-        while True:
-            print("Waiting vm to be stopped...")
-            time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
             vm_info = json.loads(self.astore.get(uri))
             if vm_info is not None and vm_info.get("status") == "stop":
                 break
 
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
-                  (node_uuid, kvm.get('uuid'), vm_uuid))
+                  (node_uuid, native.get('uuid'), app_uuid))
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting cleaned...")
+            print("Waiting native to defined...")
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
             vm_info = json.loads(self.astore.get(uri))
             if vm_info is not None and vm_info.get("status") == "cleaned":
                 break
 
-        json_data = json.dumps({'status': 'undefine'})
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' %
-                  (node_uuid, kvm.get('uuid'), vm_uuid))
-        self.dstore.dput(uri, json_data)
-
-    def migrate_vm(self, src, dst, vm_uuid):
-
-        uri = str('afos://<sys-id>/%s/plugins' % src)
-        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
-
-        runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
-        print("locating kvm plugin")
-        search = [x for x in runtimes if 'KVMLibvirt' in x.get('name')]
-        if len(search) == 0:
-            print ("Plugin was not loaded")
-            exit()
-        else:
-            kvm_src = search[0]
-        uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (src, kvm_src.get('uuid'), vm_uuid))
-        vm_info = json.loads(self.astore.get(uri))
-        print (vm_info)
-
-        input()
-
-        vm_info.update({"status": "taking_off"})
-        vm_info.update({"dst": dst})
-
-        vm_info_dst = vm_info.copy()
-        vm_info_dst.update({"status": "landing"})
-
-        print(vm_info)
-        print(vm_info_dst)
-
-        input()
-
-        print("Make node load kvm plugin")
-
-        val = {'plugins': [{'name': 'KVMLibvirt', 'version': 1, 'uuid': '',
-                            'type': 'runtime', 'status': 'add'}]}
-        uri = str('dfos://<sys-id>/%s/plugins' % dst)
-        self.dstore.put(uri, json.dumps(val))
-
-        time.sleep(1)
-        val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
-                            'type': 'network', 'status': 'add'}]}
-        uri = str('dfos://<sys-id>/%s/plugins' % dst)
-        self.dstore.put(uri, json.dumps(val))
-
-        time.sleep(1)
-
-        print("Looking if kvm plugin loaded")
-
-        uri = str('afos://<sys-id>/%s/plugins' % dst)
-        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
-
-        runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
-        print("locating kvm plugin")
-        search = [x for x in runtimes if 'KVMLibvirt' in x.get('name')]
-        if len(search) == 0:
-            print ("Plugin was not loaded")
-            exit()
-        else:
-            kvm_dst = search[0]
-
-        uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (dst, kvm_dst.get('uuid'), vm_uuid))
-
-        json_data = json.dumps(vm_info_dst)
-
-        print("Press enter to migrate a vm")
-        input()
-
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (dst, kvm_dst.get('uuid'), vm_uuid))
-        self.dstore.put(uri, json_data)
-
-        json_data = json.dumps(vm_info)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (src, kvm_src.get('uuid'), vm_uuid))
-        self.dstore.dput(uri, json_data)
-
-        input("press enter to destroy vm")
-        self.vm_destroy(dst, vm_uuid)
-
-
-
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' %
+                  (node_uuid, native.get('uuid'), app_uuid))
+        self.dstore.dput(uri)
 
 
     def main(self):
@@ -344,88 +153,19 @@ class Controll():
         uri = str('afos://<sys-id>/*/')
         self.astore.observe(uri, self.nodeDiscovered)
 
-        vm_uuid = str(uuid.uuid4())
-
         while len(self.nodes) < 1:
             time.sleep(2)
 
         self.show_nodes()
 
-        vm_src_node = self.nodes.get(1)
-        if vm_src_node is not None:
-            vm_src_node = list(vm_src_node.keys())[0]
-
-
-
-        # print("###################################### Desidered Store ######################################")
-        # print(self.dstore)
-        # print("#############################################################################################")
-        #
-        # print("###################################### Actual Store #########################################")
-        # print(self.astore)
-        # print("#############################################################################################")
+        na_node = self.nodes.get(1)
+        if na_node is not None:
+            na_node = list(na_node.keys())[0]
 
         input()
 
-        vm_src_node = self.nodes.get(1)
-        if vm_src_node is not None:
-            vm_src_node = list(vm_src_node.keys())[0]
 
-
-
-
-        vm_dst_node = self.nodes.get(2)
-        if vm_dst_node is not None:
-            vm_dst_node = list(vm_dst_node.keys())[0]
-
-        vm_uuid = str(uuid.uuid4())
-
-        self.vm_deploy(vm_src_node, vm_uuid)
-
-        input()
-
-        self.migrate_vm(vm_src_node, vm_dst_node, vm_uuid)
-
-
-
-        '''
-        n = int(input("Select node for vm deploy: "))
-
-        node_uuid = self.nodes.get(n)
-        if node_uuid is not None:
-            node_uuid = list(node_uuid.keys())[0]
-            if node_uuid is not None:
-                pass
-        else:
-            exit()
-
-        #self.deploy_application(node_uuid)
-
-
-
-        vm_node = node_uuid
-
-        self.vm_deploy(vm_node, vm_uuid)
-
-        self.show_nodes()
-
-        n = int(input("Select node for native app deploy: "))
-
-        node_uuid = self.nodes.get(n)
-        if node_uuid is not None:
-            node_uuid = list(node_uuid.keys())[0]
-            if node_uuid is not None:
-                pass
-        else:
-            exit()
-
-        self.lf_native(node_uuid)
-
-        input("Press enter to destroy vm")
-
-        self.vm_destroy(vm_node, vm_uuid)
-        #########
-        '''
+        self.lf_native(na_node)
 
         input()
 
