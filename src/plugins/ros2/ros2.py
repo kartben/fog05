@@ -7,6 +7,7 @@ sys.path.append(os.path.join(sys.path[0], 'interfaces'))
 from States import State
 from RuntimePlugin import *
 from ROS2Entity import ROS2Entity
+from jinja2 import Environment
 
 
 
@@ -29,10 +30,17 @@ class ROS2(RuntimePlugin):
         uri = str('%s/%s/*' % (self.agent.dhome, self.HOME))
         print("ROS2 Listening on %s" % uri)
 
-        s_cmd = "source /opt/ros/r2b3/setup.bash"
-        self.agent.getOSPlugin().executeCommand(s_cmd, True)
-        s_cmd = "source /opt/ros/r2b3/share/ros2cli/environment/ros2-argcomplete.bash"
-        self.agent.getOSPlugin().executeCommand(s_cmd, True)
+        #s_cmd = "source /opt/ros/r2b3/setup.bash"
+        #self.agent.getOSPlugin().executeCommand(s_cmd, True)
+        #s_cmd = "source /opt/ros/r2b3/share/ros2cli/environment/ros2-argcomplete.bash"
+        #self.agent.getOSPlugin().executeCommand(s_cmd, True)
+
+        #self.__shell_source("/opt/ros/r2b3/setup.bash")
+        #self.__shell_source("/opt/ros/r2b3/share/ros2cli/environment/ros2-argcomplete.bash")
+        '''
+        These two files need to be sourced
+        '''
+
 
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
@@ -102,14 +110,10 @@ class ROS2(RuntimePlugin):
 
             self.agent.getOSPlugin().createFile(entity.outfile)
             ## download the nodelet file
-            nodelet_dir = str("%s/%s/%s" % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
+            nodelet_dir = str("%s/%s/%s" % (self.BASE_DIR, self.NODLETS_DIR, entity_uuid))
             self.agent.getOSPlugin().createDir(nodelet_dir)
-            wget_cmd = str('wget %s -O %s/' % (entity.url, nodelet_dir))
+            wget_cmd = str('wget %s -O %s/%s' % (entity.url, nodelet_dir, entity.url.split('/')[-1]))
             self.agent.getOSPlugin().executeCommand(wget_cmd, True)
-            ## unzip it?
-
-
-
             '''
             from https://github.com/ros2/examples
             I tried to run some c++ example, here the workflow
@@ -125,11 +129,23 @@ class ROS2(RuntimePlugin):
              http://172.16.7.128/minimal_publisher.zip
              http://172.16.7.128/minimal_subscriber.zip
             '''
+            unzip_cmd = str("unzip %s/%s -d %s" % (nodelet_dir, entity.url.split('/')[-1], nodelet_dir))
+            self.agent.getOSPlugin().executeCommand(unzip_cmd, True)
+            '''
+            ament_cmd = str("ament build_pkg %s/%s" % (nodelet_dir, entity_uuid))
+            self.agent.getOSPlugin().executeCommand(ament_cmd, True)
+            
+            At the moment using the generated bash script for build
+            '''
+            path = str("%s/%s" % (nodelet_dir, entity.url.split('/')[-1].split('.')[0]))
+            build_script = self.__generate_build_script(path, nodelet_dir)
+            self.agent.getOSPlugin().storeFile(build_script, nodelet_dir, str("%s_build.sh" % entity_uuid))
+            chmod_cmd = str("chmod +x %s/%s" % (nodelet_dir, str("%s_build.sh" % entity_uuid)))
+            self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
+            build_cmd = str("%s/%s" % (nodelet_dir, str("%s_build.sh" % entity_uuid)))
+            self.agent.getOSPlugin().executeCommand(build_cmd, True)
 
-            unzip_cmd = str("unzip %s -d %s/%s" % (entity.url.split('/')[-1], nodelet_dir, entity_uuid))
-            ament_cmd = str("ament build_pkg %s/%s" (nodelet_dir, entity_uuid))
-
-
+            ### this is only a workaround not a real solution
 
 
             entity.onConfigured()
@@ -154,7 +170,7 @@ class ROS2(RuntimePlugin):
         else:
 
             self.agent.getOSPlugin().removeFile(entity.outfile)
-            nodelet_dir = str("%s/%s/%s" % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
+            nodelet_dir = str("%s/%s/%s" % (self.BASE_DIR, self.NODLETS_DIR, entity_uuid))
             self.agent.getOSPlugin().removeDir(nodelet_dir)
             entity.onClean()
             self.current_entities.update({entity_uuid: entity})
@@ -179,9 +195,19 @@ class ROS2(RuntimePlugin):
         else:
 
             #cmd = str("ros2 run %s %s" % (entity.command, ' '.join(str(x) for x in entity.args)))
-            nodelet_dir = str("%s/%s/%s" % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
-            cmd = str("%s/install/libs/%s" % (nodelet_dir, entity.command))
-            process = self.__execute_command(cmd, entity.outfile)
+            nodelet_dir = str("%s/%s/%s" % (self.BASE_DIR, self.NODLETS_DIR, entity_uuid))
+            cmd = str("%s/lib/%s/%s" % (nodelet_dir, entity.name, entity.command))
+
+            # ###################### WORKAROUND ##############################
+            run_script = self.__generate_run_script(cmd)
+            self.agent.getOSPlugin().storeFile(run_script, nodelet_dir, str("%s_run.sh" % entity_uuid))
+            chmod_cmd = str("chmod +x %s/%s" % (nodelet_dir, str("%s_run.sh" % entity_uuid)))
+            self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
+            run_cmd = str("%s/%s" % (nodelet_dir, str("%s_run.sh" % entity_uuid)))
+            # ################################################################
+
+
+            process = self.__execute_command(run_cmd, entity.outfile)
             entity.onStart(process.pid, process)
             self.current_entities.update({entity_uuid: entity})
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
@@ -202,7 +228,7 @@ class ROS2(RuntimePlugin):
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
             p = entity.process
-            p.terminate()
+            self.agent.getOSPlugin().sendSigKill(p.pid)
             entity.onStop()
             self.current_entities.update({entity_uuid: entity})
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
@@ -238,7 +264,7 @@ class ROS2(RuntimePlugin):
         return p
 
     def __react_to_cache(self, uri, value, v):
-        print("Native on React \nURI:%s\nValue:%s\nVersion:%s" % (uri, value, v))
+        print("ROS2 on React \nURI:%s\nValue:%s\nVersion:%s" % (uri, value, v))
         uuid = uri.split('/')[-1]
         value = json.loads(value)
         action = value.get('status')
@@ -252,6 +278,39 @@ class ROS2(RuntimePlugin):
                 react_func(**entity_data)
             else:
                 react_func(entity_data)
+
+    def __generate_build_script(self, path, space):
+        template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
+                                                                      'templates', 'build_ros.sh'))
+        vm_xml = Environment().from_string(template_xml)
+        vm_xml = vm_xml.render(node_path=path, space=space)
+        return vm_xml
+
+    def __generate_run_script(self, cmd):
+        template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
+                                                                      'templates', 'run_ros.sh'))
+        vm_xml = Environment().from_string(template_xml)
+        vm_xml = vm_xml.render(command=cmd)
+        return vm_xml
+
+    def __shell_source(self, script):
+        """Sometime you want to emulate the action of "source" in bash,
+        settings some environment variables. Here is a way to do it."""
+        import subprocess, os
+        pipe = subprocess.Popen(". %s; env" % script, stdout=subprocess.PIPE, shell=True)
+        output = pipe.communicate()[0]
+        env = dict((line.split(b"=", 1) for line in output.splitlines()))
+        env = self.__convert(env)
+        os.environ.update(env)
+
+    def __convert(self, data):
+        data_type = type(data)
+
+        if data_type == bytes: return data.decode()
+        if data_type in (str, int): return str(data)
+
+        if data_type == dict: data = data.items()
+        return data_type(map(self.convert, data))
 
     def __react(self, action):
         r = {

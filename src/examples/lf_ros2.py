@@ -52,7 +52,7 @@ class Controll():
 
     def lf_ros2(self, node_uuid):
 
-        print("Make node load native plugin")
+        print("Make node load ros2 plugin")
 
         val = {'plugins': [{'name': 'ros2', 'version': 1, 'uuid': '',
                             'type': 'runtime', 'status': 'add'}]}
@@ -67,16 +67,16 @@ class Controll():
         all_plugins = json.loads(self.astore.get(uri)).get('plugins')
 
         runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
-        print("locating native plugin")
-        search = [x for x in runtimes if 'native' in x.get('name')]
+        print("locating ros2 plugin")
+        search = [x for x in runtimes if 'ros2' in x.get('name')]
         if len(search) == 0:
             print ("Plugin was not loaded")
             exit()
         else:
             native = search[0]
-        app_name = 'Browser'
+        app_name = 'examples_rclcpp_minimal_publisher'
         app_uuid = str(uuid.uuid4())
-        app_definition = {'name': app_name, 'command': 'subscriber_member_function', 'args': ['www.adlinktech.com'],
+        app_definition = {'name': app_name, 'command': 'publisher_member_function', 'args': ['www.adlinktech.com'],
                           'url': 'http://172.16.7.128/minimal_publisher.zip', 'uuid': app_uuid}
         entity_definition = {'status': 'define', 'name': app_name, 'version': 1, 'entity_data': app_definition}
 
@@ -98,7 +98,7 @@ class Controll():
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting native to defined...")
+            print("Waiting native to configured...")
             time.sleep(1)
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
             vm_info = json.loads(self.astore.get(uri))
@@ -110,7 +110,7 @@ class Controll():
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting native to defined...")
+            print("Waiting native to run...")
             time.sleep(1)
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
             vm_info = json.loads(self.astore.get(uri))
@@ -125,19 +125,21 @@ class Controll():
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting native to defined...")
+            print("Waiting native to stop...")
             time.sleep(1)
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
             vm_info = json.loads(self.astore.get(uri))
             if vm_info is not None and vm_info.get("status") == "stop":
                 break
 
+        input("press enter to clean")
+
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
                   (node_uuid, native.get('uuid'), app_uuid))
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting native to defined...")
+            print("Waiting native to clean...")
             time.sleep(1)
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
             vm_info = json.loads(self.astore.get(uri))

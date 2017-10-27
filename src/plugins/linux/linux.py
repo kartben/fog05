@@ -12,6 +12,7 @@ import subprocess
 import re
 import platform
 import netifaces
+import shutil
 from socket import *
 
 # platform.linux_distribution()
@@ -75,7 +76,7 @@ class Linux(OSPlugin):
             os.utime(path, None)
 
     def removeDir(self, path):
-        return os.rmdir(path)
+        shutil.rmtree(path)
 
     def removeFile(self, path):
         try:
@@ -117,7 +118,12 @@ class Linux(OSPlugin):
         return psutil.disk_usage('/').percent
 
     def checkIfPidExists(self, pid):
-        return psutil.pid_exsists(pid)
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return False
+        else:
+            return True
 
     def sendSignal(self, signal, pid):
         if self.checkIfPidExists(pid) is False:
@@ -138,6 +144,9 @@ class Linux(OSPlugin):
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(9)
+            if psutil.Process(pid) is not None:
+                print("Staying alive! O_O")
+                os.kill(pid, 9)
         return True
 
     def getNetworkLevel(self):

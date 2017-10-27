@@ -9,7 +9,7 @@ class ROS2Entity(Entity):
 
     def __init__(self, uuid, name, command, args, outfile, url):
 
-        super(NativeEntity, self).__init__()
+        super(ROS2Entity, self).__init__()
         self.uuid = uuid
         self.name = name
         self.command = command

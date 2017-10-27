@@ -11,7 +11,7 @@ class OSPlugin(Plugin):
     def __init__(self,version):
         super(OSPlugin, self).__init__(version)
 
-    def executeCommand(self, command):
+    def executeCommand(self, command, blocking):
 
         """
         Execute a command to cli of underlying os, IDK should return bool or the command output?
