@@ -29,8 +29,10 @@ class ROS2(RuntimePlugin):
         uri = str('%s/%s/*' % (self.agent.dhome, self.HOME))
         print("ROS2 Listening on %s" % uri)
 
-        #source /opt/ros/r2b3/setup.bash
-        #source /opt/ros/r2b3/share/ros2cli/environment/ros2-argcomplete.bash
+        s_cmd = "source /opt/ros/r2b3/setup.bash"
+        self.agent.getOSPlugin().executeCommand(s_cmd, True)
+        s_cmd = "source /opt/ros/r2b3/share/ros2cli/environment/ros2-argcomplete.bash"
+        self.agent.getOSPlugin().executeCommand(s_cmd, True)
 
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
@@ -107,6 +109,29 @@ class ROS2(RuntimePlugin):
             ## unzip it?
 
 
+
+            '''
+            from https://github.com/ros2/examples
+            I tried to run some c++ example, here the workflow
+            ament build_pkg example_directory
+            cd install/libs
+            ./example_executable
+             
+             and it seems to run, i'll try to make these steps here
+             
+             
+             test nodes 
+             
+             http://172.16.7.128/minimal_publisher.zip
+             http://172.16.7.128/minimal_subscriber.zip
+            '''
+
+            unzip_cmd = str("unzip %s -d %s/%s" % (entity.url.split('/')[-1], nodelet_dir, entity_uuid))
+            ament_cmd = str("ament build_pkg %s/%s" (nodelet_dir, entity_uuid))
+
+
+
+
             entity.onConfigured()
             self.current_entities.update({entity_uuid: entity})
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
@@ -153,7 +178,9 @@ class ROS2(RuntimePlugin):
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
 
-            cmd = str("ros2 run %s %s" % (entity.command, ' '.join(str(x) for x in entity.args)))
+            #cmd = str("ros2 run %s %s" % (entity.command, ' '.join(str(x) for x in entity.args)))
+            nodelet_dir = str("%s/%s/%s" % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
+            cmd = str("%s/install/libs/%s" % (nodelet_dir, entity.command))
             process = self.__execute_command(cmd, entity.outfile)
             entity.onStart(process.pid, process)
             self.current_entities.update({entity_uuid: entity})

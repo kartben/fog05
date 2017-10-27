@@ -20,7 +20,8 @@ todo:
 ---
 package dependencies:
 
-- ros2 
+- ros2
+- ament
 ---
 
 python dependencies:
