@@ -144,9 +144,6 @@ class Linux(OSPlugin):
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(9)
-            if psutil.Process(pid) is not None:
-                print("Staying alive! O_O")
-                os.kill(pid, 9)
         return True
 
     def getNetworkLevel(self):
