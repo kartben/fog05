@@ -28,6 +28,10 @@ python dependencies:
 
 - libvirt-python
 - jinja2 
+- wget
+- qemu-img
+- mkisofs
+
 
 ---
 
