@@ -3,7 +3,7 @@
 
 Unifies compute/networking fabric end-to-end
 
-Thanks to it's plugin architecture can manage near everything
+Thanks to its plugin architecture can manage near everything
 
 See inside [docs](https://github.com/atolab/FogOS/tree/master/docs) for some design documentation
 
