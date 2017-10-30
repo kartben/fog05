@@ -15,7 +15,7 @@ In this directory you can find some example of what Fog05 can do.
     cd FogOS/src/
     python3 examples/<example_file>.py
     
-The in another terminal simply start the Agent
+Then in another terminal simply start the Agent
     
     cd FogOS/src/
     python3 fogagent.py
