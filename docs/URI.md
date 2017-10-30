@@ -1,19 +1,72 @@
 #URI definition
 
-###### updated 29/09/2017
+###### updated 30/10/2017
 
 Because we want to share all possibile information through our distributed cache (K,V cache), URI are very important as they are the key for our cache.
+
+
+The store is divided in two parts, one for store the desidered state of the node/entity/plugin, and one for store the
+ actual state of the node/plugin/entity.
+ 
+ Assuming this means that plugins and agent work to make the actual state match the desidered state.
+ The actual state can be written only by the node that owns it, so only plugins and agent of that node can update its
+  actual store, instead the desidered store can be written by all nodes, and readed only by the agent and plugins of 
+  the node that own the store.
+  
+  Thinking in this way is very simple to register an observer on some remote entity for looking if state changes, and
+   also make consistency of the data written to the actual store, because only the owner of the store can change 
+   these data.
+   So all requests should be written in the Desidered State Store, and all information should be readed from the 
+   Actual Store Cache.
+   
+   See the following image:
+   
+    +-------------------------------------------------------------------+
+    |                                                  Agent1           |
+    |                                                                   |
+    |    Desidered Store                        Actual Store            |
+    |    +-------+                               +-------+              |
+    |    |       |                               |       |              |
+    |    |       |        +---------------+      |       |              |
+    |    |       +------->| Plugins/Agent |----->+       |              |
+    |    |       |        +---------------+      |       |              |
+    |    |       |                               |       |              |
+    |    |       |                               |       |              |
+    |    +---^---+                               +---+---+              |
+    |        |                                       |                  |
+    |        |                                       |                  |
+    +--------|---------------------------------------|------------------+
+             |                                       |
+             | put(dfos:/s1/a1/...)                  |   get(afos://s1/a1/....)
+             |                                       |
+    +-------+---------------------------------------V--------------------+
+    |                                                  Agent2           |
+    |                                                                   |
+    |                                                                   |
+    |    +-------+                               +-------+              |
+    |    |       |                               |       |              |
+    |    |       |        +---------------+      |       |              |
+    |    |       |------->| Plugins/Agent |----->|       |              |
+    |    |       |        +---------------+      |       |              |
+    |    |       |                               |       |              |
+    |    |       |                               |       |              |
+    |    +-------+                               +-------+              |
+    |    Desidered Store                        Actual Store            |
+    |                                                                   |
+    +-------------------------------------------------------------------+
+
+
 
 ## So let's see some examples:
 
 ##### Looking for all nodes in a system
-`fos://<system_id>/`
+`<a|d>fos://<system_id>/`
 
 ##### Looking for basic information about all nodes in the system
-`fos://<system_id>/**`
+`<a|d>fos://<system_id>/**`
 
 ##### Add a plugin to a node
-`fos://<system_id>/<node_id>/plugins$add` 
+`dfos://<system_id>/<node_id>/plugins$add` 
 
 Then the value should be a JSON object with all information that permitt to get and install the plugin
 
@@ -25,12 +78,12 @@ Then the value should be a JSON object with all information that permitt to get 
 		
 			
 ###### Interact with a runtime
-`fos://<system_id>/<node_id>/runtime/<runtime_id>/$action_to_runtime` 
+`dfos://<system_id>/<node_id>/runtime/<runtime_id>/$action_to_runtime` 
 
 	@GB: see comments below, all actions become desidered state and are passed through the JSON parameter
 
 ###### Create a new entity
-`fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/$create_entity` 
+`dfos://<system_id>/<node_id>/runtime/<runtime_id>/entity/$create_entity` 
 
 And the value should be a JSON with all information about this entity
 
@@ -38,30 +91,30 @@ And the value should be a JSON with all information about this entity
 		a new entity. Likewise the remove operation should dispose the entity.
 		
 		@GB: This become something like:
-		pput('fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/',{'status':define ... })
+		pput('dfos://<system_id>/<node_id>/runtime/<runtime_id>/entity/',{'status':define ... })
 		and all entity information are into the JSON
 		
 
 ##### Interact with an entity
-`fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>$action_to_entity`
+`dfos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>$action_to_entity`
 
 In this case `action` can be very different things, depend on entity type (vm, unikernel, native app, µSvc...) and can need some value in form of a JSON object
 
 	@AC: If embed actions in the URI I don't think that these should be part of the 
 	key used to inster the value in the cache. In other terms, for the URI below:
 	
-		`fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>$action_to_entity`
+		`fdos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>$action_to_entity`
 		
 		The key used by the cache should be only:
 		
-		`fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>`
+		`dfos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>`
 
 	The value associated with a specific key K should represent the desired state for 
 	the a specific resource.
 	
 	@GB: As discussed can we use 
 	
-	`fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>` as key
+	`dfos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>` as key
 	
 	and the previously defined 'action' become part of the JSON send in the put() or pput()
 	
@@ -69,8 +122,8 @@ In this case `action` can be very different things, depend on entity type (vm, u
 	
 	so as example:
 	
-	previously uri: pput('fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>$run')
-	now uri: pput('fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>',{'status':run ... })
+	previously uri: pput('dfos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>$run')
+	now uri: pput('dfos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>',{'status':run ... })
 	
 	
 	
@@ -79,7 +132,7 @@ In this case `action` can be very different things, depend on entity type (vm, u
 So after this example we can try to define a more general URI scheme for FogOS
 
 `
-fos://<system_id>/<node_id>/<type_of_resource>/<id_of_resource>/<type_of_subresource>/<id_of_subresource>
+<a|d>fos://<system_id>/<node_id>/<type_of_resource>/<id_of_resource>/<type_of_subresource>/<id_of_subresource>
 `
 
 > It is possible to get basic information about all nodes/entity/... at every level by using `**`, where id is required is possible to use wildcard `*` or list of ids
@@ -119,7 +172,7 @@ fos://<system_id>/<node_id>/<type_of_resource>/<id_of_resource>/<type_of_subreso
 Here some JSON object types
 
 ### Plugin Interaction
-URI: `fos://<system_id>/<node_id>/plugins/<plugin-name>/<uuid>`
+URI: `<a|d>fos://<system_id>/<node_id>/plugins/<plugin-name>/<uuid>`
 
 ##### Add a plugin
 
@@ -129,11 +182,14 @@ URI: `fos://<system_id>/<node_id>/plugins/<plugin-name>/<uuid>`
 		"description" : brief plugin description,
 		"uuid" : should plugin have an uuid? maybe for locating it
     }
-
+    
+    pput(dfos://<system_id>/<node_id>/plugins/<plugin-name>/<uuid>)
+    
+    pput because you maybe don't know if a node has loaded other plugins 
 
 ##### Remove a plugin
 
-    remove('fos://<system_id>/<node_id>/plugins/<plugin-name>/<uuid>')
+    remove('dfos://<system_id>/<node_id>/plugins/<plugin-name>/<uuid>')
     
     
 ##### Update a plugin
@@ -151,7 +207,7 @@ URI: `fos://<system_id>/<node_id>/plugins/<plugin-name>/<uuid>`
  
 ### Runtime Interaction
  
- URI: `fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity-uuid>`
+ URI: `u<a|d>fos://<system_id>/<node_id>/rntime/<runtime_id>/entity/<entity-uuid>`
  
 ##### Create an Entity
 
@@ -162,16 +218,16 @@ URI: `fos://<system_id>/<node_id>/plugins/<plugin-name>/<uuid>`
 		"entity_data" : this should depend on entity type (vm/container/µSvc,...) and should containt information about how and where recover the entity
     }
     
-  
+    put(dfos://<system_id>/<node_id>/rntime/<runtime_id>/entity/<entity-uuid>)
   
 ### Entity Interaction
 
- URI: `fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>#status=run&entity_data.memory=2GB
+ URI: `dfos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>#status=run&entity_data.memory=2GB
   
    
- dput('fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>#status=run&entity_data.memory=2GB')
+ dput('dfos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>#status=run&entity_data.memory=2GB')
  
- dput('fos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>, "{status=run, entity_data.memory=2GB }")
+ dput('dfos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>, "{status=run, entity_data.memory=2GB }")
  
   
 ##### Configure an Entity
@@ -225,10 +281,5 @@ eg. if entity is a vm I can define the let's say 'base image and requirements', 
     }
     
 ##### Undefine an Entity
-        @AC: This should be a remove(uri).
-        
-	{
-		"status" : "undefine"
-    }
     
-  
+    remove(dfos://<system_id>/<node_id>/runtime/<runtime_id>/entity/<entity_id>)
