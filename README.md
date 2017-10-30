@@ -1,17 +1,27 @@
-#FogOS
+# FogOS
 
-python packages dependencies:
 
-- psutil
-- netifaces
-    
-    - bridge-utils     |-> brctl Plugin
+Unifies compute/networking fabric end-to-end
+
+Thanks to it's plugin architecture can manage near everything
+
+See inside [docs](https://github.com/atolab/FogOS/tree/master/docs) for some design documentation
+
+Inside [src/plugins](https://github.com/atolab/FogOS/tree/master/src/plugins) there are some plugins for entity
+
+Inside [src/examples](https://github.com/atolab/FogOS/tree/master/src/examples) you can find some example/demo
+
+
+
+## Agent
+
+python dependencies:
+
+- networkx
+
 ---
 
 config dependencies:
 
 - user should be able to use sudo without password asking (`echo "username  ALL=(ALL) NOPASSWD: ALL"  >> /etc/sudoers`)
 
----
-
-with centos7 we hit [this bug](https://bugs.centos.org/view.php?id=10608)
