@@ -197,9 +197,9 @@ class ROS2(RuntimePlugin):
             #cmd = str("ros2 run %s %s" % (entity.command, ' '.join(str(x) for x in entity.args)))
             nodelet_dir = str("%s/%s/%s" % (self.BASE_DIR, self.NODLETS_DIR, entity_uuid))
             cmd = str("%s/lib/%s/%s" % (nodelet_dir, entity.name, entity.command))
-
+            path = str("%s/%s/%s/%s" % (self.BASE_DIR, self.NODLETS_DIR, entity_uuid, entity.name))
             # ###################### WORKAROUND ##############################
-            run_script = self.__generate_run_script(cmd)
+            run_script = self.__generate_run_script(cmd, path)
             self.agent.getOSPlugin().storeFile(run_script, nodelet_dir, str("%s_run.sh" % entity_uuid))
             chmod_cmd = str("chmod +x %s/%s" % (nodelet_dir, str("%s_run.sh" % entity_uuid)))
             self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
@@ -227,6 +227,11 @@ class ROS2(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
+
+            path = str("%s/%s/%s/%s.pid" % (self.BASE_DIR, self.NODLETS_DIR, entity_uuid, entity.name))
+            pid = int(self.agent.getOSPlugin().readFile(path))
+            self.agent.getOSPlugin().sendSigKill(pid)
+            '''
             p = entity.process
 
             p.terminate()  #process don't die
@@ -239,6 +244,7 @@ class ROS2(RuntimePlugin):
             print(p.ppid()) ##
 
             ####
+            '''
             entity.onStop()
             self.current_entities.update({entity_uuid: entity})
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
@@ -296,11 +302,11 @@ class ROS2(RuntimePlugin):
         vm_xml = vm_xml.render(node_path=path, space=space)
         return vm_xml
 
-    def __generate_run_script(self, cmd):
+    def __generate_run_script(self, cmd, dir):
         template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
                                                                       'templates', 'run_ros.sh'))
         vm_xml = Environment().from_string(template_xml)
-        vm_xml = vm_xml.render(command=cmd)
+        vm_xml = vm_xml.render(command=cmd, path=dir)
         return vm_xml
 
     def __shell_source(self, script):
