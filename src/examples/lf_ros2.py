@@ -86,7 +86,7 @@ class Controll():
         self.dstore.put(uri, json_data)
 
         while True:
-            print("Waiting native to defined...")
+            print("Waiting ROS2 to defined...")
             time.sleep(1)
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
             vm_info = json.loads(self.astore.get(uri))
@@ -98,7 +98,7 @@ class Controll():
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting native to configured...")
+            print("Waiting ROS2 to configured...")
             time.sleep(1)
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
             vm_info = json.loads(self.astore.get(uri))
@@ -110,14 +110,14 @@ class Controll():
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting native to run...")
+            print("Waiting ROS2 to run...")
             time.sleep(1)
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
             vm_info = json.loads(self.astore.get(uri))
             if vm_info is not None and vm_info.get("status") == "run":
                 break
 
-        print("Press enter to stop the native")
+        print("Press enter to stop the ROS2")
         input()
 
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' %
@@ -125,7 +125,7 @@ class Controll():
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting native to stop...")
+            print("Waiting ROS2 to stop...")
             time.sleep(1)
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
             vm_info = json.loads(self.astore.get(uri))
@@ -139,7 +139,7 @@ class Controll():
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting native to clean...")
+            print("Waiting ROS2 to clean...")
             time.sleep(1)
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), app_uuid))
             vm_info = json.loads(self.astore.get(uri))
