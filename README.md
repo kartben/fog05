@@ -15,6 +15,9 @@ Inside [src/examples](https://github.com/atolab/FogOS/tree/master/src/examples) 
 
 ## Agent
 
+You should have OpenSplice installed, and Python OpenSplice DDS API Bindings
+
+
 python dependencies:
 
 - networkx
