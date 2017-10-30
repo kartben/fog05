@@ -64,8 +64,8 @@ class Controll():
 
         app_uuid = str(uuid.uuid4())
 
-        cinit = self.read_file('./cloud_init_demo')
-        sshk = self.read_file('/home/ubuntu/key.pub')
+        cinit = self.read_file(os.path.join(sys.path[0], 'examples', 'etc', 'cloud_init_demo'))
+        sshk = self.read_file(os.path.join(sys.path[0], 'examples', 'etc', 'example_key.pub'))
         vm_name = 'nginx'
         vm_uuid = str(uuid.uuid4())
         vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
