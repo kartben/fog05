@@ -5,11 +5,11 @@ Unifies compute/networking fabric end-to-end
 
 Thanks to its plugin architecture can manage near everything
 
-See inside [docs](https://github.com/atolab/FogOS/tree/master/docs) for some design documentation
+See inside [docs](../docs) for some design documentation
 
-Inside [src/plugins](https://github.com/atolab/FogOS/tree/master/src/plugins) there are some plugins for entity
+Inside [src/plugins](../src/plugins) there are some plugins for entity
 
-Inside [src/examples](https://github.com/atolab/FogOS/tree/master/src/examples) you can find some example/demo
+Inside [src/examples](../src/examples) you can find some example/demo
 
 
 
