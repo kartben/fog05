@@ -1,10 +1,10 @@
-# FogOS Node FSM
+# Fog05 Node FSM
 
 ###### Update 21/09/2017
 
-Here some points to the Node (VM/unikernel/container/miscroservice) states in FogOS.
+Here some points to the Entity (VM/unikernel/container/miscroservice/ros2/...) states in Fog05.
 
-![](../img/fogos_fsm_node.png)
+![](../img/fog05_fsm_node.png)
 
 
 Each Node can have 9 states (the marine green ones):
@@ -30,16 +30,16 @@ Each Node start from an "UNDEFINED" state because initialy nothing as been defin
 
 The definition can be made in several ways:
 
-- From file (XML,YAML,JSON)
-- By parameters to the define() function  
+- From file (~XML,YAML,~JSON)
+- ~By parameters to the define() function~ -> This is what happens internally
 
 For the definition of microservices we think that each service should have a manifest file where are defined the constraints and the requirements (eg. the use of some HW accellerator or memory/storage constraints) 
 
-![Microservice Manifest](../img/fogos_microservice_manifest.png)
+![Microservice Manifest](../img/fog05_microservice_manifest.png)
 
 And then should be a manifest file for the entire application in which are fenined the Affinity Class for each service (eg two or more services should be deployed on the same system) and the graph that describe the connection between the sevices (also describe the order in which the services should be deployed)
 
-![Example App Graph](../img/fogos_example_app_graph.png)
+![Example App Graph](../img/fog05_example_app_graph.png)
 
 
 

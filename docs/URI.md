@@ -21,7 +21,7 @@ The store is divided in two parts, one for store the desidered state of the node
    
    See the following image:
    
-![graph](../img/fogos_stores.png)
+![graph](../img/fog05_stores.png)
 
 
 

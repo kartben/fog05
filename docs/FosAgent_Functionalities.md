@@ -1,4 +1,4 @@
-# FogAgent Functionalities
+# FosAgent Functionalities
 
 - Provide state of the agent (CPU,RAM,Network,Disk,I/O,Arch,Position [GPS Coordinates])
 
