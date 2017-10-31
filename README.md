@@ -28,3 +28,6 @@ config dependencies:
 
 - user should be able to use sudo without password asking (`echo "username  ALL=(ALL) NOPASSWD: ALL"  >> /etc/sudoers`)
 
+### How to run:
+
+Simply open a shell and write `python3 fosagent.py`
