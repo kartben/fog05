@@ -7,7 +7,7 @@ Here some points to the Entity (VM/unikernel/container/miscroservice/ros2/...) s
 ![](../img/fog05_fsm_node.png)
 
 
-Each Node can have 9 states (the marine green ones):
+Each Entity can have 9 states (the marine green ones):
 
 - UNDEFINED
 - DEFINED

@@ -7,7 +7,7 @@ Here some points to the Application (graph of entity or other applications) stat
 ![](../img/system_application_fsm.png)
 
 
-Each Node can Application 6 states:
+Each Application can have one of this six states:
 
 - UNDEFINED
 - DEFINED
