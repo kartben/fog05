@@ -286,7 +286,7 @@ class FosAgent(Agent):
                     if vm_info is not None and vm_info.get("status") == "run":
                         break
 
-                self.logger.info('[ DONE ] VM Running on node:' % node_uuid)
+                self.logger.info('[ DONE ] VM Running on node: %s' % node_uuid)
 
             elif t == "container":
                 self.logger.info('[ INFO ] Component is a Container')
@@ -343,7 +343,7 @@ class FosAgent(Agent):
                     vm_info = json.loads(self.astore.get(uri))
                     if vm_info is not None and vm_info.get("status") == "run":
                         break
-                self.logger.info('[ DONE ] Native Running on node:' % node_uuid)
+                self.logger.info('[ DONE ] Native Running on node: %s' % node_uuid)
 
             elif t == "ros2":
                 self.logger.info('[ INFO ] Component is a ROS2 Application')
@@ -398,7 +398,7 @@ class FosAgent(Agent):
                     vm_info = json.loads(self.astore.get(uri))
                     if vm_info is not None and vm_info.get("status") == "run":
                         break
-                self.logger.info('[ DONE ] ROS2 Running on node:' % node_uuid)
+                self.logger.info('[ DONE ] ROS2 Running on node: %s' % node_uuid)
 
             elif t == "usvc":
                 self.logger.info('[ INFO ] Component is a Microservice')
