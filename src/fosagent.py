@@ -318,7 +318,7 @@ class FosAgent(Agent):
                 self.dstore.dput(uri)
 
                 while True:
-                    self.logger.info('[ INFO ] Native VM to be CONFIGURED')
+                    self.logger.info('[ INFO ] Native to be CONFIGURED')
                     time.sleep(1)
                     uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
                     vm_info = json.loads(self.astore.get(uri))
@@ -332,7 +332,7 @@ class FosAgent(Agent):
                 self.dstore.dput(uri)
 
                 while True:
-                    self.logger.info('[ INFO ] Waiting VM to be RUN')
+                    self.logger.info('[ INFO ] Native to be RUN')
                     time.sleep(1)
                     uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
                     vm_info = json.loads(self.astore.get(uri))
@@ -340,8 +340,61 @@ class FosAgent(Agent):
                         break
                 self.logger.info('[ DONE ] Native Running on node:' % node_uuid)
 
-            elif t == "ros":
-                self.logger.info('[ INFO ] Component is a Ros Application')
+            elif t == "ros2":
+                self.logger.info('[ INFO ] Component is a ROS2 Application')
+                native = self.__search_plugin_by_name('ros2')
+                if native is None:
+                    self.logger.error('[ ERRO ] ROS2 Application Plugin not loaded/found!!!')
+                    return False
+
+                node_uuid = str(self.uuid)  # @TODO: select deploy node in a smart way
+                na_uuid = mf.get("entity_description").get("uuid")
+
+                entity_definition = {'status': 'define', 'name': component.get("name"), 'version': component.get(
+                    'version'), 'entity_data': mf.get("entity_description")}
+                json_data = json.dumps(entity_definition)
+
+                self.logger.info('[ INFO ] Define ROS2')
+                uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, native.get('uuid'), na_uuid))
+                self.dstore.put(uri, json_data)
+
+                while True:
+                    self.logger.info('[ INFO ] ROS2 to be DEFINED')
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
+                    vm_info = json.loads(self.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "defined":
+                        break
+                self.logger.info('[ DONE ] ROS2 DEFINED')
+
+                self.logger.info('[ INFO ] Configure Native')
+                uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
+                          (node_uuid, native.get('uuid'), na_uuid))
+                self.dstore.dput(uri)
+
+                while True:
+                    self.logger.info('[ INFO ] ROS2 to be CONFIGURED')
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
+                    vm_info = json.loads(self.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "configured":
+                        break
+                self.logger.info('[ DONE ] ROS2 CONFIGURED')
+
+                self.logger.info('[ INFO ] Starting ROS2')
+                uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
+                          (node_uuid, native.get('uuid'), na_uuid))
+                self.dstore.dput(uri)
+
+                while True:
+                    self.logger.info('[ INFO ] ROS2 to be RUN')
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
+                    vm_info = json.loads(self.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "run":
+                        break
+                self.logger.info('[ DONE ] ROS2 Running on node:' % node_uuid)
+
             elif t == "usvc":
                 self.logger.info('[ INFO ] Component is a Microservice')
 
