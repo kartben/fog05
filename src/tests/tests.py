@@ -59,25 +59,63 @@ def args2dict(values):
             data.update(d)
     return data
 
+def data_merge(base, updates):
+    if base is None or isinstance(base, int) or isinstance(base, str) or isinstance(base, float):
+        base = updates
+    elif isinstance(base, list):
+        if isinstance(updates, list):
+            names = [x.get('name') for x in updates]
+            item_same_name = [item for item in base if item.get('name') in [x.get('name') for x in updates]]
+            print (names)
+            print (item_same_name)
+            if all(isinstance(x, dict) for x in updates) and len(
+                    [item for item in base if item.get('name') in [x.get('name') for x in updates]]) > 0:
+                for e in base:
+                    for u in updates:
+                        if e.get('name') == u.get('name'):
+                            data_merge(e, u)
+            else:
+                base.extend(updates)
+        else:
+            base.append(updates)
+    elif isinstance(base, dict):
+        if isinstance(updates, dict):
+            for k in updates.keys():
+                if k in base.keys():
+                    base.update({k: data_merge(base.get(k), updates.get(k))})
+                else:
+                    base.update({k: updates.get(k)})
+    return base
 
 class DependenciesTests(unittest.TestCase):
     def test_resolve_dependencies_with_dependable_components(self):
-        intput_data = [{'name': 'c1', 'need': ['c2', 'c3']}, {'name': 'c2', 'need': ['c3']},
+        input_data = [{'name': 'c1', 'need': ['c2', 'c3']}, {'name': 'c2', 'need': ['c3']},
                        {'name': 'c3', 'need': ['c4']}, {'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}]
         output_data = ['c4', 'c5', 'c3', 'c2', 'c1']
-        self.assertEqual(resolve_dependencies(intput_data), output_data)
+        self.assertEqual(resolve_dependencies(input_data), output_data)
 
     def test_resolve_dependencies_with_no_dependable_components(self):
-        intput_data = [{'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}, {'name': 'c3', 'need': []},
+        input_data = [{'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}, {'name': 'c3', 'need': []},
                        {'name': 'c2', 'need': []}, {'name': 'c1', 'need': []}]
         output_data = ['c4', 'c5', 'c3', 'c2', 'c1']
-        self.assertEqual(resolve_dependencies(intput_data), output_data)
+        self.assertEqual(resolve_dependencies(input_data), output_data)
 
     def test_dotnotation_to_dict_conversion(self):
         input_data = "par=1&val2.val3=4"
         output_data = {'par': '1', 'val2': {'val3': '4'}}
         self.assertEqual(args2dict(input_data), output_data)
 
+    def test_complex_data_merge(self):
+        input_data_one = {'key1': 1, 'key2': {'subkey1': 1, 'subkey2': 1}}
+        input_data_two = {'key1': 2}
+        output_data = {'key1': 2, 'key2': {'subkey1': 1, 'subkey2': 1}}
+        self.assertEqual(data_merge(input_data_one, input_data_two), output_data)
+
+    def test_complex_data_merge_two(self):
+        input_data_one = {'key1': 1, 'key2': {'subkey1': 1, 'subkey2': 1}}
+        input_data_two = {'key2': {'subkey1': 2}}
+        output_data = {'key1': 1, 'key2': {'subkey1': 2, 'subkey2': 1}}
+        self.assertEqual(data_merge(input_data_one, input_data_two), output_data)
 
 def main():
     unittest.main()
