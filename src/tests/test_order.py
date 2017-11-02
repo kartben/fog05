@@ -1,12 +1,12 @@
-
 import uuid
 import sys
 import os
 sys.path.append(os.path.join(sys.path[0].rstrip("tests")))
 from DStore import *
-
+import dds
 import json
 import time
+
 
 class Controll():
     def __init__(self):
@@ -19,18 +19,18 @@ class Controll():
         # giving the same id to the nodew and the cache
         self.store = DStore(sid, self.root, self.home, 1024)
 
-    def nodeDiscovered(self, uri, value, v = None):
+    def nodeDiscovered(self, uri, value, v=None):
         value = json.loads(value)
         print(value)
         if uri != str('fos://<sys-id>/%s/' % self.uuid):
-            print ("###########################")
-            print ("###########################")
-            print ("### New Node discovered ###")
-            print ("UUID: %s" % value.get('uuid'))
-            print ("Name: %s" % value.get('name'))
-            print ("###########################")
-            print ("###########################")
-            self.nodes.update({ len(self.nodes)+1 : {value.get('uuid'): value}})
+            print("###########################")
+            print("###########################")
+            print("### New Node discovered ###")
+            print("UUID: %s" % value.get('uuid'))
+            print("Name: %s" % value.get('name'))
+            print("###########################")
+            print("###########################")
+            self.nodes.update({len(self.nodes) + 1: {value.get('uuid'): value}})
             self.show_nodes()
 
     def test_observer(self, key, value, v):
@@ -46,7 +46,7 @@ class Controll():
         for k in self.nodes.keys():
             n = self.nodes.get(k)
             id = list(n.keys())[0]
-            print ("%d - %s : %s" % (k, n.get(id).get('name'), id))
+            print("%d - %s : %s" % (k, n.get(id).get('name'), id))
 
 
     def lot_of_puts(self,node_uuid):
@@ -59,15 +59,16 @@ class Controll():
 
     def main(self, master=True):
 
-        uri = str('fos://<sys-id>/*/')
+        uri = str('fos://<sys-id>/*')
         self.store.observe(uri, self.nodeDiscovered)
 
         if master:
-
+            print("Running as Master")
             while len(self.nodes) == 0:
+                print("Looking for stores...")
+                self.show_nodes()
                 time.sleep(2)
 
-            self.show_nodes()
 
             node_uuid = self.nodes.get(1)
             if node_uuid is not None:
@@ -81,14 +82,18 @@ class Controll():
             self.lot_of_puts(node_uuid)
 
         else:
-
+            print("Running as delegate")
             val = {'uuid': str(self.uuid), "name": "slave"}
             uri = str('fos://<sys-id>/%s/' % self.uuid)
+
+
             self.store.put(uri, json.dumps(val))
+
 
             uri = str('fos://<sys-id>/%s/info' % self.uuid)
             self.store.observe(uri, self.test_observer)
             while True:
+                print("Delegate done with writing...")
                 time.sleep(10)
 
         input()
@@ -97,6 +102,7 @@ class Controll():
 
 
 if __name__ == '__main__':
+    rt = dds.Runtime()
     c = Controll()
     print (len(sys.argv))
     if len(sys.argv) == 1:

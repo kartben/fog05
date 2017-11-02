@@ -1,40 +1,10 @@
 from interfaces.Store import *
+from interfaces.Types import *
 from dds import *
-from ddsutil import *
-from utils.dutils import *
+
 import time
 import uuid
 import ctypes
-
-
-dds_store_info = DDSTopicInfo()
-dds_store_info.idl = "/opt/fos/idl/store.idl"
-dds_store_info.topic_name = "StoreInfo"
-dds_store_info.type_name = "fos::dds::types::StoreInfo"
-dds_store_info.key = "sid"
-dds_store_info.tqos = tl_state_rqos
-dds_store_info.dwqos = tl_state_wqos
-dds_store_info.drqos = tl_state_rqos
-
-
-dds_key_value_info = DDSTopicInfo()
-dds_key_value_info.idl = "/opt/fos/idl/store.idl"
-dds_key_value_info.topic_name = "KeyValue"
-dds_key_value_info.type_name = "fos::dds::types::KeyValue"
-dds_key_value_info.key = "key"
-dds_key_value_info.tqos = cache_tl_entry_qos
-dds_key_value_info.dwqos = cache_tl_entry_qos
-dds_key_value_info.drqos = cache_tl_entry_qos
-
-dds_resolve_info = DDSTopicInfo()
-dds_resolve_info.idl = "/opt/fos/idl/store.idl"
-dds_resolve_info.topic_name = "Resolve"
-dds_resolve_info.type_name = "fos::dds::types::Resolve"
-dds_resolve_info.key = "key"
-dds_resolve_info.tqos = event_qos
-dds_resolve_info.dwqos = event_qos
-dds_resolve_info.drqos = event_qos
-
 
 
 class DController (Controller, Observer):
@@ -42,40 +12,55 @@ class DController (Controller, Observer):
     DISPOSED_INSTANCE = 32
 
     def __init__(self, store):
-        global dds_store_info
-        global dds_key_value_info
         super(DController, self).__init__()
         self.__store = store
-        dp = DomainParticipant()
-        init_dds_topic_info(dp, dds_store_info)
-        init_dds_topic_info(dp, dds_key_value_info)
-        init_dds_topic_entities(dp, dds_store_info, [store.root])
-        init_dds_topic_entities(dp, dds_key_value_info, [store.root])
 
-        dds_store_info.listener.attachment = self
-        dds_store_info.listener.actions[Action.DATA] = lambda reader, attachment: attachment.cache_discovered(reader)
-        dds_store_info.listener.actions[Action.LIVELINESS_CHANGED] = lambda reader, status, attachment: attachment.cache_disappeared(reader, status)
+        self.dds_runtime = Runtime.get_runtime()
+        self.dp = Participant(0)
+        self.pub = Publisher(self.dp, [Partition(["fos://store$"])])
+        self.sub = Subscriber(self.dp, [Partition(["fos://store$"])])
 
-        dds_key_value_info.listener.attachment = self
-        dds_key_value_info.listener.actions[Action.DATA] = lambda reader, attachment: attachment.handle_remote_put(reader)
+        self.store_info_topic = FlexyTopic(self.dp, "StoreInfo")
+        self.key_value_topic = FlexyTopic(self.dp, "KeyValue")
 
-    # The Store Observer operations have to be updated to consider the version
-    # below we also need to properly take into account the semantic of put right now
-    # everything is persisted
+
+        self.store_info_writer = FlexyWriter(self.pub,
+                                             self.store_info_topic,
+                                            [Reliable(), TransientLocal(), KeepLastHistory(1)])
+
+        self.store_info_reader = FlexyReader(self.sub,
+                                            self.store_info_topic,
+                                            [Reliable(), TransientLocal(), KeepLastHistory(1)],
+                                            self.cache_discovered)
+
+
+        self.store_info_reader.on_liveliness_changed(self.cache_disappeared)
+
+        self.key_value_writer = FlexyWriter(self.pub,
+                                            self.key_value_topic,
+                                            [Reliable(), TransientLocal(), KeepLastHistory(1)])
+
+        self.key_value_reader = FlexyReader(self.sub,
+                                            self.key_value_topic,
+                                            [Reliable(), TransientLocal(), KeepLastHistory(1)],
+                                            lambda r: self.handle_remote_put(r))
+
+
+
 
 
     def handle_remove(self, uri):
         self.__store.remote_remove(uri)
 
     def handle_remote_put(self, reader):
-        samples = reader.take(DController.MAX_SAMPLES)
+        samples = reader.take(DDS_NOT_READ_SAMPLE_STATE)
         for (d, i) in samples:
-            if i.instance_state == DDSStatusKind.NOT_ALIVE_DISPOSED_INSTANCE_STATE.value:
-                self.handle_remove(d.key.decode())
+            if i.is_disposed_instance():
+                self.handle_remove(d.key)
             else:
-                rkey = d.key.decode()
-                rsid = d.sid.decode()
-                rvalue = d.value.decode()
+                rkey = d.key
+                rsid = d.sid
+                rvalue = d.value
                 rversion = d.version
                 if rsid != self.__store.store_id and rkey.startswith(self.__store.root):
                     print(">>>>>>>> Handling remote put for key = " + rkey)
@@ -90,49 +75,44 @@ class DController (Controller, Observer):
 
 
     def cache_discovered(self,reader):
-        samples = reader.read(DController.MAX_SAMPLES, DDSMaskUtil.new_samples())
+        samples = reader.read(DDS_NOT_READ_SAMPLE_STATE)
         for (d, i) in samples:
-            if d is not None:
-                rsid = d.sid.decode()
+            if i.valid_data:
+                rsid = d.sid
                 print(">>> Discovered new store with id: " +  rsid)
+                
 
 
     def cache_disappeared(self, reader, status):
         print(">>> Cache Disappeared")
-        samples = reader.read(DController.MAX_SAMPLES, DDSMaskUtil.not_alive_instance_samples())
+        samples = reader.read(DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE | DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE)
         for (d, i) in samples:
             if d is not None:
                 d.print_vars()
 
 
     def onPut(self, uri, val, ver):
-        global dds_key_value_info
         print(">> val: " + val)
-        # dds_key_value_info.
-        v = dds_key_value_info.builder(key = uri , value = val, sid = self.__store.store_id, version = ver)
-        dds_key_value_info.writer.write(v)
+        v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
+        self.key_value_writer.write(v)
 
 
     # One of these for each operation on the cache...
     def onPput(self, uri, val, ver):
-        global dds_key_value_info
-
-        v = dds_key_value_info.builder(key = uri , value = val, sid = self.__store.store_id, version = ver)
-        dds_key_value_info.writer.write(v)
+        v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
+        self.key_value_writer.write(v)
 
     def onDput(self, uri, val, ver):
-        global dds_key_value_info
-
-        v = dds_key_value_info.builder(key = uri , value = val, sid = self.__store.store_id, version = ver)
-        dds_key_value_info.writer.write(v)
+        v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
+        self.key_value_writer.write(v)
 
 
     def onGet(self, uri):
         print("onGet Not yet...")
 
     def onRemove(self, uri):
-        v = dds_key_value_info.builder(key=uri, value=uri, sid=self.__store.store_id, version=0)
-        dds_key_value_info.writer.dispose_instance(v)
+        v = KeyValue(key=uri, value=uri, sid=self.__store.store_id, version=0)
+        self.key_value_writer.dispose_instance(v)
 
 
     def onObserve(self, uri, action):
@@ -155,11 +135,9 @@ class DController (Controller, Observer):
         return None
 
     def start(self):
-        global dds_store_info
-        print("Starting..")
-
-        info = dds_store_info.builder(sid = self.__store.store_id, sroot = self.__store.root, shome = self.__store.home)
-        dds_store_info.writer.write(info)
+        print("Advertising Store..")
+        info = StoreInfo(sid = self.__store.store_id, sroot = self.__store.root, shome = self.__store.home)
+        self.store_info_writer.write(info)
 
 
     def pause(self):
