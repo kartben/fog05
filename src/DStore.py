@@ -301,7 +301,7 @@ class DStore(Store):
                 print (names)
                 print (item_same_name)
                 if all(isinstance(x, dict) for x in updates) and len(
-                        [item for item in base if item.get('name')  in [x.get('name') for x in updates]]) > 0:
+                        [item for item in base if item.get('name') in [x.get('name') for x in updates]]) > 0:
                     for e in base:
                         for u in updates:
                             if e.get('name') == u.get('name'):
