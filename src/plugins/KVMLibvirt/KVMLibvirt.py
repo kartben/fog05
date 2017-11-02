@@ -55,8 +55,14 @@ class KVMLibvirt(RuntimePlugin):
         return self.uuid
 
     def stopRuntime(self):
+        self.agent.logger.info('[ INFO ] KVM Plugin - Destroying running domains')
+        for k in list(self.current_entities.keys()):
+            self.stopEntity(k)
+            self.cleanEntity(k)
+            self.undefineEntity(k)
+
         self.conn.close()
-        self.agent.logger.info('[ INFO ] KVM Plugin - Bye Bye')
+        self.agent.logger.info('[ DONE ] KVM Plugin - Bye Bye')
 
     def getEntities(self):
         return self.current_entities

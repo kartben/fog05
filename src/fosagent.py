@@ -9,6 +9,7 @@ import json
 import re
 import time
 import logging
+import signal
 
 
 class FosAgent(Agent):
@@ -119,7 +120,7 @@ class FosAgent(Agent):
             self.logger.info('[ INIT ] Loading a Network plugin: %s' % plugin_name)
             net = self.pl.loadPlugin(net)
             net = net.run(agent=self)
-            self.__rtPlugins.update({net.uuid: net})
+            self.__nwPlugins.update({net.uuid: net})
 
             val = {'version': net.version, 'description': str('runtime %s' % net.name),
                    'plugin': ''}
@@ -127,7 +128,7 @@ class FosAgent(Agent):
             self.astore.put(uri, json.dumps(val))
 
             val = {'plugins': [{'name': net.name, 'version': net.version, 'uuid': str(net.uuid),
-                                'type': 'network','status': 'loaded'}]}
+                                'type': 'network', 'status': 'loaded'}]}
             uri = str('%s/plugins' % self.ahome)
             self.astore.dput(uri, json.dumps(val))
             self.logger.info('[ DONE ] Loading a Network plugin: %s' % plugin_name)
@@ -407,7 +408,7 @@ class FosAgent(Agent):
                 self.__application_onboarding(mf.get("uuid"), mf.get("entity_description"))
 
             else:
-                self.logger.error("Component type not recognized %s" % t)
+                self.logger.error("[ ERRO ] Component type not recognized %s" % t)
                 raise AssertionError("Component type not recognized %s" % t)
 
     def __resolve_dependencies(self, components):
@@ -449,6 +450,15 @@ class FosAgent(Agent):
         else:
             return search[0]
 
+    def __exit_gracefully(self, signal, frame):
+        self.logger.info('[ INFO ] Received signal: %d' % signal)
+        self.logger.info('[ INFO ] fosAgent exiting...')
+        keys = list(self.__rtPlugins.keys())
+        for k in keys:
+            self.__rtPlugins.get(k).stopRuntime()
+            self.logger.info('[ DONE ] Bye')
+        sys.exit(0)
+
     def main(self):
 
 
@@ -463,6 +473,8 @@ class FosAgent(Agent):
         uri = str('%s/plugins' % self.dhome)
         self.dstore.observe(uri, self.__react_to_plugins)
         self.logger.info('[ INFO ] fosAgent Observing plugins on: %s' % uri)
+
+        signal.signal(signal.SIGINT, self.__exit_gracefully)
 
         self.logger.info('[ DONE ] fosAgent Up and Running')
         while True:
