@@ -447,19 +447,20 @@ class FosAgent(Agent):
 
     def main(self):
 
+
         uri = str('%s/onboard/*/' % self.dhome)
-        print("Applications URI: %s" % uri)
         self.dstore.observe(uri, self.__react_to_onboarding)
+        self.logger.info('[ INFO ] fosAgent Observing for onboarding on: %s' % uri)
 
         uri = str('%s/*/' % self.dhome)
-        print("Home URI: %s" % uri)
         self.dstore.observe(uri, self.__react_to_cache)
+        self.logger.info('[ INFO ] fosAgent Observing home on: %s' % uri)
 
         uri = str('%s/plugins' % self.dhome)
-        print("Plugins URI: %s" %uri)
         self.dstore.observe(uri, self.__react_to_plugins)
+        self.logger.info('[ INFO ] fosAgent Observing plugins on: %s' % uri)
 
-        print("Listening on Store...")
+        self.logger.info('[ DONE ] fosAgent Up and Running')
         while True:
             time.sleep(100)
 
@@ -472,6 +473,7 @@ class FosAgent(Agent):
 if __name__=='__main__':
     print(" _____            ___  ____\n|  ___|__   __ _ / _ \/ ___|\n| |_ / _ \ / _` | | | \___ \ \n|  _| (_) | (_| "
           "| |_| |___) |\n|_|  \___/ \__, |\___/|____/\n           |___/")
+    print("\n\n##### OUTPUT TO LOGFILE #####")
     agent = FosAgent()
     agent.main()
 
