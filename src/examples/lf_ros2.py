@@ -76,7 +76,7 @@ class Controll():
             native = search[0]
         app_name = 'examples_rclcpp_minimal_publisher'
         app_uuid = str(uuid.uuid4())
-        app_definition = {'name': app_name, 'command': 'publisher_member_function', 'args': ['www.adlinktech.com'],
+        app_definition = {'name': app_name, 'command': 'publisher_member_function', 'args': [],
                           'url': 'http://172.16.7.128/minimal_publisher.zip', 'uuid': app_uuid}
         entity_definition = {'status': 'define', 'name': app_name, 'version': 1, 'entity_data': app_definition}
 
