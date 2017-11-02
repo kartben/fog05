@@ -161,19 +161,16 @@ class FosAgent(Agent):
 
     def __react_to_plugins(self, uri, value, v):
         self.logger.info('[ INFO ] Received a plugin action on Desidered Store')
-        #print(value)
         value = json.loads(value)
         value = value.get('plugins')
         for v in value:
             if v.get('status') == 'add':
-                #print (v)
-                #print("I should add a plugin")
                 name = v.get('name')
                 load_method = self.__load_plugin_method_selection(v.get('type'))
                 if load_method is not None:
                     load_method(name)
                 else:
-                    print('Plugins of type %s are not yet supported...' % v.get('type'))
+                    self.logger.warning('[ WARN ] Plugins of type %s are not yet supported...' % v.get('type'))
 
     def __load_plugin_method_selection(self, type):
         r = {
@@ -473,7 +470,7 @@ class FosAgent(Agent):
 if __name__=='__main__':
     print(" _____            ___  ____\n|  ___|__   __ _ / _ \/ ___|\n| |_ / _ \ / _` | | | \___ \ \n|  _| (_) | (_| "
           "| |_| |___) |\n|_|  \___/ \__, |\___/|____/\n           |___/")
-    print("\n\n##### OUTPUT TO LOGFILE #####")
+    print("\n\n##### OUTPUT TO LOGFILE #####\n\n")
     agent = FosAgent()
     agent.main()
 
