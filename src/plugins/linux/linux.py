@@ -30,21 +30,24 @@ from socket import *
 
 
 class Linux(OSPlugin):
-    def __init__(self, name, version):
+    def __init__(self, name, version, agent):
         super(Linux, self).__init__(version)
         self.uuid = uuid.uuid4()
         self.name = name
         self.pm = None
-
+        self.agent = agent
+        self.agent.logger.info('[ INFO ] Hello from GNU\Linux Plugin')
         self.distro = self.__check_distro()
         if self.distro == "":
-            print ("Linux distribution not recognized!")
+            self.agent.logger.warning('[ WARN ] Distribution not recognized, cannot install packages')
         else:
-            print ("Running on %s" % self.distro)
+            self.agent.logger.info('[ INFO ] Running on %s' % self.distro)
             self.pm = self.__get_package_manager(self.distro)
             print ("Package manager loaded! Name %s" % self.pm.name)
+            self.agent.logger.info('[ INFO ] Package manger %s loaded! ' % self.pm.name)
 
     def executeCommand(self, command, blocking=False):
+        self.agent.logger.info('[ INFO ] OS Plugin executing command %s', command)
         print(command)
         cmd_splitted = command.split()
         p = psutil.Popen(cmd_splitted, stdout=PIPE)
@@ -52,15 +55,17 @@ class Linux(OSPlugin):
             p.wait()
 
         for line in p.stdout:
-            print (line)
+            self.agent.logger.info('[ INFO ] %s', line)
 
     def addKnowHost(self, hostname, ip):
+        self.agent.logger.info('[ INFO ] OS Plugin add to hosts file')
         add_cmd = str("sudo %s -a %s %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts',
                                                         'manage_hosts.sh'),
                                        hostname, ip))
         self.executeCommand(add_cmd, True)
 
     def removeKnowHost(self, hostname):
+        self.agent.logger.info('[ INFO ] OS Plugin remove from hosts file')
         del_cmd = str("sudo %s -d %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts', 'manage_hosts.sh'),
                                     hostname))
         self.executeCommand(del_cmd, True)
@@ -82,7 +87,7 @@ class Linux(OSPlugin):
         try:
             return os.remove(path)
         except FileNotFoundError as e:
-            print("File Not Found %s so don't need to remove" % e.strerror)
+            self.agent.logger.error("[ ERRO ] OS Plugin File Not Found %s so don't need to remove" % e.strerror)
             return
 
     def fileExists(self, file_path):
@@ -127,6 +132,7 @@ class Linux(OSPlugin):
 
     def sendSignal(self, signal, pid):
         if self.checkIfPidExists(pid) is False:
+            self.agent.logger.error('[ ERRO ] OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(signal)
@@ -134,6 +140,7 @@ class Linux(OSPlugin):
 
     def sendSigInt(self, pid):
         if self.checkIfPidExists(pid) is False:
+            self.agent.logger.error('[ ERRO ] OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(2)
@@ -141,6 +148,7 @@ class Linux(OSPlugin):
 
     def sendSigKill(self, pid):
         if self.checkIfPidExists(pid) is False:
+            self.agent.logger.error('[ ERRO ] OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(9)

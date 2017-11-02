@@ -70,7 +70,7 @@ class FosAgent(Agent):
             os = self.pl.locatePlugin('linux')
             if os is not None:
                 os = self.pl.loadPlugin(os)
-                self.__osPlugin = os.run()
+                self.__osPlugin = os.run(agent=self)
             else:
                 self.logger.error('[ ERRO ] Error on Loading GNU\Linux plugin!!!')
                 raise RuntimeError("Error on loading OS Plugin")
