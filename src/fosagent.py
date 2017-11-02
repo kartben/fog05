@@ -10,7 +10,7 @@ import re
 import time
 
 
-class FogAgent(Agent):
+class FosAgent(Agent):
 
     def __init__(self):
         self.__PLUINGDIR = './plugins'
@@ -385,6 +385,6 @@ class FogAgent(Agent):
 if __name__=='__main__':
     print(" _____            ___  ____\n|  ___|__   __ _ / _ \/ ___|\n| |_ / _ \ / _` | | | \___ \ \n|  _| (_) | (_| "
           "| |_| |___) |\n|_|  \___/ \__, |\___/|____/\n           |___/")
-    agent = FogAgent()
+    agent = FosAgent()
     agent.main()
 

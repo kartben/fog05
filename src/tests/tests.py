@@ -3,7 +3,6 @@ import sys, os
 sys.path.append(os.path.join(sys.path[0].rstrip("tests")))
 import unittest
 
-
 def resolve_dependencies(components):
     '''
     The return list contains component's name in the order that can be used to deploy
@@ -89,6 +88,7 @@ def data_merge(base, updates):
 
 class DependenciesTests(unittest.TestCase):
     def test_resolve_dependencies_with_dependable_components(self):
+
         input_data = [{'name': 'c1', 'need': ['c2', 'c3']}, {'name': 'c2', 'need': ['c3']},
                        {'name': 'c3', 'need': ['c4']}, {'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}]
         output_data = ['c4', 'c5', 'c3', 'c2', 'c1']
