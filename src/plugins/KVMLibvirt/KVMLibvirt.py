@@ -89,7 +89,7 @@ class KVMLibvirt(RuntimePlugin):
         vm_info = json.loads(self.agent.dstore.get(uri))
         vm_info.update({"status": "defined"})
         self.__update_actual_store(entity_uuid, vm_info)
-        self.agent.logger.info('[ DONE ] KVM Plugin - VM Defined uuid:' % entity_uuid)
+        self.agent.logger.info('[ DONE ] KVM Plugin - VM Defined uuid: %s' % entity_uuid)
         return entity_uuid
 
     def undefineEntity(self, entity_uuid):
@@ -514,7 +514,7 @@ class KVMLibvirt(RuntimePlugin):
                 return True
 
     def __react_to_cache(self, uri, value, v):
-        self.agent.logger.info('[ INFO ] KVM Plugin - Reacto to URI: %s Value: %s Version: %s' % (uri, value, v))
+        self.agent.logger.info('[ INFO ] KVM Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
         if value is None and v is None:
             self.agent.logger.info('[ INFO ] KVM Plugin - This is a remove for URI: %s' % uri)
         else:

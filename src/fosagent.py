@@ -35,14 +35,14 @@ class FosAgent(Agent):
         # Desidered Store. containing the desidered state
         self.droot = "dfos://<sys-id>"
         self.dhome = str("%s/%s" % (self.droot,sid))
-        self.logger.info('[ INIT ] Creating Desidered State Store ROOT: %s HOME:%d' % (self.droot, self.dhome))
+        self.logger.info('[ INIT ] Creating Desidered State Store ROOT: %s HOME: %s' % (self.droot, self.dhome))
         self.dstore = DStore(sid, self.droot, self.dhome, 1024)
         self.logger.info('[ DONE ] Creating Desidered State Store')
 
         # Actual Store, containing the Actual State
         self.aroot = "afos://<sys-id>"
         self.ahome = str("%s/%s" % (self.aroot, sid))
-        self.logger.info('[ INIT ] Creating Actual State Store ROOT: %s HOME:%d' % (self.aroot, self.ahome))
+        self.logger.info('[ INIT ] Creating Actual State Store ROOT: %s HOME: %s' % (self.aroot, self.ahome))
         self.astore = DStore(sid, self.aroot, self.ahome, 1024)
         self.logger.info('[ DONE ] Creating Actual State Store')
 
@@ -160,17 +160,24 @@ class FosAgent(Agent):
         print ("###########################")
 
     def __react_to_plugins(self, uri, value, v):
-        self.logger.info('[ INFO ] Received a plugin action on Desidered Store')
+        self.logger.info('[ INFO ] Received a plugin action on Desidered Store URI: %s Value: %s Version: %s' %
+                         (uri, value, v))
         value = json.loads(value)
         value = value.get('plugins')
         for v in value:
-            if v.get('status') == 'add':
+            uri = str('%s/plugins' % self.ahome)
+            all_plugins = json.loads(self.astore.get(uri))
+            s = [x for x in all_plugins.get('plugins') if v.get('name') in x.get('name')]
+            if v.get('status') == 'add' and len(s) == 0:
                 name = v.get('name')
                 load_method = self.__load_plugin_method_selection(v.get('type'))
                 if load_method is not None:
                     load_method(name)
                 else:
-                    self.logger.warning('[ WARN ] Plugins of type %s are not yet supported...' % v.get('type'))
+                    if len(s) != 0:
+                        self.logger.warning('[ WARN ] Plugins of type %s are not yet supported...' % v.get('type'))
+                    else:
+                        self.logger.warning('[ WARN ] Plugin already loaded')
 
     def __load_plugin_method_selection(self, type):
         r = {
