@@ -18,7 +18,7 @@ class ROS2(RuntimePlugin):
         self.uuid = uuid.uuid4()
         self.name = name
         self.agent = agent
-
+        self.agent.logger.info('[ INFO ] Hello from ROS2 Plugin')
         self.BASE_DIR = "/opt/fos/ros2"
         self.NODLETS_DIR = "nodlets"
         self.LOG_DIR = "logs"
@@ -41,7 +41,7 @@ class ROS2(RuntimePlugin):
         These two files need to be sourced
         '''
 
-
+        self.agent.logger.info('[ INFO ] ROS2 Plugin - Observing %s' % uri)
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
         '''check if dirs exists if not exists create'''
@@ -56,11 +56,16 @@ class ROS2(RuntimePlugin):
             self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
 
     def stopRuntime(self):
-        print ("Stopping ROS2 runtime...")
+        self.agent.logger.info('[ INFO ] ROS2 Plugin - Destroy running entities')
+        for k in list(self.current_entities.keys()):
+            self.stopEntity(k)
+            self.cleanEntity(k)
+            self.undefineEntity(k)
+        self.agent.logger.info('[ DONE ] ROS2 Plugin - Bye')
         return True
 
     def defineEntity(self, *args, **kwargs):
-
+        self.agent.logger.info('[ INFO ] ROS2 Plugin - Define ROS2 Nodelets')
         if len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
             out_file = str("%s/%s/native_%s.log" % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
@@ -75,34 +80,40 @@ class ROS2(RuntimePlugin):
         na_info = json.loads(self.agent.dstore.get(uri))
         na_info.update({"status": "defined"})
         self.__update_actual_store(entity_uuid, na_info)
-
+        self.agent.logger.info('[ DONE ] ROS2 Plugin - Define ROS2 Nodelets uuid %s' % entity_uuid)
         return entity_uuid
 
     def undefineEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
+        self.agent.logger.info('[ INFO ] ROS2 Plugin - Undefine ROS2 Nodelets uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
+            self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.DEFINED:
+            self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             self.current_entities.pop(entity_uuid, None)
             #self.__pop_actual_store(entity_uuid)
+            self.agent.logger.info('[ DONE ] ROS2 Plugin - Undefine ROS2 Nodelets uuid %s' % entity_uuid)
             return True
 
     def configureEntity(self, entity_uuid):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-
+        self.agent.logger.info('[ INFO ] ROS2 Plugin - Configure ROS2 Nodelets uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
+            self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.DEFINED:
+            self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
@@ -154,17 +165,20 @@ class ROS2(RuntimePlugin):
             na_info = json.loads(self.agent.dstore.get(uri))
             na_info.update({"status": "configured"})
             self.__update_actual_store(entity_uuid, na_info)
+            self.agent.logger.info('[ DONE ] ROS2 Plugin - Configure ROS2 Nodelets uuid %s' % entity_uuid)
             return True
 
     def cleanEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-
+        self.agent.logger.info('[ INFO ] ROS2 Plugin - Clean ROS2 Nodelets uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
+            self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.CONFIGURED:
+            self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
@@ -179,17 +193,20 @@ class ROS2(RuntimePlugin):
             na_info = json.loads(self.agent.dstore.get(uri))
             na_info.update({"status": "cleaned"})
             self.__update_actual_store(entity_uuid, na_info)
-
+            self.agent.logger.info('[ DONE ] ROS2 Plugin - Clean ROS2 Nodelets uuid %s' % entity_uuid)
             return True
 
     def runEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        entity = self.current_entities.get(entity_uuid,None)
+        self.agent.logger.info('[ INFO ] ROS2 Plugin - Starting ROS2 Nodelets uuid %s' % entity_uuid)
+        entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
+            self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.CONFIGURED:
+            self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
@@ -214,16 +231,20 @@ class ROS2(RuntimePlugin):
             na_info = json.loads(self.agent.dstore.get(uri))
             na_info.update({"status": "run"})
             self.__update_actual_store(entity_uuid, na_info)
+            self.agent.logger.info('[ DONE ] ROS2 Plugin - Started ROS2 Nodelets uuid %s' % entity_uuid)
             return True
 
     def stopEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
+        self.agent.logger.info('[ INFO ] ROS2 Plugin - Stopping ROS2 Nodelets uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
+            self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.RUNNING:
+            self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
@@ -251,14 +272,15 @@ class ROS2(RuntimePlugin):
             na_info = json.loads(self.agent.dstore.get(uri))
             na_info.update({"status": "stop"})
             self.__update_actual_store(entity_uuid, na_info)
+            self.agent.logger.info('[ DONE ] ROS2 Plugin - Clean ROS2 Nodelet uuid %s' % entity_uuid)
             return True
 
     def pauseEntity(self, entity_uuid):
-        print("Can't pause a native application")
+        self.agent.logger.warning('[ WARN ] ROS2 Plugin - Cannot pause a ROS2 Nodelet')
         return False
 
     def resumeEntity(self, entity_uuid):
-        print("Can't resume a native application")
+        self.agent.logger.warning('[ WARN ] ROS2 Plugin - Cannot pause a ROS2 Nodelet')
         return False
 
 
@@ -280,7 +302,7 @@ class ROS2(RuntimePlugin):
         return p
 
     def __react_to_cache(self, uri, value, v):
-        print("ROS2 on React \nURI:%s\nValue:%s\nVersion:%s" % (uri, value, v))
+        self.agent.logger.info('[ INFO ] ROS2 Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
         uuid = uri.split('/')[-1]
         value = json.loads(value)
         action = value.get('status')

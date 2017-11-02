@@ -9,7 +9,6 @@ from RuntimePlugin import *
 from NativeEntity import NativeEntity
 
 
-
 class Native(RuntimePlugin):
 
     def __init__(self, name, version, agent):
@@ -29,6 +28,10 @@ class Native(RuntimePlugin):
 
     def stopRuntime(self):
         self.agent.logger.info('[ INFO ] Native Plugin - Destroy running BE')
+        for k in list(self.current_entities.keys()):
+            self.stopEntity(k)
+            self.cleanEntity(k)
+            self.undefineEntity(k)
         self.agent.logger.info('[ DONE ] Native Plugin - Bye')
         return True
 
@@ -61,7 +64,7 @@ class Native(RuntimePlugin):
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.DEFINED:
-            self.agent.logger.error('[ ERRO ] KVM Native - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('[ ERRO ] Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
@@ -80,7 +83,7 @@ class Native(RuntimePlugin):
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.DEFINED:
-            self.agent.logger.error('[ ERRO ] KVM Native - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('[ ERRO ] Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
@@ -106,7 +109,7 @@ class Native(RuntimePlugin):
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.CONFIGURED:
-            self.agent.logger.error('[ ERRO ] KVM Native - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('[ ERRO ] Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
@@ -132,7 +135,7 @@ class Native(RuntimePlugin):
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.CONFIGURED:
-            self.agent.logger.error('[ ERRO ] KVM Native - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('[ ERRO ] Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
@@ -158,7 +161,7 @@ class Native(RuntimePlugin):
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.RUNNING:
-            self.agent.logger.error('[ ERRO ] KVM Native - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('[ ERRO ] Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
@@ -181,8 +184,6 @@ class Native(RuntimePlugin):
         self.agent.logger.warning('[ WARN ] Native Plugin - Cannot resume a BE')
         return False
 
-
-
     def __update_actual_store(self, uri, value):
         uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, uri))
         value = json.dumps(value)
@@ -191,7 +192,6 @@ class Native(RuntimePlugin):
     def __pop_actual_store(self, uri,):
         uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, uri))
         self.agent.astore.remove(uri)
-
 
     def __execute_command(self, command, out_file):
         f = open(out_file, 'w')
