@@ -245,6 +245,7 @@ class Controll():
         json_data = json.dumps({'status': 'undefine'})
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, kvm.get('uuid'), vm_uuid))
         self.dstore.dput(uri, json_data)
+        #self.dstore.remove(uri)
 
 
     def main(self):

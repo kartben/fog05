@@ -405,7 +405,7 @@ class KVMLibvirt(RuntimePlugin):
 
             entity.state = State.TAKING_OFF
             self.current_entities.update({entity_uuid: entity})
-            uri = str("afos://<sys-id>/%s/" % fognode_uuid)  # TODO: clarify this get
+            uri = str("afos://<sys-id>/%s/" % fognode_uuid)
             dst_node_info = json.loads(self.agent.astore.get(uri))
 
             dom = self.__lookup_by_uuid(entity_uuid)
