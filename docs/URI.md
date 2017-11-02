@@ -34,7 +34,7 @@ The store is divided in two parts, one for store the desidered state of the node
 `<a|d>fos://<system_id>/**`
 
 ##### Add a plugin to a node
-`dfos://<system_id>/<node_id>/plugins$add` 
+`dfos://<system_id>/<node_id>/plugins` 
 
 Then the value should be a JSON object with all information that permitt to get and install the plugin
 
