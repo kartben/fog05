@@ -1,5 +1,5 @@
-from interfaces.Store import *
-from DController import *
+from fog05.interfaces.Store import *
+from fog05.DController import *
 import fnmatch
 from threading import Thread
 import json

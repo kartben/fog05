@@ -1,4 +1,4 @@
-from Plugin import Plugin
+from fog05.interfaces.Plugin import Plugin
 
 
 class NetworkPlugin(Plugin):

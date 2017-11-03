@@ -1,5 +1,5 @@
-from interfaces.Store import *
-from interfaces.Types import *
+from fog05.interfaces.Store import *
+from fog05.interfaces.Types import *
 from dds import *
 
 import time

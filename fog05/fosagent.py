@@ -1,7 +1,7 @@
-from interfaces.Agent import Agent
-from PluginLoader import PluginLoader
+from fog05.interfaces.Agent import Agent
+from fog05.PluginLoader import PluginLoader
 import sys
-from DStore import *
+from fog05.DStore import *
 import json
 #import networkx as nx
 import time
@@ -501,9 +501,4 @@ class FosAgent(Agent):
 
 
 
-
-if __name__=='__main__':
-
-    agent = FosAgent()
-    agent.main()
 
