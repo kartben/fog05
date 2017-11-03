@@ -11,7 +11,7 @@ import signal
 
 class FosAgent(Agent):
 
-    def __init__(self, debug=False, plugins_path=None):
+    def __init__(self, debug=True, plugins_path=None):
         print(" _____            ____   ____\n"
               "|  ___|__   __ _ / __ \ | ___|\n"
               "| |_ / _ \ / _` | | /| ||___ \ \n"
@@ -19,14 +19,17 @@ class FosAgent(Agent):
               "|_|  \___/ \__, |\____/ |____/ \n"
               "           |___/ \n")
 
-
-        if debug:
+        if not debug:
             self.LOGFILE = str('fosagent_log_%d.log' % int(time.time()))
+            logging.basicConfig(filename=self.LOGFILE,
+                                format='[%(asctime)s] - %(name)s - [%(levelname)s] > %(message)s',
+                                level=logging.INFO)
         else:
             self.LOGFILE = "stdout"
+            logging.basicConfig(format='[%(asctime)s] - %(name)s - [%(levelname)s] > %(message)s',
+                                level=logging.INFO)
         # Enable logging
-        logging.basicConfig(filename=self.LOGFILE, format='[%(asctime)s] - %(name)s - [%(levelname)s] > %(message)s',
-                            level=logging.INFO)
+
         self.logger = logging.getLogger(__name__)
         print("\n\n##### OUTPUT TO LOGFILE #####\n\n")
         print("\n\n##### LOGFILE %s ####\n\n" % self.LOGFILE)
@@ -37,48 +40,57 @@ class FosAgent(Agent):
         else:
             self.__PLUINGDIR = plugins_path
 
-        self.logger.info('Plugins Dir: %s' % self.__PLUINGDIR)
-        self.pl = PluginLoader(self.__PLUINGDIR)
-        self.pl.getPlugins()
-        self.__osPlugin = None
-        self.__rtPlugins = {}
-        self.__nwPlugins = {}
-        self.logger.info('[ INIT ] Loading OS Plugin...')
-        self.__load_os_plugin()
-        self.logger.info('[ DONE ] Loading OS Plugin...')
-        super(FosAgent, self).__init__(self.__osPlugin.getUUID())
-        sid = str(self.uuid)
+        try:
 
-        # Desidered Store. containing the desidered state
-        self.droot = "dfos://<sys-id>"
-        self.dhome = str("%s/%s" % (self.droot,sid))
-        self.logger.info('[ INIT ] Creating Desidered State Store ROOT: %s HOME: %s' % (self.droot, self.dhome))
-        self.dstore = DStore(sid, self.droot, self.dhome, 1024)
-        self.logger.info('[ DONE ] Creating Desidered State Store')
+            self.logger.info('Plugins Dir: %s' % self.__PLUINGDIR)
+            self.pl = PluginLoader(self.__PLUINGDIR)
+            self.pl.getPlugins()
+            self.__osPlugin = None
+            self.__rtPlugins = {}
+            self.__nwPlugins = {}
+            self.logger.info('[ INIT ] Loading OS Plugin...')
+            self.__load_os_plugin()
+            self.logger.info('[ DONE ] Loading OS Plugin...')
+            super(FosAgent, self).__init__(self.__osPlugin.getUUID())
+            sid = str(self.uuid)
 
-        # Actual Store, containing the Actual State
-        self.aroot = "afos://<sys-id>"
-        self.ahome = str("%s/%s" % (self.aroot, sid))
-        self.logger.info('[ INIT ] Creating Actual State Store ROOT: %s HOME: %s' % (self.aroot, self.ahome))
-        self.astore = DStore(sid, self.aroot, self.ahome, 1024)
-        self.logger.info('[ DONE ] Creating Actual State Store')
+            # Desidered Store. containing the desidered state
+            self.droot = "dfos://<sys-id>"
+            self.dhome = str("%s/%s" % (self.droot, sid))
+            self.logger.info('[ INIT ] Creating Desidered State Store ROOT: %s HOME: %s' % (self.droot, self.dhome))
+            self.dstore = DStore(sid, self.droot, self.dhome, 1024)
+            self.logger.info('[ DONE ] Creating Desidered State Store')
 
-        self.logger.info('[ INIT ] Populating Actual Store with data from OS Plugin')
-        val = {'status': 'add', 'version': self.__osPlugin.version, 'description': 'linux plugin', 'plugin': ''}
-        uri = str('%s/plugins/%s/%s' % (self.ahome, self.__osPlugin.name, self.__osPlugin.uuid))
-        self.astore.put(uri, json.dumps(val))
+            # Actual Store, containing the Actual State
+            self.aroot = "afos://<sys-id>"
+            self.ahome = str("%s/%s" % (self.aroot, sid))
+            self.logger.info('[ INIT ] Creating Actual State Store ROOT: %s HOME: %s' % (self.aroot, self.ahome))
+            self.astore = DStore(sid, self.aroot, self.ahome, 1024)
+            self.logger.info('[ DONE ] Creating Actual State Store')
 
-        val = {'plugins': [{'name': 'linux', 'version': self.__osPlugin.version, 'uuid': str(self.__osPlugin.uuid),
-                           'type': 'os'}]}
-        uri = str('%s/plugins' % self.ahome)
-        self.astore.put(uri, json.dumps(val))
+            self.logger.info('[ INIT ] Populating Actual Store with data from OS Plugin')
+            val = {'status': 'add', 'version': self.__osPlugin.version, 'description': 'linux plugin', 'plugin': ''}
+            uri = str('%s/plugins/%s/%s' % (self.ahome, self.__osPlugin.name, self.__osPlugin.uuid))
+            self.astore.put(uri, json.dumps(val))
 
-        val = {'plugins': []}
-        uri = str('%s/plugins' % self.dhome)
-        self.dstore.put(uri, json.dumps(val))
+            val = {'plugins': [{'name': 'linux', 'version': self.__osPlugin.version, 'uuid': str(self.__osPlugin.uuid),
+                               'type': 'os'}]}
+            uri = str('%s/plugins' % self.ahome)
+            self.astore.put(uri, json.dumps(val))
 
-        self.__populate_node_information()
-        self.logger.info('[ DONE ] Populating Actual Store with data from OS Plugin')
+            val = {'plugins': []}
+            uri = str('%s/plugins' % self.dhome)
+            self.dstore.put(uri, json.dumps(val))
+
+            self.__populate_node_information()
+            self.logger.info('[ DONE ] Populating Actual Store with data from OS Plugin')
+        except FileNotFoundError as fne:
+            self.logger.error("File Not Found Aborting %s " % fne.strerror)
+            exit(-1)
+        except Error as e:
+            self.logger.error("Something trouble happen %s " % e.strerror)
+            exit(-1)
+
 
     def __load_os_plugin(self):
         platform = sys.platform
@@ -475,7 +487,7 @@ class FosAgent(Agent):
             self.logger.info('[ DONE ] Bye')
         sys.exit(0)
 
-    def main(self):
+    def run(self):
 
 
         uri = str('%s/onboard/*/' % self.dhome)
