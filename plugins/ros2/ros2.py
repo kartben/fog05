@@ -17,7 +17,7 @@ class ROS2(RuntimePlugin):
         self.uuid = uuid.uuid4()
         self.name = name
         self.agent = agent
-        self.agent.logger.info('[ INFO ] Hello from ROS2 Plugin')
+        self.agent.logger.info(' Hello from ROS2 Plugin')
         self.BASE_DIR = "/opt/fos/ros2"
         self.NODLETS_DIR = "nodlets"
         self.LOG_DIR = "logs"
@@ -40,7 +40,7 @@ class ROS2(RuntimePlugin):
         These two files need to be sourced
         '''
 
-        self.agent.logger.info('[ INFO ] ROS2 Plugin - Observing %s' % uri)
+        self.agent.logger.info(' ROS2 Plugin - Observing %s' % uri)
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
         '''check if dirs exists if not exists create'''
@@ -55,7 +55,7 @@ class ROS2(RuntimePlugin):
             self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
 
     def stopRuntime(self):
-        self.agent.logger.info('[ INFO ] ROS2 Plugin - Destroy running entities')
+        self.agent.logger.info(' ROS2 Plugin - Destroy running entities')
         for k in list(self.current_entities.keys()):
             self.stopEntity(k)
             self.cleanEntity(k)
@@ -64,7 +64,7 @@ class ROS2(RuntimePlugin):
         return True
 
     def defineEntity(self, *args, **kwargs):
-        self.agent.logger.info('[ INFO ] ROS2 Plugin - Define ROS2 Nodelets')
+        self.agent.logger.info(' ROS2 Plugin - Define ROS2 Nodelets')
         if len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
             out_file = str("%s/%s/native_%s.log" % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
@@ -85,7 +85,7 @@ class ROS2(RuntimePlugin):
     def undefineEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('[ INFO ] ROS2 Plugin - Undefine ROS2 Nodelets uuid %s' % entity_uuid)
+        self.agent.logger.info(' ROS2 Plugin - Undefine ROS2 Nodelets uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity not exists')
@@ -105,7 +105,7 @@ class ROS2(RuntimePlugin):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('[ INFO ] ROS2 Plugin - Configure ROS2 Nodelets uuid %s' % entity_uuid)
+        self.agent.logger.info(' ROS2 Plugin - Configure ROS2 Nodelets uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity not exists')
@@ -170,7 +170,7 @@ class ROS2(RuntimePlugin):
     def cleanEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('[ INFO ] ROS2 Plugin - Clean ROS2 Nodelets uuid %s' % entity_uuid)
+        self.agent.logger.info(' ROS2 Plugin - Clean ROS2 Nodelets uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity not exists')
@@ -198,7 +198,7 @@ class ROS2(RuntimePlugin):
     def runEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('[ INFO ] ROS2 Plugin - Starting ROS2 Nodelets uuid %s' % entity_uuid)
+        self.agent.logger.info(' ROS2 Plugin - Starting ROS2 Nodelets uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity not exists')
@@ -236,7 +236,7 @@ class ROS2(RuntimePlugin):
     def stopEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('[ INFO ] ROS2 Plugin - Stopping ROS2 Nodelets uuid %s' % entity_uuid)
+        self.agent.logger.info(' ROS2 Plugin - Stopping ROS2 Nodelets uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             self.agent.logger.error('[ ERRO ] ROS2 Plugin - Entity not exists')
@@ -301,7 +301,7 @@ class ROS2(RuntimePlugin):
         return p
 
     def __react_to_cache(self, uri, value, v):
-        self.agent.logger.info('[ INFO ] ROS2 Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
+        self.agent.logger.info(' ROS2 Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
         uuid = uri.split('/')[-1]
         value = json.loads(value)
         action = value.get('status')
