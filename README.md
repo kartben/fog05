@@ -7,20 +7,17 @@ Thanks to its plugin architecture can manage near everything
 
 See inside [docs](../docs) for some design documentation
 
-Inside [src/plugins](../src/plugins) there are some plugins for entity
+Inside [src/plugins](../plugins) there are some plugins for entity
 
-Inside [src/examples](../src/examples) you can find some example/demo
+Inside [src/examples](../examples) you can find some example/demo
 
 
 
 ## Agent
 
-You should have OpenSplice installed, and Python OpenSplice DDS API Bindings
+You should have OpenSplice installed, and [Python ATO DDS API Bindings](https://github.com/atolab/dds-python)
 
 
-python dependencies:
-
-- networkx
 
 ---
 
@@ -28,6 +25,21 @@ config dependencies:
 
 - user should be able to use sudo without password asking (`echo "username  ALL=(ALL) NOPASSWD: ALL"  >> /etc/sudoers`)
 
+## Installation
+
+Run `python3 setup.py install`
+
+
 ### How to run:
 
-Simply open a shell and write `python3 fosagent.py`
+Open a python3 interpreter
+    
+    $ python3
+    >>> from fog05.fosagent import FosAgent
+    >>> a = FosAgent()
+    >>> a.run()
+    ....
+    >>> a.stop()
+
+You can pass to the constructor the plugins directory `FosAgent(plugins_path="/path/to/plugins)`
+or debug=False to have logging on file
