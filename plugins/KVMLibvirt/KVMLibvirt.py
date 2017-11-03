@@ -2,9 +2,9 @@ import sys
 import os
 import uuid
 sys.path.append(os.path.join(sys.path[0],'interfaces'))
-from States import State
-from RuntimePlugin import *
-from KVMLibvirtEntity import KVMLibvirtEntity
+from fog05.interfaces.States import State
+from fog05.interfaces.RuntimePlugin import *
+from .KVMLibvirtEntity import KVMLibvirtEntity
 from jinja2 import Environment
 import json
 import random

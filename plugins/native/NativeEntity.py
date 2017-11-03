@@ -1,8 +1,8 @@
 import sys
 import os
 sys.path.append(os.path.join(sys.path[0],'interfaces'))
-from States import State
-from Entity import Entity
+from fog05.interfaces.States import State
+from fog05.interfaces.Entity import Entity
 
 
 class NativeEntity(Entity):

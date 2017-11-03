@@ -19,9 +19,11 @@ class PluginLoader(object):
                 continue
             info = imp.find_module(self.MainModule, [location])
             self.plugins.append({"name": p, "info": info})
+            sys.path.append(os.path.join(sys.path[0], self.PluginFolder, p))
         return self.plugins
 
     def loadPlugin(self, name):
+
         return imp.load_module(self.MainModule, *name["info"])
 
     def locatePlugin(self, name):

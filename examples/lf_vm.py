@@ -1,8 +1,8 @@
 import uuid
 import sys
 import os
-sys.path.append(os.path.join(sys.path[0].rstrip("examples")))
-from DStore import *
+
+from fog05.DStore import *
 import json
 import time
 

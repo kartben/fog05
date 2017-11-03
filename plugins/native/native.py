@@ -3,10 +3,9 @@ import os
 import uuid
 import psutil
 import json
-sys.path.append(os.path.join(sys.path[0], 'interfaces'))
-from States import State
-from RuntimePlugin import *
-from NativeEntity import NativeEntity
+from fog05.interfaces.States import State
+from fog05.interfaces.RuntimePlugin import *
+from .NativeEntity import NativeEntity
 
 
 class Native(RuntimePlugin):

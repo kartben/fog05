@@ -4,7 +4,7 @@ import uuid
 import struct
 import json
 sys.path.append(os.path.join(sys.path[0], 'interfaces'))
-from NetworkPlugin import *
+from fog05.interfaces.NetworkPlugin import *
 from socket import *
 
 
