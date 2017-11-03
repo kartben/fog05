@@ -5,7 +5,7 @@ import psutil
 import json
 from fog05.interfaces.States import State
 from fog05.interfaces.RuntimePlugin import *
-from .ROS2Entity import ROS2Entity
+from ROS2Entity import ROS2Entity
 from jinja2 import Environment
 
 

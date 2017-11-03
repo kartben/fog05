@@ -5,7 +5,7 @@ import psutil
 import json
 from fog05.interfaces.States import State
 from fog05.interfaces.RuntimePlugin import *
-from .NativeEntity import NativeEntity
+from NativeEntity import NativeEntity
 
 
 class Native(RuntimePlugin):

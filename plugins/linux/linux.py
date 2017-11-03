@@ -1,8 +1,7 @@
 
 import uuid
 import psutil
-from fog05.interfaces import OSPlugin
-
+from fog05.interfaces.OSPlugin import OSPlugin
 from subprocess import PIPE
 import subprocess
 import re
@@ -10,7 +9,7 @@ import platform
 import netifaces
 import shutil
 from socket import *
-
+import os
 # platform.linux_distribution()
 
 
@@ -253,24 +252,24 @@ class Linux(OSPlugin):
         # $ blkid / dev / sda1
         # /dev/sda1: LABEL = "/"  UUID = "ee7cf0a0-1922-401b-a1ae-6ec9261484c0" SEC_TYPE = "ext2" TYPE = "ext3"
         # generate uuid from this or from cpuid or mb uuid from /sys/class/dmi/id/product_uuid
-
+        '''
+                uuid_regex = r"UUID=\"(.{0,37})\""
+                p = psutil.Popen('sudo blkid /dev/sda1'.split(), stdout=PIPE)
+                res = ""
+                for line in p.stdout:
+                    res = str(res+"%s" % line)
+                m = re.search(uuid_regex, res)
+                if m:
+                    found = m.group(1)
+                return found
+        '''
         p = psutil.Popen('sudo cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE)
         #p = psutil.Popen('sudo cat '.split(), stdout=PIPE)
         res = ""
         for line in p.stdout:
             res = str(res + "%s" % line.decode("utf-8"))
         return res.lower().strip()
-        '''
-        uuid_regex = r"UUID=\"(.{0,37})\""
-        p = psutil.Popen('sudo blkid /dev/sda1'.split(), stdout=PIPE)
-        res = ""
-        for line in p.stdout:
-            res = str(res+"%s" % line)
-        m = re.search(uuid_regex, res)
-        if m:
-            found = m.group(1)
-        return found
-        '''
+
 
     def getHostname(self):
         res = ''
@@ -367,9 +366,11 @@ class Linux(OSPlugin):
                 pkgs.append(l.split(b'/')[0].decode('utf-8'))
             return pkgs
 
+
     class YumWrapper(object):
         def __init__(self):
             self.name = "yum"
+
 
         def update_packages(self):
             cmd = "sudo yum update -y && sudo yum autoremove"
