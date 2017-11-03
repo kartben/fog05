@@ -110,6 +110,9 @@ class TestCache():
         uri = str('%s/test3' % self.ahome)
         self.astore.put(uri, json.dumps(val))
 
+        uri = str('%s/test3' % self.ahome)
+        self.astore.put(uri, json.dumps(val))
+
         while len(self.nodes) < 1:
             time.sleep(2)
 
@@ -127,9 +130,14 @@ class TestCache():
 
 
 
+        input()
 
+        uri = str('%s/test3' % self.ahome)
+        self.astore.remove(uri)
 
-
+        print("###################################### Actual Store #########################################")
+        print(self.astore)
+        print("#############################################################################################")
 
         '''        print(self.store)
 

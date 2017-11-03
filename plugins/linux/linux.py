@@ -1,12 +1,8 @@
-import sys
-import os
+
 import uuid
 import psutil
+from fog05.interfaces import OSPlugin
 
-sys.path.append(os.path.join(sys.path[0], 'interfaces'))
-from States import State
-from OSPlugin import *
-from jinja2 import Environment
 from subprocess import PIPE
 import subprocess
 import re

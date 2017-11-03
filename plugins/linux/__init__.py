@@ -6,7 +6,7 @@ VERSION = 1
 
 def run(*args,**kwargs):
 
-    sys.path.append(os.path.join(sys.path[0], 'plugins', 'linux'))
+
     from linux import Linux
     l = Linux('linux', VERSION, kwargs.get('agent'))
     return l

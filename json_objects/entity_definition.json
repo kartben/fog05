@@ -25,7 +25,7 @@
       "type":"string",
       "description":"depends on entity"
     },
-//    Maybe should have a nested json for migration data, with information about src and dst nodes
+//    Maybe should have a nested json for migration data, with information about fog05 and dst nodes
     "dst":{
       "optional":"true",
       "type":"string",

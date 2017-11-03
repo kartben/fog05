@@ -1,12 +1,9 @@
 from interfaces.Agent import Agent
 from PluginLoader import PluginLoader
-import uuid
 import sys
 from DStore import *
-#from RedisLocalCache import RedisCache
 import json
 #import networkx as nx
-import re
 import time
 import logging
 import signal
@@ -14,14 +11,33 @@ import signal
 
 class FosAgent(Agent):
 
-    def __init__(self):
-        self.__PLUINGDIR = './plugins'
-        self.LOGFILE = str('fosagent_log_%d.log' % int(time.time()))
+    def __init__(self, debug=False, plugins_path=None):
+        print(" _____            ____   ____\n"
+              "|  ___|__   __ _ / __ \ | ___|\n"
+              "| |_ / _ \ / _` | | /| ||___ \ \n"
+              "|  _| (_) | (_| | |/_| | ___) |\n"
+              "|_|  \___/ \__, |\____/ |____/ \n"
+              "           |___/ \n")
+
+
+        if debug:
+            self.LOGFILE = str('fosagent_log_%d.log' % int(time.time()))
+        else:
+            self.LOGFILE = "stdout"
         # Enable logging
-        logging.basicConfig(filename=self.LOGFILE, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        logging.basicConfig(filename=self.LOGFILE, format='[%(asctime)s] - %(name)s - [%(levelname)s] > %(message)s',
                             level=logging.INFO)
         self.logger = logging.getLogger(__name__)
+        print("\n\n##### OUTPUT TO LOGFILE #####\n\n")
+        print("\n\n##### LOGFILE %s ####\n\n" % self.LOGFILE)
         self.logger.info('[ INFO ] FosAgent Starting...')
+
+        if plugins_path is None:
+            self.__PLUINGDIR = './plugins'
+        else:
+            self.__PLUINGDIR = plugins_path
+
+        self.logger.info('Plugins Dir: %s' % self.__PLUINGDIR)
         self.pl = PluginLoader(self.__PLUINGDIR)
         self.pl.getPlugins()
         self.__osPlugin = None
@@ -67,24 +83,24 @@ class FosAgent(Agent):
     def __load_os_plugin(self):
         platform = sys.platform
         if platform == 'linux':
-            self.logger.info('[ INFO ] fosAgent running on GNU\Linux')
+            self.logger.info('fosAgent running on GNU\Linux')
             os = self.pl.locatePlugin('linux')
             if os is not None:
                 os = self.pl.loadPlugin(os)
                 self.__osPlugin = os.run(agent=self)
             else:
-                self.logger.error('[ ERRO ] Error on Loading GNU\Linux plugin!!!')
+                self.logger.error('Error on Loading GNU\Linux plugin!!!')
                 raise RuntimeError("Error on loading OS Plugin")
         elif platform == 'darwin':
-            self.logger.info('[ INFO ] fosAgent running on macOS')
-            self.logger.error('[ ERRO ] Mac plugin not yet implemented...')
+            self.logger.info('fosAgent running on macOS')
+            self.logger.error(' Mac plugin not yet implemented...')
             raise RuntimeError("Mac plugin not yet implemented...")
         elif platform == 'windows':
-            self.logger.info('[ INFO ] fosAgent running on Windows')
-            self.logger.error('[ ERRO ] Windows plugin not yet implemented...')
+            self.logger.info('fosAgent running on Windows')
+            self.logger.error('Windows plugin not yet implemented...')
             raise RuntimeError("Windows plugin not yet implemented...")
         else:
-            self.logger.error('[ ERRO ] Platform %s not compatible!!!!' % platform)
+            self.logger.error('Platform %s not compatible!!!!' % platform)
             raise RuntimeError("Platform not compatible")
 
     def getOSPlugin(self):
@@ -487,9 +503,7 @@ class FosAgent(Agent):
 
 
 if __name__=='__main__':
-    print(" _____            ___  ____\n|  ___|__   __ _ / _ \/ ___|\n| |_ / _ \ / _` | | | \___ \ \n|  _| (_) | (_| "
-          "| |_| |___) |\n|_|  \___/ \__, |\___/|____/\n           |___/")
-    print("\n\n##### OUTPUT TO LOGFILE #####\n\n")
+
     agent = FosAgent()
     agent.main()
 
