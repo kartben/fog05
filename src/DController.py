@@ -20,8 +20,8 @@ class DController (Controller, Observer):
         self.pub = Publisher(self.dp, [Partition(["fos://store$"])])
         self.sub = Subscriber(self.dp, [Partition(["fos://store$"])])
 
-        self.store_info_topic = FlexyTopic(self.dp, "StoreInfo")
-        self.key_value_topic = FlexyTopic(self.dp, "KeyValue")
+        self.store_info_topic = FlexyTopic(self.dp, "FOSStoreInfo")
+        self.key_value_topic = FlexyTopic(self.dp, "FOSKeyValue")
 
 
         self.store_info_writer = FlexyWriter(self.pub,
@@ -80,7 +80,7 @@ class DController (Controller, Observer):
             if i.valid_data:
                 rsid = d.sid
                 print(">>> Discovered new store with id: " +  rsid)
-                
+
 
 
     def cache_disappeared(self, reader, status):
