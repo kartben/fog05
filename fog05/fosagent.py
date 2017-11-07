@@ -227,7 +227,7 @@ class FosAgent(Agent):
         self.__application_onboarding(application_uuid, value)
 
     def __application_onboarding(self,application_uuid, value):
-        self.logger.info(' Onboarding application with uuid: %s' % application_uuid)
+        self.logger.info('__application_onboarding()', ' Onboarding application with uuid: %s' % application_uuid)
         deploy_order_list = self.__resolve_dependencies(value.get('components', None))
         informations = {}
         '''
@@ -245,7 +245,7 @@ class FosAgent(Agent):
             if len(search) > 0:
                 component = search[0]
             else:
-                self.logger.warning('[ WARN ] Could not find component in component list WTF?')
+                self.logger.warning('__application_onboarding()', '[ WARN ] Could not find component in component list WTF?')
                 raise AssertionError("Could not find component in component list WTF?")
 
 
@@ -263,7 +263,7 @@ class FosAgent(Agent):
                 self.logger.info(' Component is a VM')
                 kvm = self.__search_plugin_by_name('KVM')
                 if kvm is None:
-                    self.logger.error('[ ERRO ] KVM Plugin not loaded/found!!!')
+                    self.logger.error('__application_onboarding()', '[ ERRO ] KVM Plugin not loaded/found!!!')
                     return False
 
                 '''
@@ -280,34 +280,34 @@ class FosAgent(Agent):
                     'version'), 'entity_data': mf.get("entity_description")}
                 json_data = json.dumps(entity_definition)
 
-                self.logger.info(' Define VM')
+                self.logger.info('__application_onboarding()', ' Define VM')
                 uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, kvm.get('uuid'), vm_uuid))
                 self.dstore.put(uri, json_data)
 
                 while True:
-                    self.logger.info(' Waiting VM to be DEFINED')
+                    self.logger.info('__application_onboarding()', ' Waiting VM to be DEFINED')
                     time.sleep(1)
                     uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
                     vm_info = json.loads(self.astore.get(uri))
                     if vm_info is not None and vm_info.get("status") == "defined":
                         break
-                self.logger.info('[ DONE ] VM DEFINED')
+                self.logger.info('__application_onboarding()', '[ DONE ] VM DEFINED')
 
-                self.logger.info('Configure VM')
+                self.logger.info('__application_onboarding()', 'Configure VM')
                 uri = str(
                     'dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (node_uuid, kvm.get('uuid'), vm_uuid))
                 self.dstore.dput(uri)
 
                 while True:
-                    self.logger.info('Waiting VM to be CONFIGURED')
+                    self.logger.info('__application_onboarding()', 'Waiting VM to be CONFIGURED')
                     time.sleep(1)
                     uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
                     vm_info = json.loads(self.astore.get(uri))
                     if vm_info is not None and vm_info.get("status") == "configured":
                         break
-                self.logger.info('[ DONE ] VM Configured')
+                self.logger.info('__application_onboarding()', '[ DONE ] VM Configured')
 
-                self.logger.info('Staring VM')
+                self.logger.info('__application_onboarding()', 'Staring VM')
                 uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, kvm.get('uuid'), vm_uuid))
                 self.dstore.dput(uri)
 
@@ -319,15 +319,15 @@ class FosAgent(Agent):
                     if vm_info is not None and vm_info.get("status") == "run":
                         break
 
-                self.logger.info('[ DONE ] VM Running on node: %s' % node_uuid)
+                self.logger.info('__application_onboarding()', '[ DONE ] VM Running on node: %s' % node_uuid)
 
             elif t == "container":
-                self.logger.info('Component is a Container')
+                self.logger.info('__application_onboarding()', 'Component is a Container')
             elif t == "native":
-                self.logger.info('Component is a Native Application')
+                self.logger.info('__application_onboarding()', 'Component is a Native Application')
                 native = self.__search_plugin_by_name('native')
                 if native is None:
-                    self.logger.error('[ ERRO ] Native Application Plugin not loaded/found!!!')
+                    self.logger.error('__application_onboarding()', '[ ERRO ] Native Application Plugin not loaded/found!!!')
                     return False
 
                 node_uuid = str(self.uuid)  # @TODO: select deploy node in a smart way
@@ -337,52 +337,52 @@ class FosAgent(Agent):
                     'version'), 'entity_data': mf.get("entity_description")}
                 json_data = json.dumps(entity_definition)
 
-                self.logger.info('Define Native')
+                self.logger.info('__application_onboarding()', 'Define Native')
                 uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, native.get('uuid'), na_uuid))
                 self.dstore.put(uri, json_data)
 
                 while True:
-                    self.logger.info('Native to be DEFINED')
+                    self.logger.info('__application_onboarding()', 'Native to be DEFINED')
                     time.sleep(1)
                     uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
                     vm_info = json.loads(self.astore.get(uri))
                     if vm_info is not None and vm_info.get("status") == "defined":
                         break
-                self.logger.info('[ DONE ] Native DEFINED')
+                self.logger.info('__application_onboarding()', '[ DONE ] Native DEFINED')
 
-                self.logger.info(' Configure Native')
+                self.logger.info('__application_onboarding()', ' Configure Native')
                 uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
                           (node_uuid, native.get('uuid'), na_uuid))
                 self.dstore.dput(uri)
 
                 while True:
-                    self.logger.info('Native to be CONFIGURED')
+                    self.logger.info('__application_onboarding()', 'Native to be CONFIGURED')
                     time.sleep(1)
                     uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
                     vm_info = json.loads(self.astore.get(uri))
                     if vm_info is not None and vm_info.get("status") == "configured":
                         break
-                self.logger.info('[ DONE ] Native CONFIGURED')
+                self.logger.info('__application_onboarding()', '[ DONE ] Native CONFIGURED')
 
-                self.logger.info('Starting Native')
+                self.logger.info('__application_onboarding()', 'Starting Native')
                 uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
                           (node_uuid, native.get('uuid'), na_uuid))
                 self.dstore.dput(uri)
 
                 while True:
-                    self.logger.info('Native to be RUN')
+                    self.logger.info('__application_onboarding()', 'Native to be RUN')
                     time.sleep(1)
                     uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
                     vm_info = json.loads(self.astore.get(uri))
                     if vm_info is not None and vm_info.get("status") == "run":
                         break
-                self.logger.info('[ DONE ] Native Running on node: %s' % node_uuid)
+                self.logger.info('__application_onboarding()', '[ DONE ] Native Running on node: %s' % node_uuid)
 
             elif t == "ros2":
                 self.logger.info('Component is a ROS2 Application')
                 native = self.__search_plugin_by_name('ros2')
                 if native is None:
-                    self.logger.error('[ ERRO ] ROS2 Application Plugin not loaded/found!!!')
+                    self.logger.error('__application_onboarding()', '[ ERRO ] ROS2 Application Plugin not loaded/found!!!')
                     return False
 
                 node_uuid = str(self.uuid)  # @TODO: select deploy node in a smart way
@@ -392,56 +392,56 @@ class FosAgent(Agent):
                     'version'), 'entity_data': mf.get("entity_description")}
                 json_data = json.dumps(entity_definition)
 
-                self.logger.info('Define ROS2')
+                self.logger.info('__application_onboarding()', 'Define ROS2')
                 uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, native.get('uuid'), na_uuid))
                 self.dstore.put(uri, json_data)
 
                 while True:
-                    self.logger.info('ROS2 to be DEFINED')
+                    self.logger.info('__application_onboarding()', 'ROS2 to be DEFINED')
                     time.sleep(1)
                     uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
                     vm_info = json.loads(self.astore.get(uri))
                     if vm_info is not None and vm_info.get("status") == "defined":
                         break
-                self.logger.info('[ DONE ] ROS2 DEFINED')
+                self.logger.info('__application_onboarding()', '[ DONE ] ROS2 DEFINED')
 
-                self.logger.info('Configure Native')
+                self.logger.info('__application_onboarding()', 'Configure Native')
                 uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' %
                           (node_uuid, native.get('uuid'), na_uuid))
                 self.dstore.dput(uri)
 
                 while True:
-                    self.logger.info('ROS2 to be CONFIGURED')
+                    self.logger.info('__application_onboarding()', 'ROS2 to be CONFIGURED')
                     time.sleep(1)
                     uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
                     vm_info = json.loads(self.astore.get(uri))
                     if vm_info is not None and vm_info.get("status") == "configured":
                         break
-                self.logger.info('[ DONE ] ROS2 CONFIGURED')
+                self.logger.info('__application_onboarding()', '[ DONE ] ROS2 CONFIGURED')
 
-                self.logger.info('Starting ROS2')
+                self.logger.info('__application_onboarding()', 'Starting ROS2')
                 uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' %
                           (node_uuid, native.get('uuid'), na_uuid))
                 self.dstore.dput(uri)
 
                 while True:
-                    self.logger.info('ROS2 to be RUN')
+                    self.logger.info('__application_onboarding()', 'ROS2 to be RUN')
                     time.sleep(1)
                     uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, native.get('uuid'), na_uuid))
                     vm_info = json.loads(self.astore.get(uri))
                     if vm_info is not None and vm_info.get("status") == "run":
                         break
-                self.logger.info('[ DONE ] ROS2 Running on node: %s' % node_uuid)
+                self.logger.info('__application_onboarding()', '[ DONE ] ROS2 Running on node: %s' % node_uuid)
 
             elif t == "usvc":
-                self.logger.info('Component is a Microservice')
+                self.logger.info('__application_onboarding()', 'Component is a Microservice')
 
             elif t == "application":
-                self.logger.info('Component is a Complex Application')
+                self.logger.info('__application_onboarding()', 'Component is a Complex Application')
                 self.__application_onboarding(mf.get("uuid"), mf.get("entity_description"))
 
             else:
-                self.logger.error("Component type not recognized %s" % t)
+                self.logger.error('__application_onboarding()', "Component type not recognized %s" % t)
                 raise AssertionError("Component type not recognized %s" % t)
 
     def __resolve_dependencies(self, components):
@@ -484,12 +484,12 @@ class FosAgent(Agent):
             return search[0]
 
     def __exit_gracefully(self, signal, frame):
-        self.logger.info('Received signal: %d' % signal)
-        self.logger.info('fosAgent exiting...')
+        self.logger.info('__exit_gracefully()', 'Received signal: %d' % signal)
+        self.logger.info('__exit_gracefully()', 'fosAgent exiting...')
         keys = list(self.__rtPlugins.keys())
         for k in keys:
             self.__rtPlugins.get(k).stopRuntime()
-            self.logger.info('[ DONE ] Bye')
+            self.logger.info('__exit_gracefully()', '[ DONE ] Bye')
         #sys.exit(0)
 
     def run(self):
@@ -497,19 +497,19 @@ class FosAgent(Agent):
 
         uri = str('%s/onboard/*/' % self.dhome)
         self.dstore.observe(uri, self.__react_to_onboarding)
-        self.logger.info('fosAgent Observing for onboarding on: %s' % uri)
+        self.logger.info('run()', 'fosAgent Observing for onboarding on: %s' % uri)
 
         uri = str('%s/*/' % self.dhome)
         self.dstore.observe(uri, self.__react_to_cache)
-        self.logger.info('fosAgent Observing home on: %s' % uri)
+        self.logger.info('run()','fosAgent Observing home on: %s' % uri)
 
         uri = str('%s/plugins' % self.dhome)
         self.dstore.observe(uri, self.__react_to_plugins)
-        self.logger.info('fosAgent Observing plugins on: %s' % uri)
+        self.logger.info('run()','fosAgent Observing plugins on: %s' % uri)
 
         signal.signal(signal.SIGINT, self.__exit_gracefully)
 
-        self.logger.info('[ DONE ] fosAgent Up and Running')
+        self.logger.info('run()','[ DONE ] fosAgent Up and Running')
         return self
 
     def stop(self):
