@@ -40,7 +40,6 @@ class DLogger:
         if not DLogger.instance:
             DLogger.instance = DLogger.__SingletonLogger(file_name, debug)
 
-
     def info(self, caller, message):
         self.instance.info(caller, message)
 
