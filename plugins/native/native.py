@@ -15,23 +15,23 @@ class Native(RuntimePlugin):
         self.uuid = uuid.uuid4()
         self.name = name
         self.agent = agent
-        self.agent.logger.info(' Hello from Native Plugin')
+        self.agent.logger.info('__init__()', ' Hello from Native Plugin')
         self.HOME = str("runtime/%s/entity" % self.uuid)
         self.startRuntime()
 
     def startRuntime(self):
         uri = str('%s/%s/*' % (self.agent.dhome, self.HOME))
-        self.agent.logger.info(' Native Plugin - Observing %s' % uri)
+        self.agent.logger.info('startRuntime()', ' Native Plugin - Observing %s' % uri)
         self.agent.dstore.observe(uri, self.__react_to_cache)
         return self.uuid
 
     def stopRuntime(self):
-        self.agent.logger.info(' Native Plugin - Destroy running BE')
+        self.agent.logger.info('stopRuntime()', ' Native Plugin - Destroy running BE')
         for k in list(self.current_entities.keys()):
             self.stopEntity(k)
             self.cleanEntity(k)
             self.undefineEntity(k)
-        self.agent.logger.info('[ DONE ] Native Plugin - Bye')
+        self.agent.logger.info('stopRuntime()', '[ DONE ] Native Plugin - Bye')
         return True
 
     def defineEntity(self, *args, **kwargs):
@@ -43,46 +43,46 @@ class Native(RuntimePlugin):
         else:
             return None
 
-        self.agent.logger.info(' Native Plugin - Define BE')
+        self.agent.logger.info('defineEntity()', ' Native Plugin - Define BE')
         entity.setState(State.DEFINED)
         self.current_entities.update({entity_uuid: entity})
         uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
         na_info = json.loads(self.agent.dstore.get(uri))
         na_info.update({"status": "defined"})
         self.__update_actual_store(entity_uuid, na_info)
-        self.agent.logger.info(' Native Plugin - Defined BE uuid %s' % entity_uuid)
+        self.agent.logger.info('defineEntity()', ' Native Plugin - Defined BE uuid %s' % entity_uuid)
         return entity_uuid
 
     def undefineEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info(' Native Plugin - Undefine BE uuid %s' % entity_uuid)
+        self.agent.logger.info('undefineEntity()', ' Native Plugin - Undefine BE uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
-            self.agent.logger.error('[ ERRO ] Native Plugin - Entity not exists')
+            self.agent.logger.error('undefineEntity()', 'Native Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.DEFINED:
-            self.agent.logger.error('[ ERRO ] Native Plugin - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('undefineEntity()', 'Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             self.current_entities.pop(entity_uuid, None)
-            self.agent.logger.info('[ DONE ] Native Plugin - Undefine BE uuid %s' % entity_uuid)
+            self.agent.logger.info('undefineEntity()', '[ DONE ] Native Plugin - Undefine BE uuid %s' % entity_uuid)
             return True
 
     def configureEntity(self, entity_uuid):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info(' Native Plugin - Configure BE uuid %s' % entity_uuid)
+        self.agent.logger.info('configureEntity()', ' Native Plugin - Configure BE uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
-            self.agent.logger.error('[ ERRO ] Native Plugin - Entity not exists')
+            self.agent.logger.error('configureEntity()', 'Native Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.DEFINED:
-            self.agent.logger.error('[ ERRO ] Native Plugin - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('configureEntity()', 'Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
@@ -95,20 +95,20 @@ class Native(RuntimePlugin):
             na_info = json.loads(self.agent.dstore.get(uri))
             na_info.update({"status": "configured"})
             self.__update_actual_store(entity_uuid, na_info)
-            self.agent.logger.info('[ DONE ] Native Plugin - Configure BE uuid %s' % entity_uuid)
+            self.agent.logger.info('configureEntity()', '[ DONE ] Native Plugin - Configure BE uuid %s' % entity_uuid)
             return True
 
     def cleanEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info(' Native Plugin - Clean BE uuid %s' % entity_uuid)
+        self.agent.logger.info('cleanEntity()', ' Native Plugin - Clean BE uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
-            self.agent.logger.error('[ ERRO ] Native Plugin - Entity not exists')
+            self.agent.logger.error('cleanEntity()', 'Native Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.CONFIGURED:
-            self.agent.logger.error('[ ERRO ] Native Plugin - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('cleanEntity()', 'Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
@@ -121,20 +121,20 @@ class Native(RuntimePlugin):
             na_info = json.loads(self.agent.dstore.get(uri))
             na_info.update({"status": "cleaned"})
             self.__update_actual_store(entity_uuid, na_info)
-            self.agent.logger.info('[ DONE ] Native Plugin - Clean BE uuid %s' % entity_uuid)
+            self.agent.logger.info('cleanEntity()', '[ DONE ] Native Plugin - Clean BE uuid %s' % entity_uuid)
             return True
 
     def runEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info(' Native Plugin - Starting BE uuid %s' % entity_uuid)
+        self.agent.logger.info('runEntity()', ' Native Plugin - Starting BE uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid,None)
         if entity is None:
-            self.agent.logger.error('[ ERRO ] Native Plugin - Entity not exists')
+            self.agent.logger.error('runEntity()', 'Native Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.CONFIGURED:
-            self.agent.logger.error('[ ERRO ] Native Plugin - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('runEntity()', 'Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
@@ -147,20 +147,20 @@ class Native(RuntimePlugin):
             na_info = json.loads(self.agent.dstore.get(uri))
             na_info.update({"status": "run"})
             self.__update_actual_store(entity_uuid, na_info)
-            self.agent.logger.info('[ DONE ] Native Plugin - Runnign BE uuid %s' % entity_uuid)
+            self.agent.logger.info('runEntity()', '[ DONE ] Native Plugin - Runnign BE uuid %s' % entity_uuid)
             return True
 
     def stopEntity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info(' Native Plugin - Stop BE uuid %s' % entity_uuid)
+        self.agent.logger.info('stopEntity()', ' Native Plugin - Stop BE uuid %s' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
-            self.agent.logger.error('[ ERRO ] Native Plugin - Entity not exists')
+            self.agent.logger.error('stopEntity()', 'Native Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.getState() != State.RUNNING:
-            self.agent.logger.error('[ ERRO ] Native Plugin - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('stopEntity()', 'Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
@@ -172,15 +172,15 @@ class Native(RuntimePlugin):
             na_info = json.loads(self.agent.dstore.get(uri))
             na_info.update({"status": "stop"})
             self.__update_actual_store(entity_uuid, na_info)
-            self.agent.logger.info('[ DONE ] Native Plugin - Stopped BE uuid %s' % entity_uuid)
+            self.agent.logger.info('stopEntity()', '[ DONE ] Native Plugin - Stopped BE uuid %s' % entity_uuid)
             return True
 
     def pauseEntity(self, entity_uuid):
-        self.agent.logger.warning('[ WARN ] Native Plugin - Cannot pause a BE')
+        self.agent.logger.warning('pauseEntity()', 'Native Plugin - Cannot pause a BE')
         return False
 
     def resumeEntity(self, entity_uuid):
-        self.agent.logger.warning('[ WARN ] Native Plugin - Cannot resume a BE')
+        self.agent.logger.warning('resumeEntity()', 'Native Plugin - Cannot resume a BE')
         return False
 
     def __update_actual_store(self, uri, value):
@@ -199,7 +199,8 @@ class Native(RuntimePlugin):
         return p
 
     def __react_to_cache(self, uri, value, v):
-        self.agent.logger.info(' Native Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
+        self.agent.logger.info('__react_to_cachexs()', ' Native Plugin - React to to URI: %s Value: %s Version: %s' %
+                               (uri, value, v))
         uuid = uri.split('/')[-1]
         value = json.loads(value)
         action = value.get('status')
