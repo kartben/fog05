@@ -31,18 +31,17 @@ class Linux(OSPlugin):
         self.name = name
         self.pm = None
         self.agent = agent
-        self.agent.logger.info(' Hello from GNU\Linux Plugin')
+        self.agent.logger.info('__init__()',' Hello from GNU\Linux Plugin')
         self.distro = self.__check_distro()
         if self.distro == "":
-            self.agent.logger.warning('[ WARN ] Distribution not recognized, cannot install packages')
+            self.agent.logger.warning('__init__()', 'Distribution not recognized, cannot install packages')
         else:
-            self.agent.logger.info(' Running on %s' % self.distro)
+            self.agent.logger.info('__init__()', ' Running on %s' % self.distro)
             self.pm = self.__get_package_manager(self.distro)
-            print ("Package manager loaded! Name %s" % self.pm.name)
-            self.agent.logger.info(' Package manger %s loaded! ' % self.pm.name)
+            self.agent.logger.info('__init__()', ' Package manger %s loaded! ' % self.pm.name)
 
     def executeCommand(self, command, blocking=False):
-        self.agent.logger.info(' OS Plugin executing command %s', command)
+        self.agent.logger.info('executeCommand()', ' OS Plugin executing command %s', command)
         print(command)
         cmd_splitted = command.split()
         p = psutil.Popen(cmd_splitted, stdout=PIPE)
@@ -53,14 +52,14 @@ class Linux(OSPlugin):
             self.agent.logger.info(' %s', line)
 
     def addKnowHost(self, hostname, ip):
-        self.agent.logger.info(' OS Plugin add to hosts file')
+        self.agent.logger.info('addKnowHost()', ' OS Plugin add to hosts file')
         add_cmd = str("sudo %s -a %s %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts',
                                                         'manage_hosts.sh'),
                                        hostname, ip))
         self.executeCommand(add_cmd, True)
 
     def removeKnowHost(self, hostname):
-        self.agent.logger.info(' OS Plugin remove from hosts file')
+        self.agent.logger.info('removeKnowHost()', ' OS Plugin remove from hosts file')
         del_cmd = str("sudo %s -d %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts', 'manage_hosts.sh'),
                                     hostname))
         self.executeCommand(del_cmd, True)
@@ -82,7 +81,7 @@ class Linux(OSPlugin):
         try:
             return os.remove(path)
         except FileNotFoundError as e:
-            self.agent.logger.error("[ ERRO ] OS Plugin File Not Found %s so don't need to remove" % e.strerror)
+            self.agent.logger.error('removeFile()', "OS Plugin File Not Found %s so don't need to remove" % e.strerror)
             return
 
     def fileExists(self, file_path):
@@ -127,7 +126,7 @@ class Linux(OSPlugin):
 
     def sendSignal(self, signal, pid):
         if self.checkIfPidExists(pid) is False:
-            self.agent.logger.error('[ ERRO ] OS Plugin Process not exists %d' % pid)
+            self.agent.logger.error('sendSignal()', 'OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(signal)
@@ -135,7 +134,7 @@ class Linux(OSPlugin):
 
     def sendSigInt(self, pid):
         if self.checkIfPidExists(pid) is False:
-            self.agent.logger.error('[ ERRO ] OS Plugin Process not exists %d' % pid)
+            self.agent.logger.error('sendSigInt()', 'OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(2)
@@ -143,7 +142,7 @@ class Linux(OSPlugin):
 
     def sendSigKill(self, pid):
         if self.checkIfPidExists(pid) is False:
-            self.agent.logger.error('[ ERRO ] OS Plugin Process not exists %d' % pid)
+            self.agent.logger.error('sendSigInt()' ,'OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(9)
