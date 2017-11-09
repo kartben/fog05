@@ -32,9 +32,9 @@ class KVMLibvirt(RuntimePlugin):
     def startRuntime(self):
         self.agent.logger.info('startRuntime()', ' KVM Plugin - Connecting to KVM')
         self.conn = libvirt.open("qemu:///system")
-        self.agent.logger.info('[ DONE ] KVM Plugin - Connecting to KVM')
+        self.agent.logger.info('startRuntime()', '[ DONE ] KVM Plugin - Connecting to KVM')
         uri = str('%s/%s/*' % (self.agent.dhome, self.HOME))
-        self.agent.logger.info(' KVM Plugin - Observing %s' % uri)
+        self.agent.logger.info('startRuntime()',' KVM Plugin - Observing %s' % uri)
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
         '''check if dirs exists if not exists create'''

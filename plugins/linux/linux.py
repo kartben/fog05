@@ -41,7 +41,7 @@ class Linux(OSPlugin):
             self.agent.logger.info('__init__()', ' Package manger %s loaded! ' % self.pm.name)
 
     def executeCommand(self, command, blocking=False):
-        self.agent.logger.info('executeCommand()', ' OS Plugin executing command %s', command)
+        self.agent.logger.info('executeCommand()', str(' OS Plugin executing command %s' % command))
         print(command)
         cmd_splitted = command.split()
         p = psutil.Popen(cmd_splitted, stdout=PIPE)
