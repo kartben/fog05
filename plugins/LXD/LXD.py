@@ -149,8 +149,11 @@ class LXD(RuntimePlugin):
             '''
                 Should explore how to setup correctly the networking, seems that you can't decide the interface you 
                 want to attach to the container
-            
+                Below there is a try using a profile customized for network
             '''
+            custom_profile_for_network = self.conn.profile.create(entity_uuid)
+            custom_profile_for_network.devices = self.__generate_custom_profile_devices_configuration(entity)
+            entity.profiles.append(custom_profile_for_network)
 
             self.conn.containers.create(config, wait=True)
 
@@ -344,10 +347,10 @@ class LXD(RuntimePlugin):
         if dst is True:
             self.agent.logger.info('beforeMigrateEntityActions()', ' LXD Plugin - Before Migration Destination')
 
-            self.current_entities.update({entity_uuid: entity})
+            #self.current_entities.update({entity_uuid: entity})
 
-            entity_info.update({"status": "landing"})
-            self.__update_actual_store(entity_uuid, cont_info)
+            #entity_info.update({"status": "landing"})
+            #self.__update_actual_store(entity_uuid, cont_info)
 
             return True
         else:
@@ -458,6 +461,18 @@ class LXD(RuntimePlugin):
                         found = m.group(1)
                         return found
 
+    def __generate_custom_profile_devices_configuration(self, entity):
+        template = "{% for net in networks %}" \
+                   "{'eth{{loop.index}}': " \
+                   "{'name': 'eth{{loop.index}}', " \
+                   "'type': 'nic', " \
+                   "'parent': '{{ net.intf_name }}', " \
+                   "'nictype': 'bridged' }}"
+
+        devices = Environment().from_string(template)
+        devices = devices.render(networks=entity.networks)
+
+        return devices
     def __generate_container_dict(self, entity):
         conf = {'name': entity.name, "profiles":  entity.profiles,
                 'source': {'type': 'image', 'alias': entity.uuid}}
