@@ -80,6 +80,9 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError("This is and interface!")
 
+    def readBinaryFile(self, file_path):
+        raise NotImplemented
+
     def getCPUID(self):
         """
         Return the underlying hw cpuid

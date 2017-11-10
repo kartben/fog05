@@ -84,8 +84,8 @@ class KVMLibvirt(RuntimePlugin):
             disk_path = str("%s/%s/%s.qcow2" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
             cdrom_path = str("%s/%s/%s_config.iso" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
             entity = KVMLibvirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
-                                   kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
-                                   kwargs.get('base_image'), kwargs.get('user-data'), kwargs.get('ssh-key'))
+                                      kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
+                                      kwargs.get('base_image'), kwargs.get('user-data'), kwargs.get('ssh-key'))
         else:
             return None
 

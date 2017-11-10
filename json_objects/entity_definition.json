@@ -1,5 +1,5 @@
 {
- "$schema": "http://json-schema.org/draft-06/schema#",
+  "$schema": "http://json-schema.org/draft-06/schema#",
   "title": "Generic Definition",
   "description": "entity definition schema",
   "type": "object",
@@ -11,8 +11,8 @@
     "name": {
       "type": "string"
     },
-    "uuid":{
-      "type":"string"
+    "uuid": {
+      "type": "string"
     }
     "type": {
       "type": "string",
@@ -22,14 +22,64 @@
       "type": "int"
     },
     "entity_data": {
-      "type":"string",
-      "description":"depends on entity"
+      "type": "string",
+      "description": "depends on entity"
     },
-//    Maybe should have a nested json for migration data, with information about fog05 and dst nodes
-    "dst":{
-      "optional":"true",
-      "type":"string",
-      "description":"in case of taking_off/landing is the destination node uuid"
+    "constrains": {
+      "type": "object",
+      "properties": {
+        "i/o": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "specific i/o name (gpio/....)"
+              },
+              "number":{
+                "type":"int"
+              }
+            }
+          }
+        },
+        "networks":{
+          "type":"array",
+          "items":{
+            "type":"object",
+            "properties":{
+              "type":{
+                "type":"string",
+                "description":"necessary interface type (wlan, eth, filbus, tsn)"
+              },
+              "number":{
+                "type":"int"
+              }
+            }
+          }
+        },
+        "accelerators":{
+          "type":"array",
+          "items":{
+            "type":"object",
+            "properties":{
+              "type":{
+                "type":"string",
+                "description":"hw acceleator needed (netfpga, fpga, cuda, opencl...."
+              },
+              "number":{
+                "type":"int"
+              }
+            }
+          }
+        }
+      }
+    },
+    //    Maybe should have a nested json for migration data, with information about fog05 and dst nodes
+    "dst": {
+      "optional": "true",
+      "type": "string",
+      "description": "in case of taking_off/landing is the destination node uuid"
     }
   }
 }

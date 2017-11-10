@@ -60,7 +60,7 @@ class LXD(RuntimePlugin):
             self.cleanEntity(k)
             self.undefineEntity(k)
 
-        self.conn.close()
+        self.conn = None
         self.agent.logger.info('stopRuntime()', '[ DONE ] LXD Plugin - Bye Bye')
 
     def getEntities(self):
@@ -75,13 +75,13 @@ class LXD(RuntimePlugin):
         if len(args) > 0:
             entity_uuid = args[4]
             '''
-                Define entity from manifest
+                The plugin should never enter here!!!
             '''
         elif len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
-            '''
-                           Define entity from manifest
-            '''
+            entity = LXDEntity(entity_uuid, kwargs.get('name'), kwargs.get('networks'), kwargs.get('base_image'),
+                               kwargs.get('user-data'), kwargs.get('ssh-key'), kwargs.get('docker_file'),
+                               kwargs.get("profiles"))
         else:
             return None
 
@@ -110,7 +110,7 @@ class LXD(RuntimePlugin):
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             self.current_entities.pop(entity_uuid, None)
-            #self.__pop_actual_store(entity_uuid)
+            self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefineEntity()', '[ DONE ] LXD Plugin - Undefine a Container uuid %s ' %
                                    entity_uuid)
             return True
@@ -131,33 +131,41 @@ class LXD(RuntimePlugin):
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
 
+            ''' 
+                See if is possible to:
+                - Put rootfs and images inside a custom path
             '''
-                Here should add the image to the ones available on lxd
-                So should download the image and add that to lxd
-                
-                wget image_url
-                with open(image_path,'rb) as img:
-                    image_data = img.read(()
-                
-                image = client.images.create(image_data, public=True, wait=True)
-                
-                then add an alias to this image in a way that is simple after to start the container 
-                image.add_alias('alias',description = 'alias description')
-                
-                
-                Should put rootfs and image inside a custom path
+            image_name = entity.image.split('/')[-1]
+            wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
+
+            self.agent.getOSPlugin().executeCommand(wget_cmd, True)
+
+            image_data = self.agent.getOSPlugin().readBinaryFile("%s/%s/%s" % (self.BASE_DIR, self.IMAGE_DIR, image_name))
+
+            img = self.conn.images.create(image_data, public=True, wait=True)
+            img.add_alias(entity_uuid, description=entity.name)
+
+            config = self.__generate_container_dict(entity)
             '''
+                Should explore how to setup correctly the networking, seems that you can't decide the interface you 
+                want to attach to the container
+                Below there is a try using a profile customized for network
+            '''
+            custom_profile_for_network = self.conn.profile.create(entity_uuid)
+            custom_profile_for_network.devices = self.__generate_custom_profile_devices_configuration(entity)
+            entity.profiles.append(custom_profile_for_network)
 
-
+            self.conn.containers.create(config, wait=True)
 
             entity.onConfigured()
             self.current_entities.update({entity_uuid: entity})
 
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.dstore.get(uri))
-            vm_info.update({"status": "configured"})
-            self.__update_actual_store(entity_uuid, vm_info)
-            self.agent.logger.info('configureEntity()', '[ DONE ] KVM Plugin - Configure a VM uuid %s ' % entity_uuid)
+            container_info = json.loads(self.agent.dstore.get(uri))
+            container_info.update({"status": "configured"})
+            self.__update_actual_store(entity_uuid, container_info)
+            self.agent.logger.info('configureEntity()', '[ DONE ] LXD Plugin - Configure a Container uuid %s ' %
+                                   entity_uuid)
             return True
 
     def cleanEntity(self, entity_uuid):
@@ -175,20 +183,16 @@ class LXD(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
-
-
-
-           '''
-                Here delete al files belong to the container
-           '''
+            img = self.conn.images.get_by_alias(entity_uuid)
+            img.delete()
 
             entity.onClean()
             self.current_entities.update({entity_uuid: entity})
 
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.dstore.get(uri))
-            vm_info.update({"status": "cleaned"})
-            self.__update_actual_store(entity_uuid, vm_info)
+            container_info = json.loads(self.agent.dstore.get(uri))
+            container_info.update({"status": "cleaned"})
+            self.__update_actual_store(entity_uuid, container_info)
             self.agent.logger.info('cleanEntity()', '[ DONE ] LXD Plugin - Clean a Container uuid %s ' % entity_uuid)
 
             return True
@@ -210,17 +214,14 @@ class LXD(RuntimePlugin):
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
 
+            c = self.conn.containers.get(entity.name)
+            c.start()
+
             entity.onStart()
-            '''
-                Simply start the container and wait to be in running
-            '''
-
-
-
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.dstore.get(uri))
-            vm_info.update({"status": "run"})
-            self.__update_actual_store(entity_uuid, vm_info)
+            container_info = json.loads(self.agent.dstore.get(uri))
+            container_info.update({"status": "run"})
+            self.__update_actual_store(entity_uuid, container_info)
 
             self.current_entities.update({entity_uuid: entity})
             self.agent.logger.info('runEntity()', '[ DONE ] LXD Plugin - Starting a Container uuid %s ' % entity_uuid)
@@ -240,18 +241,17 @@ class LXD(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
+
+            c = self.conn.containers.get(entity.name)
+            c.delete()
+            
             entity.onStop()
-
-            '''
-                Simply stop the container
-            '''
-
             self.current_entities.update({entity_uuid: entity})
 
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.dstore.get(uri))
-            vm_info.update({"status": "stop"})
-            self.__update_actual_store(entity_uuid, vm_info)
+            container_info = json.loads(self.agent.dstore.get(uri))
+            container_info.update({"status": "stop"})
+            self.__update_actual_store(entity_uuid, container_info)
             self.agent.logger.info('stopEntity()', '[ DONE ] LXD Plugin - Stop a Container uuid %s ' % entity_uuid)
 
             return True
@@ -270,15 +270,15 @@ class LXD(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
-            '''
-                Stop the container
-            '''
+            c = self.conn.containers.get(entity.name)
+            c.freeze()
+
             entity.onPause()
             self.current_entities.update({entity_uuid: entity})
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.dstore.get(uri))
-            vm_info.update({"status": "pause"})
-            self.__update_actual_store(entity_uuid, vm_info)
+            container_info = json.loads(self.agent.dstore.get(uri))
+            container_info.update({"status": "pause"})
+            self.__update_actual_store(entity_uuid, container_info)
             self.agent.logger.info('pauseEntity()', '[ DONE ] LXD Plugin - Pause a Container uuid %s ' % entity_uuid)
             return True
 
@@ -296,9 +296,9 @@ class LXD(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in PAUSED state",
                                                      str("Entity %s is not in PAUSED state" % entity_uuid))
         else:
-            '''
-                Resume the container
-            '''
+            c = self.conn.containers.get(entity.name)
+            c.unfreeze()
+
             entity.onResume()
             self.current_entities.update({entity_uuid: entity})
 
@@ -347,10 +347,10 @@ class LXD(RuntimePlugin):
         if dst is True:
             self.agent.logger.info('beforeMigrateEntityActions()', ' LXD Plugin - Before Migration Destination')
 
-            self.current_entities.update({entity_uuid: entity})
+            #self.current_entities.update({entity_uuid: entity})
 
-            entity_info.update({"status": "landing"})
-            self.__update_actual_store(entity_uuid, cont_info)
+            #entity_info.update({"status": "landing"})
+            #self.__update_actual_store(entity_uuid, cont_info)
 
             return True
         else:
@@ -461,14 +461,22 @@ class LXD(RuntimePlugin):
                         found = m.group(1)
                         return found
 
-    def __generate_dom_xml(self, entity):
-        template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
-                                                                      'templates', 'vm.xml'))
-        vm_xml = Environment().from_string(template_xml)
-        vm_xml = vm_xml.render(name=entity.name, uuid=entity.uuid, memory=entity.ram,
-                               cpu=entity.cpu, disk_image=entity.disk,
-                               iso_image=entity.cdrom, networks=entity.networks)
-        return vm_xml
+    def __generate_custom_profile_devices_configuration(self, entity):
+        template = "{% for net in networks %}" \
+                   "{'eth{{loop.index}}': " \
+                   "{'name': 'eth{{loop.index}}', " \
+                   "'type': 'nic', " \
+                   "'parent': '{{ net.intf_name }}', " \
+                   "'nictype': 'bridged' }}"
+
+        devices = Environment().from_string(template)
+        devices = devices.render(networks=entity.networks)
+
+        return devices
+    def __generate_container_dict(self, entity):
+        conf = {'name': entity.name, "profiles":  entity.profiles,
+                'source': {'type': 'image', 'alias': entity.uuid}}
+        return conf
 
     def __update_actual_store(self, uri, value):
         uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, uri))
