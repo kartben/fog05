@@ -507,7 +507,7 @@ class FosAgent(Agent):
         self.dstore.observe(uri, self.__react_to_plugins)
         self.logger.info('run()','fosAgent Observing plugins on: %s' % uri)
 
-        signal.signal(signal.SIGINT, self.__exit_gracefully)
+        #signal.signal(signal.SIGINT, self.__exit_gracefully)
 
         self.logger.info('run()','[ DONE ] fosAgent Up and Running')
         return self

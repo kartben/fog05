@@ -19,7 +19,7 @@ class LXDEntity(Entity):
         self.profiles = profiles
         self.conf = None
 
-    def onConfigured(self,configuration):
+    def onConfigured(self, configuration):
         self.conf = configuration
         self.state = State.CONFIGURED
 

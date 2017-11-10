@@ -145,19 +145,26 @@ class LXD(RuntimePlugin):
             img = self.conn.images.create(image_data, public=True, wait=True)
             img.add_alias(entity_uuid, description=entity.name)
 
-            config = self.__generate_container_dict(entity)
+
             '''
                 Should explore how to setup correctly the networking, seems that you can't decide the interface you 
                 want to attach to the container
                 Below there is a try using a profile customized for network
             '''
-            custom_profile_for_network = self.conn.profile.create(entity_uuid)
-            custom_profile_for_network.devices = self.__generate_custom_profile_devices_configuration(entity)
-            entity.profiles.append(custom_profile_for_network)
+            custom_profile_for_network = self.conn.profiles.create(entity_uuid)
+            dev = self.__generate_custom_profile_devices_configuration(entity)
+            custom_profile_for_network.devices = dev
+            custom_profile_for_network.save()
+            if entity.profiles is None:
+                entity.profiles = list()
+
+            entity.profiles.append(entity_uuid)
+
+            config = self.__generate_container_dict(entity)
 
             self.conn.containers.create(config, wait=True)
 
-            entity.onConfigured()
+            entity.onConfigured(config)
             self.current_entities.update({entity_uuid: entity})
 
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
@@ -183,8 +190,19 @@ class LXD(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
+
+            c = self.conn.containers.get(entity.name)
+            c.delete()
+
             img = self.conn.images.get_by_alias(entity_uuid)
             img.delete()
+
+            profile = self.conn.profiles.get(entity_uuid)
+            profile.delete()
+
+            ## pylxd.exceptions.LXDAPIException: Profile is currently in use
+
+            self.agent.getOSPlugin().removeFile(str("%s/%s/%s") % (self.BASE_DIR, self.IMAGE_DIR, entity.image))
 
             entity.onClean()
             self.current_entities.update({entity_uuid: entity})
@@ -243,7 +261,7 @@ class LXD(RuntimePlugin):
         else:
 
             c = self.conn.containers.get(entity.name)
-            c.delete()
+            c.stop()
             
             entity.onStop()
             self.current_entities.update({entity_uuid: entity})
@@ -462,17 +480,18 @@ class LXD(RuntimePlugin):
                         return found
 
     def __generate_custom_profile_devices_configuration(self, entity):
-        template = "{% for net in networks %}" \
-                   "{'eth{{loop.index}}': " \
-                   "{'name': 'eth{{loop.index}}', " \
-                   "'type': 'nic', " \
-                   "'parent': '{{ net.intf_name }}', " \
-                   "'nictype': 'bridged' }}"
+        template = '{% for net in networks %}' \
+                '{"eth{{loop.index -1 }}": ' \
+                '{"name": "eth{{loop.index -1}}",' \
+                '"type" : "nic",'  \
+                '"parent": "{{ net.intf_name }}",' \
+                '"nictype": "bridged" }}' \
+                '{% endfor %}'
 
         devices = Environment().from_string(template)
         devices = devices.render(networks=entity.networks)
+        return json.loads(devices)
 
-        return devices
     def __generate_container_dict(self, entity):
         conf = {'name': entity.name, "profiles":  entity.profiles,
                 'source': {'type': 'image', 'alias': entity.uuid}}
