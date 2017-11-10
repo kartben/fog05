@@ -243,7 +243,7 @@ class Linux(OSPlugin):
                 ipv6, 'ipv6_netmask': ipv6mask}
 
             nets.append({'intf_name': k, 'inft_configuration': inft_conf, 'intf_mac_address': mac, 'intf_speed':
-                speed})
+                speed, "type": self.__get_intf_type(k)})
 
         return nets
 
@@ -280,6 +280,24 @@ class Linux(OSPlugin):
 
     def getPositionInformation(self):
         raise NotImplemented
+
+    def __get_intf_type(self, name):
+        if name[:-1] in ["ppp", "wvdial"]:
+            itype = "ppp"
+        elif name[:2] in ["wl", "ra", "wi", "at"]:
+            itype = "wireless"
+        elif name[:2].lower() == "br":
+            itype = "bridge"
+        elif name[:2].lower() == "tu":
+            itype = "tunnel"
+        elif name.lower() == "lo":
+            itype = "loopback"
+        elif name[:2] in ["et", "en"]:
+            itype = "ethernet"
+        else:
+            itype = "unknown"
+
+        return itype
 
     def __get_processor_name(self):
         command = "cat /proc/cpuinfo".split()

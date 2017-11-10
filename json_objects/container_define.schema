@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "title": "VM Definition",
+  "description": "VM definition schema",
+  "type": "object",
+  "properties": {
+    "name":{
+      "type":"string",
+      "description":"vm name"
+    },
+    "uuid":{
+      "type":"string"
+    },
+    "cpu":{
+      "type":"int"
+    },
+    "memory":{
+      "type":"int"
+    },
+    "base_image":{
+      "type":"string",
+      "description":"url or local path of image, image should contain also metadata"
+    },
+    "user-data":{
+      "type" : "string",
+      "description":"cloud init file"
+    },
+    "ssh-key":{
+      "type":"string",
+      "description":"ssh key to login to the machine"
+    },
+    "docker_file":{
+      "type":"string",
+      "description":"if needed docker file for deploy"
+    },
+    "networks":{
+      "type":"array",
+      "items":{
+        "type":"object",
+        "properties":{
+          "mac_address":{
+            "type":"string"
+          },
+          "intf_name":{
+            "type":"string"
+          }
+        }
+      }
+    }
+
+  }
+}
