@@ -1,6 +1,7 @@
 from fog05.interfaces.Store import *
 from fog05.interfaces.Types import *
 from dds import *
+import json
 
 import time
 import uuid
@@ -46,7 +47,38 @@ class DController (Controller, Observer):
                                             lambda r: self.handle_remote_put(r))
 
 
+        self.miss_topic = FlexyTopic(self.dp, "FOSStoreMiss")
 
+        self.miss_writer = FlexyWriter(self.pub,
+                                       self.miss_topic,
+                                       [Reliable(), Volatile(), KeepAllHistory()])
+
+        self.miss_reader = FlexyReader(self.pub,
+                                       self.miss_topic,
+                                       [Reliable(), Volatile(), KeepAllHistory()], lambda r: self.handle_miss(r))
+
+        self.hit_topic = FlexyTopic(self.dp, "FOSStoreHit")
+
+        self.hit_writer = FlexyWriter(self.pub,
+                                       self.hit_topic,
+                                       [Reliable(), Volatile(), KeepAllHistory()])
+
+        self.hit_reader = FlexyReader(self.pub,
+                                       self.hit_topic,
+                                       [Reliable(), Volatile(), KeepAllHistory()], None)
+
+        self.miss_topic = FlexyTopic(self.dp, "FOSStoreMiss")
+
+
+    def handle_miss(self, r):
+        samples = r.take(all_samples())
+        for (d, i) in samples:
+            if i.valid_data:
+                if i.key in self.__store:
+                    h = CacheHit(self.__store.store_id, i.source_id, json.dump(self.__store[i.key]))
+                    self.hit_writer.write(h)
+                else:
+                    print(">>> Could not resolve remote miss on key {0}".format(i.key))
 
 
     def handle_remove(self, uri):
@@ -119,20 +151,32 @@ class DController (Controller, Observer):
         print("onObserve Not yet...")
 
     def onMiss(self):
-        print("onMiss Not yet...")
+        pass
 
     def onConflict(self):
         print("onConflict Not yet...")
 
-
-    def resolve(self, uri):
+    def resolve(self, uri, timeout = None):
         """
             Tries to resolve this URI on across the distributed caches
             :param uri: the URI to be resolved
             :return: the value, if something is found
         """
-        print("Resolving...")
+        # @TODO: This should be in the config...
+        if timeout is None:
+            timeout = dds_secs(3)
+
+        m = CacheMiss(self.__store.store_id, uri)
+        self.miss_writer.write(m)
+        samples = self.hit_reader.stake(new_samples(), timeout)
+
+        for (d, i) in samples:
+            if i.valid_data:
+                if d.key == uri and d.dest_sid == self.__store.sid:
+                    return (json.load(d.value), d.version)
+
         return None
+
 
     def start(self):
         print("Advertising Store..")

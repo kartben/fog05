@@ -61,6 +61,8 @@ class Controll():
 
         uri = str('fos://<sys-id>/*')
         self.store.observe(uri, self.nodeDiscovered)
+        key42 = 'fos://<sys-id>/42'
+        key21 = 'fos://<sys-id>/21'
 
         if master:
             print("Running as Master")
@@ -79,12 +81,29 @@ class Controll():
                 exit()
 
             input("Press enter to send")
+
+            print(" >>>> This should not cause a miss! <<<<< ")
+            v = self.store.get(key42)
+            print("Reolved: {0}".format(v))
+            print(" >>>> This shoud miss! <<<<< ")
+            v = self.store.get(key21)
+            print("Reolved: {0}".format(v))
+
+
             self.lot_of_puts(node_uuid)
+
+
 
         else:
             print("Running as delegate")
             val = {'uuid': str(self.uuid), "name": "slave"}
             uri = str('fos://<sys-id>/%s/' % self.uuid)
+
+            val42 = {
+                'key': key42,
+                'value': 'the ultimate truth'
+            }
+            self.store.put(key42, json.dumps(val42))
 
 
             self.store.put(uri, json.dumps(val))
@@ -92,6 +111,7 @@ class Controll():
 
             uri = str('fos://<sys-id>/%s/info' % self.uuid)
             self.store.observe(uri, self.test_observer)
+
             while True:
                 print("Delegate done with writing...")
                 time.sleep(10)

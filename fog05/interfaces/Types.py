@@ -21,7 +21,7 @@ class StoreInfo(TopicType):
         return self.sid
 
 
-class Resolve(TopicType):
+class CacheMiss(TopicType):
     def __init__(self, source_sid, key):
         self.source_sid = source_sid
         self.key = key
@@ -29,3 +29,13 @@ class Resolve(TopicType):
     def gen_key(self):
        return self.key
 
+class CacheHit(TopicType):
+    def __init__(self, source_sid, dest_sid, key, value, version):
+        self.source_sid = source_sid
+        self.dest_sid = dest_sid
+        self.key = key
+        self.value = value
+        self.version = version
+
+    def gen_key(self):
+       return self.key

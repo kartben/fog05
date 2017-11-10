@@ -252,15 +252,16 @@ class DStore(Store):
     def get(self, uri):
         v = self.get_value(uri)
         if v == None:
-            print("this is a miss")
             self.__controller.onMiss()
             rv = self.__controller.resolve(uri)
             if rv != None:
-                self.update_value(uri, v[0], v[1])
-                self.notify_observers(uri, v[0], v[1])
-                v = rv
-
-        return v[0]
+                self.update_value(uri, rv[0], rv[1])
+                self.notify_observers(uri, rv[0], rv[1])
+                return rv[0]
+            else:
+                return None
+        else:
+            return v[0]
 
 
 
