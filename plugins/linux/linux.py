@@ -1,4 +1,3 @@
-
 import uuid
 import psutil
 from fog05.interfaces.OSPlugin import OSPlugin
@@ -10,6 +9,7 @@ import netifaces
 import shutil
 from socket import *
 import os
+
 # platform.linux_distribution()
 
 
@@ -31,7 +31,7 @@ class Linux(OSPlugin):
         self.name = name
         self.pm = None
         self.agent = agent
-        self.agent.logger.info('__init__()',' Hello from GNU\Linux Plugin')
+        self.agent.logger.info('__init__()', ' Hello from GNU\Linux Plugin')
         self.distro = self.__check_distro()
         if self.distro == "":
             self.agent.logger.warning('__init__()', 'Distribution not recognized, cannot install packages')
@@ -54,14 +54,14 @@ class Linux(OSPlugin):
     def addKnowHost(self, hostname, ip):
         self.agent.logger.info('addKnowHost()', ' OS Plugin add to hosts file')
         add_cmd = str("sudo %s -a %s %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts',
-                                                        'manage_hosts.sh'),
-                                       hostname, ip))
+                                                         'manage_hosts.sh'),
+                                            hostname, ip))
         self.executeCommand(add_cmd, True)
 
     def removeKnowHost(self, hostname):
         self.agent.logger.info('removeKnowHost()', ' OS Plugin remove from hosts file')
         del_cmd = str("sudo %s -d %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts', 'manage_hosts.sh'),
-                                    hostname))
+                                         hostname))
         self.executeCommand(del_cmd, True)
 
     def dirExists(self, path):
@@ -107,6 +107,12 @@ class Linux(OSPlugin):
                 data = f.read()
         return data
 
+    def readBinaryFile(self, file_path):
+        data = None
+        with open(file_path, 'rb') as f:
+            data = f.read()
+        return data
+
     def getCPULevel(self):
         return psutil.cpu_percent(interval=1)
 
@@ -142,7 +148,7 @@ class Linux(OSPlugin):
 
     def sendSigKill(self, pid):
         if self.checkIfPidExists(pid) is False:
-            self.agent.logger.error('sendSigInt()' ,'OS Plugin Process not exists %d' % pid)
+            self.agent.logger.error('sendSigInt()', 'OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(9)
@@ -263,12 +269,11 @@ class Linux(OSPlugin):
                 return found
         '''
         p = psutil.Popen('sudo cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE)
-        #p = psutil.Popen('sudo cat '.split(), stdout=PIPE)
+        # p = psutil.Popen('sudo cat '.split(), stdout=PIPE)
         res = ""
         for line in p.stdout:
             res = str(res + "%s" % line.decode("utf-8"))
         return res.lower().strip()
-
 
     def getHostname(self):
         res = ''
@@ -383,11 +388,9 @@ class Linux(OSPlugin):
                 pkgs.append(l.split(b'/')[0].decode('utf-8'))
             return pkgs
 
-
     class YumWrapper(object):
         def __init__(self):
             self.name = "yum"
-
 
         def update_packages(self):
             cmd = "sudo yum update -y && sudo yum autoremove"

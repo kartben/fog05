@@ -11,12 +11,13 @@
     "uuid":{
       "type":"string"
     },
-    "cpu":{
+/*    "cpu":{
       "type":"int"
     },
     "memory":{
       "type":"int"
-    },
+    },*/
+//    Not sure if needed cpu and ram, maybe can be used as maximum cpu and ram to be used by the container
     "base_image":{
       "type":"string",
       "description":"url or local path of image, image should contain also metadata"
@@ -32,6 +33,12 @@
     "docker_file":{
       "type":"string",
       "description":"if needed docker file for deploy"
+    },
+    "profiles":{
+      "type":"array",
+      "items":{
+        "type":"string"
+      }
     },
     "networks":{
       "type":"array",
