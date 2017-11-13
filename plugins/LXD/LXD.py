@@ -197,6 +197,7 @@ class LXD(RuntimePlugin):
             img = self.conn.images.get_by_alias(entity_uuid)
             img.delete()
 
+            time.sleep(2)
             profile = self.conn.profiles.get(entity_uuid)
             profile.delete()
 

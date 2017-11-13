@@ -88,10 +88,10 @@ class Controll():
             print("%d - %s : %s" % (k, n.get(id).get('name'), id))
 
 
-    def vm_deploy(self, node_uuid, container_uuid):
+    def container_deploy(self, node_uuid, container_uuid):
         '''
         This method make the destination node load the correct plugins,
-        and then deploy the vm to the node
+        and then deploy the container to the node
 
         :param node_uuid:
         :param container_uuid:
@@ -105,7 +105,7 @@ class Controll():
         uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
         print(uri)
         self.dstore.dput(uri, json.dumps(val))  # Writing to the desidered store of the destination node
-                                                # the manifest of the plugin to load, in this case KVM
+                                                # the manifest of the plugin to load, in this case Kcontainer
 
         time.sleep(1)
         val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
@@ -118,7 +118,7 @@ class Controll():
 
         print("Looking if lxd plugin loaded")
 
-        # reading from the actual store of the node if the KVM plugin was loaded
+        # reading from the actual store of the node if the Kcontainer plugin was loaded
 
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)  # reading from actual state store
         all_plugins = json.loads(self.astore.get(uri)).get('plugins')
@@ -134,7 +134,7 @@ class Controll():
 
         container_name = 'test'
 
-        cinit = None  # or self.readFile(cloud_init_file_path) # KVM plugin support cloudinit initializzation
+        cinit = None  # or self.readFile(cloud_init_file_path) # Kcontainer plugin support cloudinit initializzation
         sshk = None   # or self.readFile(pub key file path)       #
 
         ##### OTHER IMAGES USED
@@ -144,7 +144,7 @@ class Controll():
         #####
 
 
-        # creating the manifest for the vm
+        # creating the manifest for the container
         container_definition = {'name': container_name, 'uuid': container_uuid, 'base_image':
             'http://172.16.7.128/ubuntu_container.tar.xz', 'networks': [{
             'mac': "d2:e3:ed:6f:e3:ef", 'intf_name': "br0"}], "user-data": cinit, "ssh-key": sshk}
@@ -153,34 +153,34 @@ class Controll():
 
         json_data = json.dumps(entity_definition)
 
-        print("Press enter to define a vm")
+        print("Press enter to define a container")
         input()
 
         # writing the manifest to the desidered store of the destination node
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, lxd.get('uuid'), container_uuid))
         self.dstore.put(uri, json_data)
 
-        # busy waiting for the vm to state change
+        # busy waiting for the container to state change
         while True:
-            print("Waiting vm defined...")
+            print("Waiting container defined...")
             time.sleep(1)
             #reading state from actual store
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, lxd.get('uuid'), container_uuid))
-            vm_info = json.loads(self.astore.get(uri))
-            if vm_info is not None and vm_info.get("status") == "defined":
+            container_info = json.loads(self.astore.get(uri))
+            if container_info is not None and container_info.get("status") == "defined":
                     break
 
-        # using a dput (delta put) to only update the vm state, so cause a state transition
+        # using a dput (delta put) to only update the container state, so cause a state transition
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (node_uuid, lxd.get('uuid'), container_uuid))
         self.dstore.dput(uri)
 
-        # waiting the vm sto state change
+        # waiting the container sto state change
         while True:
-            print("Waiting vm configured...")
+            print("Waiting container configured...")
             time.sleep(1)
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, lxd.get('uuid'), container_uuid))
-            vm_info = json.loads(self.astore.get(uri))
-            if vm_info is not None and vm_info.get("status") == "configured":
+            container_info = json.loads(self.astore.get(uri))
+            if container_info is not None and container_info.get("status") == "configured":
                     break
 
 
@@ -189,16 +189,16 @@ class Controll():
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting vm to boot...")
+            print("Waiting container to boot...")
             time.sleep(1)
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, lxd.get('uuid'), container_uuid))
-            vm_info = json.loads(self.astore.get(uri))
-            if vm_info is not None and vm_info.get("status") == "run":
+            container_info = json.loads(self.astore.get(uri))
+            if container_info is not None and container_info.get("status") == "run":
                     break
 
-        print("vm is running on node")
+        print("container is running on node")
 
-    def vm_destroy(self, node_uuid, vm_uuid):
+    def container_destroy(self, node_uuid, container_uuid):
 
 
         # load the plugin uuid from the actual store of the destination node
@@ -206,44 +206,44 @@ class Controll():
         all_plugins = json.loads(self.astore.get(uri)).get('plugins')
 
         runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
-        print("locating kvm plugin")
+        print("locating lxd plugin")
         search = [x for x in runtimes if 'LXD' in x.get('name')]
         if len(search) == 0:
             print ("Plugin was not loaded")
             exit()
         else:
-            kvm = search[0]
+            lxd = search[0]
 
 
-        print("Press enter to stop vm")
+        print("Press enter to stop container")
         input()
 
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, kvm.get('uuid'), vm_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, lxd.get('uuid'), container_uuid))
         self.dstore.dput(uri)
 
         while True:
-            print("Waiting vm to be stopped...")
+            print("Waiting container to be stopped...")
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
-            vm_info = json.loads(self.astore.get(uri))
-            if vm_info is not None and vm_info.get("status") == "stop":
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, lxd.get('uuid'), container_uuid))
+            container_info = json.loads(self.astore.get(uri))
+            if container_info is not None and container_info.get("status") == "stop":
                 break
 
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' %
-                  (node_uuid, kvm.get('uuid'), vm_uuid))
+                  (node_uuid, lxd.get('uuid'), container_uuid))
         self.dstore.dput(uri)
 
         while True:
             print("Waiting cleaned...")
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, kvm.get('uuid'), vm_uuid))
-            vm_info = json.loads(self.astore.get(uri))
-            if vm_info is not None and vm_info.get("status") == "cleaned":
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, lxd.get('uuid'), container_uuid))
+            container_info = json.loads(self.astore.get(uri))
+            if container_info is not None and container_info.get("status") == "cleaned":
                 break
 
         # TODO this should be done with a remove
         json_data = json.dumps({'status': 'undefine'})
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, kvm.get('uuid'), vm_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, lxd.get('uuid'), container_uuid))
         self.dstore.dput(uri, json_data)
         #self.dstore.remove(uri)
 
@@ -257,7 +257,7 @@ class Controll():
 
 
 
-        vm_uuid = str(uuid.uuid4())
+        container_uuid = str(uuid.uuid4())
 
         # simple busy wait for a node to appear
         while len(self.nodes) < 1:
@@ -268,17 +268,17 @@ class Controll():
         input()
 
         # getting the node uuid
-        vm_dst_node = self.nodes.get(1)
-        if vm_dst_node is not None:
-            vm_dst_node = list(vm_dst_node.keys())[0]
+        container_dst_node = self.nodes.get(1)
+        if container_dst_node is not None:
+            container_dst_node = list(container_dst_node.keys())[0]
 
-        # deploy the vm
-        self.vm_deploy(vm_dst_node, vm_uuid)
+        # deploy the container
+        self.container_deploy(container_dst_node, container_uuid)
 
         input()
 
-        # offload the vm
-        self.vm_destroy(vm_dst_node, vm_uuid)
+        # offload the container
+        self.container_destroy(container_dst_node, container_uuid)
 
         input()
 
