@@ -65,7 +65,8 @@ class RandomMANO(MANOPlugin):
                 eg. {'name':{ information }, 'name2':{}, .... }
                 '''
 
-                node_uuid = str(self.uuid)  # @TODO: select deploy node in a smart way
+                ## random node selection
+                node_uuid = self.__get_node(self.__get_elegible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
 
                 vm_uuid = mf.get("entity_description").get("uuid")
 
@@ -116,6 +117,61 @@ class RandomMANO(MANOPlugin):
 
             elif t == "container":
                 self.logger.info('onboard_application()', 'Component is a Container')
+                lxd = self.__search_plugin_by_name('KVM')
+                if lxd is None:
+                    self.logger.error('onboard_application()', '[ ERRO ] LXD Plugin not loaded/found!!!')
+                    return False
+
+                node_uuid = self.__get_node(self.__get_elegible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
+
+                container_uuid = mf.get("entity_description").get("uuid")
+
+                entity_definition = {'status': 'define', 'name': component.get("name"), 'version': component.get(
+                    'version'), 'entity_data': mf.get("entity_description")}
+                json_data = json.dumps(entity_definition)
+
+                self.logger.info('onboard_application()', ' Define container')
+                uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, lxd.get('uuid'), container_uuid))
+                self.agent.dstore.put(uri, json_data)
+
+                while True:
+                    self.logger.info('onboard_application()', ' Waiting container to be DEFINED')
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, lxd.get('uuid'), container_uuid))
+                    vm_info = json.loads(self.agent.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "defined":
+                        break
+                self.logger.info('onboard_application()', '[ DONE ] container DEFINED')
+
+                self.logger.info('onboard_application()', 'Configure container')
+                uri = str(
+                    'dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (node_uuid, lxd.get('uuid'), container_uuid))
+                self.agent.dstore.dput(uri)
+
+                while True:
+                    self.logger.info('onboard_application()', 'Waiting container to be CONFIGURED')
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, lxd.get('uuid'), container_uuid))
+                    vm_info = json.loads(self.agent.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "configured":
+                        break
+                self.logger.info('onboard_application()', '[ DONE ] container Configured')
+
+                self.logger.info('onboard_application()', 'Staring container')
+                uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, lxd.get('uuid'), container_uuid))
+                self.agent.dstore.dput(uri)
+
+                while True:
+                    self.logger.info('Waiting container to be RUN')
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, lxd.get('uuid'), container_uuid))
+                    vm_info = json.loads(self.agent.astore.get(uri))
+                    if vm_info is not None and vm_info.get("status") == "run":
+                        break
+
+                self.logger.info('onboard_application()', '[ DONE ] container Running on node: %s' % node_uuid)
+
+
             elif t == "native":
                 self.logger.info('onboard_application()', 'Component is a Native Application')
                 native = self.__search_plugin_by_name('native')
@@ -124,7 +180,7 @@ class RandomMANO(MANOPlugin):
                                       '[ ERRO ] Native Application Plugin not loaded/found!!!')
                     return False
 
-                node_uuid = str(self.uuid)  # @TODO: select deploy node in a smart way
+                node_uuid = self.__get_node(self.__get_elegible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
                 na_uuid = mf.get("entity_description").get("uuid")
 
                 entity_definition = {'status': 'define', 'name': component.get("name"), 'version': component.get(
@@ -180,7 +236,7 @@ class RandomMANO(MANOPlugin):
                                       '[ ERRO ] ROS2 Application Plugin not loaded/found!!!')
                     return False
 
-                node_uuid = str(self.uuid)  # @TODO: select deploy node in a smart way
+                node_uuid = self.__get_node(self.__get_elegible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
                 na_uuid = mf.get("entity_description").get("uuid")
 
                 entity_definition = {'status': 'define', 'name': component.get("name"), 'version': component.get(
@@ -325,7 +381,7 @@ class RandomMANO(MANOPlugin):
         nodes = json.loads(self.agent.astore.get(uri))
         return nodes
 
-    def __get_node(self, elegible_nodes, entity_manifest):
+    def __get_node(self, elegible_nodes):
         i = randint(0, len(elegible_nodes))
         return elegible_nodes[i]
 
