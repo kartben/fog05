@@ -1,0 +1,148 @@
+import sys
+from fog05.DStore import *
+
+class Fos(object):
+    def __init__(self):
+        self.uuid = str(uuid.uuid4())
+
+        print(" _____            ____   ____\n"
+              "|  ___|__   __ _ / __ \ | ___|\n"
+              "| |_ / _ \ / _` | | /| ||___ \ \n"
+              "|  _| (_) | (_| | |/_| | ___) |\n"
+              "|_|  \___/ \__, |\____/ |____/ \n"
+              "           |___/ \n")
+
+
+
+    def __initialize(self):
+        self.droot = "dfos://<sys-id>"
+        self.dhome = str("dfos://<sys-id>/%s" % self.uuid)
+        self.dstore = DStore(self.uuid, self.droot, self.dhome, 1024)
+
+        self.aroot = "afos://<sys-id>"
+        self.ahome = str("afos://<sys-id>/%s" % self.uuid)
+        self.astore = DStore(self.uuid, self.aroot, self.ahome, 1024)
+
+        self.nodes = {}
+
+        uri = str('afos://<sys-id>/*/')
+        self.astore.observe(uri, self.nodeDiscovered)
+
+    def nodeDiscovered(self, uri, value, v=None):
+        value = json.loads(value)
+        if uri != str('fos://<sys-id>/%s/' % self.uuid):
+            print("New Node Discovered: %s" % value.get('uuid'))
+            self.nodes.update({len(self.nodes) + 1: {value.get('uuid'): value}})
+
+    def print_nodes(self):
+        uri = str('afos://<sys-id>/*/')
+        nodes = json.loads(self.astore.get(uri))
+        print(nodes)
+
+    def __entry_point(self, action):
+        r = {
+            'node': self.__node_command,
+            'network': self.__network_command,
+            'entity': self.__entity_command,
+            'application': self.__application_command
+        }
+
+        return r.get(action, None)
+
+
+    def __node_command(self, parameters):
+        if len(parameters) < 2:
+            print("Should specify node UUID or list")
+            return
+
+        if parameters[1] == 'list':
+            uri = str('afos://<sys-id>/*/')
+            nodes = self.astore.get(uri)
+            print(nodes)
+        else:
+            uri = str('afos://<sys-id>/%s/' % parameters[1])
+            node = json.loads(self.astore.get(uri))
+            print(node)
+
+    def __network_command(self, parameters):
+        print(parameters)
+
+    def __entity_command(self, parameters):
+        print(parameters)
+
+    def __application_command(self, parameters):
+        print(parameters)
+
+    def main(self, argv):
+
+
+        '''
+        
+        This is the entry point of the fog05 cli interface
+        with this you can onboard application/entities, get information about current nodes in the system
+        create virtual networks, and interact with entities
+        
+        @GB I think at least system id should be always specified or can be read from a simple conf.ini file
+        
+        eg.
+
+        ---------
+        fos node list
+            list of nodes in current system
+
+        fos node <node_uuid>
+            get information about a specific node
+
+        ---------
+        fos network list 
+            list of networks in current system
+        
+        fos network add <path to network json manifest>
+            create a new network in the system
+
+        fos network remove <uuid>
+            remove the specified network
+        ---------
+        
+        ---------
+        fos entity list
+            list of entity in current system
+        
+        fos entity add <path to entity json manifest>
+            create a new entity in the system
+ 
+        fos entity remove <uuid>
+            remove the specified entity from the system
+        
+        fos entity migrate <uuid> <destination_uuid>
+            migrate the entity to the destination uuid specified node
+        --------
+        
+        --------
+        fos application list
+            list of applications in current system
+        
+        fos application add <path to application json manifest>
+            add an application in the current system
+        
+        fos application remove <uuid>
+            remove the specified application from the system
+        
+        -------
+        
+        '''
+
+        action = self.__entry_point(argv[1])
+        if action is None:
+            print("Error parameter %s not recognized" % argv[1])
+        else:
+            self.__initialize()
+            action(argv[1:])
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print("provide parameters")
+    else:
+        c = Fos()
+        c.main(sys.argv)
