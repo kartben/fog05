@@ -61,7 +61,7 @@ class Fos(object):
             print(nodes)
         else:
             uri = str('afos://<sys-id>/%s/' % parameters[1])
-            node = json.loads(self.astore.get(uri))
+            node = self.astore.get(uri)
             print(node)
 
     def __network_command(self, parameters):
