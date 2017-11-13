@@ -293,6 +293,12 @@ class Linux(OSPlugin):
             itype = "wireless"
         elif name[:2].lower() == "br":
             itype = "bridge"
+        elif name[:5].lower() == "virbr":
+            itype = "virtual bridge"
+        elif name[:5].lower() == "lxdbr":
+            itype = "container bridge"
+        elif name[:3].lower() == "tap":
+            itype = "tap"
         elif name[:2].lower() == "tu":
             itype = "tunnel"
         elif name.lower() == "lo":

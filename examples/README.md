@@ -7,7 +7,7 @@ In this directory you can find some example of what Fog05 can do.
  - [Lifecycle of a ROS2 Nodelet](lf_ros2.py)
  - [Complex application onboarding](app_onboard.py)
  - [VM Migration](vm_migration.py)
- 
+ - [Lifecycle of a LXD Container](lf_container.py)
  #### How to run examples:
  
     Fog05 shoudl be installed in order to run the examples

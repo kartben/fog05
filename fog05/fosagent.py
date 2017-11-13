@@ -76,8 +76,8 @@ class FosAgent(Agent):
             uri = str('%s/plugins/%s/%s' % (self.ahome, self.__osPlugin.name, self.__osPlugin.uuid))
             self.astore.put(uri, json.dumps(val))
 
-            val = {'plugins': [{'name': 'linux', 'version': self.__osPlugin.version, 'uuid': str(self.__osPlugin.uuid),
-                               'type': 'os'}]}
+            val = {'plugins': [{'name': self.__osPlugin.name, 'version': self.__osPlugin.version, 'uuid': str(
+                self.__osPlugin.uuid), 'type': 'os'}]}
             uri = str('%s/plugins' % self.ahome)
             self.astore.put(uri, json.dumps(val))
 
@@ -226,7 +226,7 @@ class FosAgent(Agent):
         application_uuid = uri.split('/')[-1]
         self.__application_onboarding(application_uuid, value)
 
-    def __application_onboarding(self,application_uuid, value):
+    def __application_onboarding(self, application_uuid, value):
         self.logger.info('__application_onboarding()', ' Onboarding application with uuid: %s' % application_uuid)
         deploy_order_list = self.__resolve_dependencies(value.get('components', None))
         informations = {}
