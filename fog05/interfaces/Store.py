@@ -1,6 +1,6 @@
 class Observer(object):
 
-    def onPut(self, uri, value):
+    def onPut(self, uri, val, ver):
         raise NotImplemented("Not yet...")
 
     # One of these for each operation on the cache...

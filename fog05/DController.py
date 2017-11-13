@@ -122,8 +122,8 @@ class DController (Controller, Observer):
             if d is not None:
                 d.print_vars()
 
-
     def onPut(self, uri, val, ver):
+        print(">> uri: " + uri)
         print(">> val: " + val)
         v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
         self.key_value_writer.write(v)
@@ -157,6 +157,7 @@ class DController (Controller, Observer):
         print("onConflict Not yet...")
 
     def resolve(self, uri, timeout = None):
+        print(">> Tries to resolve %s" % uri)
         """
             Tries to resolve this URI on across the distributed caches
             :param uri: the URI to be resolved
