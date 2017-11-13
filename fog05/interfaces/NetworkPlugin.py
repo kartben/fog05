@@ -132,8 +132,13 @@ class NetworkPlugin(Plugin):
 
 class BridgeAssociatedToNetworkException(Exception):
     def __init__(self, message, errors):
-
         super(BridgeAssociatedToNetworkException, self).__init__(message)
+        self.errors = errors
+
+
+class NetworkAlreadyExistsException(Exception):
+    def __init__(self, message, errors):
+        super(NetworkAlreadyExistsException, self).__init__(message)
         self.errors = errors
 
 
@@ -143,17 +148,20 @@ class NetworkHasPendingInterfacesException(Exception):
         super(NetworkHasPendingInterfacesException, self).__init__(message)
         self.errors = errors
 
+
 class InterfaceNotInNetworkException(Exception):
     def __init__(self, message, errors):
 
         super(InterfaceNotInNetworkException, self).__init__(message)
         self.errors = errors
 
+
 class BridgeNotExistingException(Exception):
     def __init__(self, message, errors):
 
         super(BridgeNotExistingException, self).__init__(message)
         self.errors = errors
+
 
 class InterfaceNotExistingException(Exception):
     def __init__(self, message, errors):

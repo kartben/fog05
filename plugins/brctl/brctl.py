@@ -3,10 +3,9 @@ import os
 import uuid
 import struct
 import json
-sys.path.append(os.path.join(sys.path[0], 'interfaces'))
 from fog05.interfaces.NetworkPlugin import *
-
-from socket import *
+from jinja2 import Environment
+import socket
 
 
 class brctl(NetworkPlugin):
@@ -18,6 +17,16 @@ class brctl(NetworkPlugin):
         self.interfaces_map = {}
         self.brmap = {}
         self.netmap = {}
+        self.BASE_DIR = "/opt/fos/brctl"
+        self.DHCP_DIR = "dhcp"
+
+        if not self.agent.getOSPlugin().dirExists(self.BASE_DIR):
+            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR)):
+                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR))
+        else:
+            self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
+            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR))
+
 
     def createVirtualInterface(self, name, uuid):
         #sudo ip link add type veth
@@ -38,20 +47,33 @@ class brctl(NetworkPlugin):
         self.brmap.update({br_uuid, name})
         return br_uuid, name
 
-    def createVirtualNetwork(self, network_name, uuid, ip_range=None, has_dhcp=False, gateway=None):
-        brcmd = str('sudo brctl addbr %s-net', network_name)
-        net_uuid = uuid
+    def createVirtualNetwork(self, network_name, net_uuid, ip_range=None, has_dhcp=False, gateway=None):
 
+        net = self.netmap.get(net_uuid, None)
+        if net is not None:
+            raise NetworkAlreadyExistsException("%s network already exists" % net_uuid)
+
+        #brcmd = str('sudo brctl addbr %s-net', network_name)
+        #net_uuid = uuid
         #
+        br_name = str("br%s" % net_uuid.split('-')[0])
+        vxlan_file = self.__generate_vxlan_script(net_uuid)
+        self.agent.getOSPlugin().executeCommand(vxlan_file, True)
 
-        self.agent.getOSPlugin().executeCommand(brcmd)
+        #self.agent.getOSPlugin().executeCommand(brcmd)
 
         if has_dhcp is True:
             address = self.__cird2block(ip_range)
-            dhcpq_cmd = str('sudo dnsmasq -d  --interface=%s-net --bind-interfaces  --dhcp-range=%s,'
-                            '%s >/opt/fog/dhcp_out/%s.out 2>&1 & echo $! > /opt/fog/dhcp_out/%s.pid' %
-                            (network_name, address[0], address[1], network_name, network_name))
+
+            ifcmd = str('sudo ifconfig %s %s netmask %s' % (br_name, address[0], address[3]))
+            dhcpq_cmd = str('sudo dnsmasq -d  --interface=%s --bind-interfaces  --dhcp-range=%s,'
+                            '%s > %s/%s/%s.out 2>&1 & echo $! > %s/%s/%s.pid' %
+                            (br_name, address[1], address[2], self.BASE_DIR, self.DHCP_DIR, br_name, self.BASE_DIR,
+                             self.DHCP_DIR, br_name))
+
+            self.agent.getOSPlugin().executeCommand(ifcmd, True)
             self.agent.getOSPlugin().executeCommand(dhcpq_cmd)
+
 
         self.netmap.update({net_uuid: {'network_name': network_name, 'intf': []}})
 
@@ -134,14 +156,22 @@ class brctl(NetworkPlugin):
         return True
 
     def __cird2block(self, cird):
+        '''
+            Convert cird subnet to first address (for router), dhcp avaiable range, netmask
+
+        :param cird:
+        :return:
+        '''
         (ip, cidr) = cird.split('/')
         cidr = int(cidr)
         host_bits = 32 - cidr
+        netmask = socket.inet_ntoa(struct.pack('!I', (1 << 32) - (1 << host_bits)))
         i = struct.unpack('>I', socket.inet_aton(ip))[0]
         start = (i >> host_bits) << host_bits
         end = i | ((1 << host_bits) - 1)
 
-        return inet_ntoa(struct.pack('>I', start+1)), inet_ntoa(struct.pack('>I', end-1))
+        return socket.inet_ntoa(struct.pack('>I', start + 1)), socket.inet_ntoa(
+            struct.pack('>I', start + 2)), socket.inet_ntoa(struct.pack('>I', end - 1)),netmask
 
     def __react_to_cache(self, key, value):
         uuid = key.split('/')[-1]
@@ -171,4 +201,20 @@ class brctl(NetworkPlugin):
 
         return r.get(action, None)
 
+    def __generate_vxlan_script(self, net_uuid):
+        template_sh = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
+                                                                      'templates', 'vxlan_creation.sh'))
+        net_sh = Environment().from_string(template_sh)
+        br_name = str("br%s" % net_uuid.split('-')[0])
+        vxlan_name = str("vxl%s" % net_uuid.split('-')[0])
+        vxlan_id = len(self.netmap)+1
+        mcast_addr = str ("239.0.0.%d" % vxlan_id)
 
+
+        net_sh = net_sh.render(bridge_name=br_name, vxlan_intf_name=vxlan_name,
+                                group_id=vxlan_id, mcast_group_address=mcast_addr)
+        self.agent.getOSPlugin().storeFile(net_sh, self.BASE_DIR, str("%s.sh" % net_uuid.split('-')[0]))
+        chmod_cmd = str("chmod +x %s/%s" % (self.BASE_DIR, str("%s.sh" % net_uuid.split('-')[0])))
+        self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
+
+        return str("%s.sh" % net_uuid.split('-')[0])
