@@ -20,18 +20,29 @@ class brctl(NetworkPlugin):
         self.agent.logger.info('__init__()', ' Hello from bridge-utils Plugin')
         self.BASE_DIR = "/opt/fos/brctl"
         self.DHCP_DIR = "dhcp"
-        self.HOME = str("network/%s/" % self.uuid)
+        self.HOME = str("network/%s" % self.uuid)
 
-        if not self.agent.getOSPlugin().dirExists(self.BASE_DIR):
+        if self.agent.getOSPlugin().dirExists(self.BASE_DIR):
             if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR)):
                 self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR))
         else:
             self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
             self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR))
 
-        uri = str('%s/%s/*' % (self.agent.dhome, self.HOME))
+
+        '''
+        should listen on:
+        
+        - dfos://<sys-id>/<node-id>/network/<myuuid>/networks/*
+        - dfos://<sys-id>/<node-id>/network/<myuuid>/bridges/*
+        - dfos://<sys-id>/<node-id>/network/<myuuid>/interfaces/*
+        
+        '''
+
+        uri = str('%s/%s/networks/*' % (self.agent.dhome, self.HOME))
+        self.agent.dstore.observe(uri, self.__react_to_cache_networks)
         self.agent.logger.info('startRuntime()', ' bridge-utils Plugin - Observing %s' % uri)
-        self.agent.dstore.observe(uri, self.__react_to_cache)
+
 
 
     def createVirtualInterface(self, name, uuid):
@@ -62,9 +73,9 @@ class brctl(NetworkPlugin):
         #brcmd = str('sudo brctl addbr %s-net', network_name)
         #net_uuid = uuid
         #
-        br_name = str("br%s" % net_uuid.split('-')[0])
+        br_name = str("br-%s" % net_uuid.split('-')[0])
         vxlan_file = self.__generate_vxlan_script(net_uuid)
-        self.agent.getOSPlugin().executeCommand(vxlan_file, True)
+        self.agent.getOSPlugin().executeCommand(str("%s/%s" % (self.BASE_DIR, vxlan_file)), True)
 
         #self.agent.getOSPlugin().executeCommand(brcmd)
 
@@ -73,8 +84,9 @@ class brctl(NetworkPlugin):
 
             ifcmd = str('sudo ifconfig %s %s netmask %s' % (br_name, address[0], address[3]))
             dhcpq_cmd = str('sudo dnsmasq -d  --interface=%s --bind-interfaces  --dhcp-range=%s,'
-                            '%s > %s/%s/%s.out 2>&1 & echo $! > %s/%s/%s.pid' %
-                            (br_name, address[1], address[2], self.BASE_DIR, self.DHCP_DIR, br_name, self.BASE_DIR,
+                            '%s --listen-address %s > %s/%s/%s.out 2>&1 & echo $! > %s/%s/%s.pid' %
+                            (br_name, address[1], address[2], address[0], self.BASE_DIR, self.DHCP_DIR, br_name,
+                             self.BASE_DIR,
                              self.DHCP_DIR, br_name))
 
             self.agent.getOSPlugin().executeCommand(ifcmd, True)
@@ -179,30 +191,35 @@ class brctl(NetworkPlugin):
         return socket.inet_ntoa(struct.pack('>I', start + 1)), socket.inet_ntoa(
             struct.pack('>I', start + 2)), socket.inet_ntoa(struct.pack('>I', end - 1)),netmask
 
-    def __react_to_cache(self, key, value):
+    def __react_to_cache_networks(self, key, value, v):
+        self.agent.logger.info('__react_to_cache_networks()',
+                               ' BRCTL Plugin - React to to URI: %s Value: %s Version: %s' % (key, value, v))
         uuid = key.split('/')[-1]
         value = json.loads(value)
         action = value.get('status')
-        entity_data = value.get('entity_data')
         react_func = self.__react(action)
-        if react_func is not None and entity_data is None:
+        if react_func is not None and value is None:
             react_func(uuid)
         elif react_func is not None:
-            entity_data.update({'entity_uuid': uuid})
-            if action == 'define':
-                react_func(**entity_data)
+            value.update({'uuid': uuid})
+            if action == 'add':
+                react_func(**value)
             else:
-                react_func(entity_data)
+                react_func(value)
 
+
+    def __parse_manifest_for_add(self, **kwargs):
+        net_uuid = kwargs.get('uuid')
+        name = kwargs.get('name')
+        ip_range = kwargs.get('ip_range')
+        has_dhcp = kwargs.get('has_dhcp')
+        gw = kwargs.get('gateway')
+        self.createVirtualNetwork(name,net_uuid,ip_range,has_dhcp,gw)
 
     def __react(self, action):
         r = {
-            'define_interface': self.createVirtualInterface,
-            'define_network': self.createVirtualNetwork,
-            'define_bridge': self.creareVirtualBridge,
-            'delete': self.deleteVirtualInterface,
-            'interface_to_network': self.assignInterfaceToNetwork,
-            'remove_interface': self.removeInterfaceFromNetwork,
+            'add': self.__parse_manifest_for_add,
+            'remove': self.createVirtualNetwork,
         }
 
         return r.get(action, None)
@@ -211,8 +228,8 @@ class brctl(NetworkPlugin):
         template_sh = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
                                                                       'templates', 'vxlan_creation.sh'))
         net_sh = Environment().from_string(template_sh)
-        br_name = str("br%s" % net_uuid.split('-')[0])
-        vxlan_name = str("vxl%s" % net_uuid.split('-')[0])
+        br_name = str("br-%s" % net_uuid.split('-')[0])
+        vxlan_name = str("vxl-%s" % net_uuid.split('-')[0])
         vxlan_id = len(self.netmap)+1
         mcast_addr = str("239.0.0.%d" % vxlan_id)
 
