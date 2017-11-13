@@ -17,8 +17,10 @@ class brctl(NetworkPlugin):
         self.interfaces_map = {}
         self.brmap = {}
         self.netmap = {}
+        self.agent.logger.info('__init__()', ' Hello from bridge-utils Plugin')
         self.BASE_DIR = "/opt/fos/brctl"
         self.DHCP_DIR = "dhcp"
+        self.HOME = str("network/%s/" % self.uuid)
 
         if not self.agent.getOSPlugin().dirExists(self.BASE_DIR):
             if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR)):
@@ -26,6 +28,10 @@ class brctl(NetworkPlugin):
         else:
             self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
             self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR))
+
+        uri = str('%s/%s/*' % (self.agent.dhome, self.HOME))
+        self.agent.logger.info('startRuntime()', ' bridge-utils Plugin - Observing %s' % uri)
+        self.agent.dstore.observe(uri, self.__react_to_cache)
 
 
     def createVirtualInterface(self, name, uuid):
@@ -208,7 +214,7 @@ class brctl(NetworkPlugin):
         br_name = str("br%s" % net_uuid.split('-')[0])
         vxlan_name = str("vxl%s" % net_uuid.split('-')[0])
         vxlan_id = len(self.netmap)+1
-        mcast_addr = str ("239.0.0.%d" % vxlan_id)
+        mcast_addr = str("239.0.0.%d" % vxlan_id)
 
 
         net_sh = net_sh.render(bridge_name=br_name, vxlan_intf_name=vxlan_name,
