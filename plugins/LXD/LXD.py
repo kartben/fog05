@@ -33,7 +33,7 @@ class LXD(RuntimePlugin):
         self.conn = Client()
         self.agent.logger.info('startRuntime()', '[ DONE ] LXD Plugin - Connecting to LXD')
         uri = str('%s/%s/*' % (self.agent.dhome, self.HOME))
-        self.agent.logger.info('startRuntime()',' LXD Plugin - Observing %s' % uri)
+        self.agent.logger.info('startRuntime()', ' LXD Plugin - Observing %s' % uri)
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
         '''check if dirs exists if not exists create'''

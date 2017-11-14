@@ -107,7 +107,7 @@ class Controll():
         self.dstore.dput(uri, json.dumps(val))  # Writing to the desidered store of the destination node
                                                 # the manifest of the plugin to load, in this case Kcontainer
 
-        time.sleep(1)
+        time.sleep(2)
         val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
                             'type': 'network', 'status': 'add'}]}
         uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
