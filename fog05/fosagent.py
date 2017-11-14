@@ -489,7 +489,11 @@ class FosAgent(Agent):
         keys = list(self.__rtPlugins.keys())
         for k in keys:
             self.__rtPlugins.get(k).stopRuntime()
-            self.logger.info('__exit_gracefully()', '[ DONE ] Bye')
+
+        keys = list(self.__nwPlugins.keys())
+        for k in keys:
+            self.__nwPlugins.get(k).stopNetwork()
+        self.logger.info('__exit_gracefully()', '[ DONE ] Bye')
         #sys.exit(0)
 
     def run(self):

@@ -50,6 +50,9 @@
           },
           "intf_name":{
             "type":"string"
+          },
+          "br_name":{
+            "type":"string"
           }
         }
       }

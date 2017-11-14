@@ -263,7 +263,13 @@ class LXD(RuntimePlugin):
 
             c = self.conn.containers.get(entity.name)
             c.stop()
-            
+            c.sync()
+
+            while c.status != 'Stopped':
+                c.sync()
+                pass
+
+
             entity.onStop()
             self.current_entities.update({entity_uuid: entity})
 
@@ -481,17 +487,28 @@ class LXD(RuntimePlugin):
                         return found
 
     def __generate_custom_profile_devices_configuration(self, entity):
-        template = '{% for net in networks %}' \
+        '''
+        template = '[ {% for net in networks %}' \
                 '{"eth{{loop.index -1 }}": ' \
                 '{"name": "eth{{loop.index -1}}",' \
                 '"type" : "nic",'  \
                 '"parent": "{{ net.intf_name }}",' \
                 '"nictype": "bridged" }}' \
-                '{% endfor %}'
+                '{% endfor %} ]'
+        '''
+        devices = {}
+        template_value = '{"name":"%s","type":"nic","parent":"%s","nictype":"bridged"}'
+        template_key = '%s'
+        for n in entity.networks:
+            nw_v = json.loads(str(template_value % (n.get('intf_name'), n.get('br_name'))))
+            nw_k = str(template_key % n.get('intf_name'))
+            devices.update({nw_k: nw_v})
 
-        devices = Environment().from_string(template)
-        devices = devices.render(networks=entity.networks)
-        return json.loads(devices)
+
+        #devices = Environment().from_string(template)
+        #devices = devices.render(networks=entity.networks)
+        print(devices)
+        return devices
 
     def __generate_container_dict(self, entity):
         conf = {'name': entity.name, "profiles":  entity.profiles,
