@@ -25,11 +25,11 @@ class Fos(object):
 
         self.nodes = {}
 
-        uri = str('afos://<sys-id>/*/')
-        self.astore.observe(uri, self.nodeDiscovered)
+        #uri = str('afos://<sys-id>/*/')
+        #self.astore.observe(uri, self.nodeDiscovered)
 
     def nodeDiscovered(self, uri, value, v=None):
-        value = json.loads(value)
+        #value = json.loads(value)
         if uri != str('fos://<sys-id>/%s/' % self.uuid):
             print("New Node Discovered: %s" % value.get('uuid'))
             self.nodes.update({len(self.nodes) + 1: {value.get('uuid'): value}})
