@@ -42,7 +42,6 @@ class Linux(OSPlugin):
 
     def executeCommand(self, command, blocking=False):
         self.agent.logger.info('executeCommand()', str(' OS Plugin executing command %s' % command))
-        print(command)
         cmd_splitted = command.split()
         p = psutil.Popen(cmd_splitted, stdout=PIPE)
         if blocking:

@@ -52,7 +52,9 @@
         {% for net in networks %}
 
         <interface type='bridge'>
+            {% if net.mac is defined %}
             <mac address='{{ net.mac }}'/>
+            {% endif %}
             <source network='default' bridge='{{ net.intf_name }}'/>
             <target dev='{{ name }}0'/>
             <model type='rtl8139'/>
