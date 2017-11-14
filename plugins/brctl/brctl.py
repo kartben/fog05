@@ -175,6 +175,15 @@ class brctl(NetworkPlugin):
         self.agent.getOSPlugin().removeFile(shutdown_file)
         self.agent.getOSPlugin().removeFile(start_file)
         self.agent.getOSPlugin().removeFile(dnsmasq_file)
+
+        self.netmap.pop(network_uuid)
+
+        return True
+
+    def stopNetwork(self):
+        keys = list(self.netmap.keys())
+        for k in keys:
+            self.deleteVirtualNetwork(k)
         return True
 
     def __cird2block(self, cird):

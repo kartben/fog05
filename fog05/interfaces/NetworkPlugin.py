@@ -128,7 +128,8 @@ class NetworkPlugin(Plugin):
 
         raise NotImplementedError("This is and interface!")
 
-
+    def stopNetwork(self):
+        raise NotImplemented
 
 class BridgeAssociatedToNetworkException(Exception):
     def __init__(self, message, errors):
