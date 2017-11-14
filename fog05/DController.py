@@ -27,11 +27,11 @@ class DController (Controller, Observer):
 
         self.store_info_writer = FlexyWriter(self.pub,
                                              self.store_info_topic,
-                                            [Reliable(), TransientLocal(), KeepLastHistory(1)])
+                                            [Reliable(), Transient(), KeepLastHistory(1)])
 
         self.store_info_reader = FlexyReader(self.sub,
                                             self.store_info_topic,
-                                            [Reliable(), TransientLocal(), KeepLastHistory(1)],
+                                            [Reliable(), Transient(), KeepLastHistory(1)],
                                             self.cache_discovered)
 
 
@@ -39,21 +39,22 @@ class DController (Controller, Observer):
 
         self.key_value_writer = FlexyWriter(self.pub,
                                             self.key_value_topic,
-                                            [Reliable(), TransientLocal(), KeepLastHistory(1)])
+                                            [Reliable(), Transient(), KeepLastHistory(1)])
 
         self.key_value_reader = FlexyReader(self.sub,
                                             self.key_value_topic,
-                                            [Reliable(), TransientLocal(), KeepLastHistory(1)],
+                                            [Reliable(), Transient(), KeepLastHistory(1)],
                                             lambda r: self.handle_remote_put(r))
 
 
         self.miss_topic = FlexyTopic(self.dp, "FOSStoreMiss")
 
+
         self.miss_writer = FlexyWriter(self.pub,
                                        self.miss_topic,
                                        [Reliable(), Volatile(), KeepAllHistory()])
 
-        self.miss_reader = FlexyReader(self.pub,
+        self.miss_reader = FlexyReader(self.sub,
                                        self.miss_topic,
                                        [Reliable(), Volatile(), KeepAllHistory()], lambda r: self.handle_miss(r))
 
@@ -63,22 +64,25 @@ class DController (Controller, Observer):
                                        self.hit_topic,
                                        [Reliable(), Volatile(), KeepAllHistory()])
 
-        self.hit_reader = FlexyReader(self.pub,
+        self.hit_reader = FlexyReader(self.sub,
                                        self.hit_topic,
                                        [Reliable(), Volatile(), KeepAllHistory()], None)
 
-        self.miss_topic = FlexyTopic(self.dp, "FOSStoreMiss")
+
 
 
     def handle_miss(self, r):
+        print('>>>> Handling Miss for store {0}'.format(self.__store.store_id))
         samples = r.take(all_samples())
         for (d, i) in samples:
-            if i.valid_data:
-                if i.key in self.__store:
-                    h = CacheHit(self.__store.store_id, i.source_id, json.dump(self.__store[i.key]))
+            if i.valid_data and (d.source_sid != self.__store.store_id):
+                v = self.__store.get_value(d.key)
+                if v is not None:
+                    print('>>>> Serving Miss')
+                    h = CacheHit(self.__store.store_id, d.source_sid, d.key, v, self.__store.get_version(d.key))
                     self.hit_writer.write(h)
                 else:
-                    print(">>> Could not resolve remote miss on key {0}".format(i.key))
+                    print(">>> Could not resolve remote miss on key {0}".format(d.key))
 
 
     def handle_remove(self, uri):
@@ -151,13 +155,15 @@ class DController (Controller, Observer):
         print("onObserve Not yet...")
 
     def onMiss(self):
-        pass
+        print(">> onMiss")
 
     def onConflict(self):
         print("onConflict Not yet...")
 
     def resolve(self, uri, timeout = None):
-        print(">> Tries to resolve %s" % uri)
+        print('>>>> Handling {0} Miss for store {1}'.format(uri, self.__store.store_id))
+
+        print(">> Trying to resolve %s" % uri)
         """
             Tries to resolve this URI on across the distributed caches
             :param uri: the URI to be resolved
@@ -173,8 +179,8 @@ class DController (Controller, Observer):
 
         for (d, i) in samples:
             if i.valid_data:
-                if d.key == uri and d.dest_sid == self.__store.sid:
-                    return (json.load(d.value), d.version)
+                if d.key == uri and d.dest_sid == self.__store.store_id:
+                    return (d.value, d.version)
 
         return None
 

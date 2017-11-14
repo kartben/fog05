@@ -253,6 +253,7 @@ class DStore(Store):
         v = self.get_value(uri)
         if v == None:
             self.__controller.onMiss()
+            print("Resolving: {0}".format(uri))
             rv = self.__controller.resolve(uri)
             if rv != None:
                 self.update_value(uri, rv[0], rv[1])
