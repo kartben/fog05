@@ -66,7 +66,7 @@ class RandomMANO(MANOPlugin):
                 '''
 
                 ## random node selection
-                node_uuid = self.__get_node(self.__get_elegible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
+                node_uuid = self.__get_node(self.__get_eligible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
 
                 vm_uuid = mf.get("entity_description").get("uuid")
 
@@ -122,7 +122,7 @@ class RandomMANO(MANOPlugin):
                     self.logger.error('onboard_application()', '[ ERRO ] LXD Plugin not loaded/found!!!')
                     return False
 
-                node_uuid = self.__get_node(self.__get_elegible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
+                node_uuid = self.__get_node(self.__get_eligible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
 
                 container_uuid = mf.get("entity_description").get("uuid")
 
@@ -180,7 +180,7 @@ class RandomMANO(MANOPlugin):
                                       '[ ERRO ] Native Application Plugin not loaded/found!!!')
                     return False
 
-                node_uuid = self.__get_node(self.__get_elegible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
+                node_uuid = self.__get_node(self.__get_eligible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
                 na_uuid = mf.get("entity_description").get("uuid")
 
                 entity_definition = {'status': 'define', 'name': component.get("name"), 'version': component.get(
@@ -236,7 +236,7 @@ class RandomMANO(MANOPlugin):
                                       '[ ERRO ] ROS2 Application Plugin not loaded/found!!!')
                     return False
 
-                node_uuid = self.__get_node(self.__get_elegible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
+                node_uuid = self.__get_node(self.__get_eligible_nodes(self.__get_all_nodes(), mf.get("entity_description")))
                 na_uuid = mf.get("entity_description").get("uuid")
 
                 entity_definition = {'status': 'define', 'name': component.get("name"), 'version': component.get(
@@ -330,51 +330,77 @@ class RandomMANO(MANOPlugin):
     def __get_manifest(self, manifest_path):
         return json.loads(self.agent.dstore.get(manifest_path))
 
+    def __get_eligible_nodes(self, nodes, entity_manifest):
+        eligible = []
 
-    def __get_elegible_nodes(self, nodes, entity_manifest):
-        elegibles = []
-
-        nw_elegibles = []
-        ac_elegibles = []
-        io_elegibles = []
+        nw_eligible = []
+        ac_eligible = []
+        io_eligible = []
 
         constraints = entity_manifest.get("constraints", None)
         if constraints is None:
             return nodes
-
-        for n in nodes:
+        for node in nodes:
             nw_constraints = constraints.get('networks', None)
-            node_nw = n.get('network', None)
+            node_nw = node.get('network', None)
             if nw_constraints is not None and node_nw is not None:
                 for nw_c in nw_constraints:
                     t = nw_c.get('type')
                     n = nw_c.get('number')
                     nws = [x for x in node_nw if x.get('type') == t]
                     if len(nws) >= n:
-                        nw_elegibles.append(n.get('uuid'))
+                        nw_eligible.append(node.get('uuid'))
             io_constraints = constraints.get('i/o', None)
-            node_io = n.get('io', None)
+            node_io = node.get('io', None)
             if io_constraints is not None and node_io is not None:
                 for io_c in io_constraints:
                     t = io_c.get('type')
                     n = io_c.get('number')
-                    ios = [x for x in node_io if x.get('type') == t]
+                    ios = [x for x in node_io if x.get('io_type') == t]
                     if len(ios) >= n:
-                        io_elegibles.append(n.get('uuid'))
+                        io_eligible.append(node.get('uuid'))
             ac_constraints = constraints.get('accelerators', None)
-            node_ac = n.get('accelerator', None)
+            node_ac = node.get('accelerator', None)
             if ac_constraints is not None and node_ac is not None:
+                node_ac = [x.get('supported_library') for x in node_ac]
+                node_sl = []
+                for sl in node_ac:
+                    node_sl.extend(sl)
                 for ac_c in ac_constraints:
                     t = ac_c.get('type')
-                    n = ac_c.get('number')
-                    ios = [x for x in node_ac if x.get('type') == t]
-                    if len(ios) >= n:
-                        ac_elegibles.append(n.get('uuid'))
+                    # n = ac_c.get('number')
+                    if t in node_sl:
+                        ac_eligible.append(node.get('uuid'))
+                        # ios = [x for x in node_ac if x.get('type') == t]
+                        # if len(ios) >= n:
+                        #    ac_elegibles.append(n.get('uuid'))
 
-
-        elegibles = list (set(nw_elegibles) & set (ac_elegibles))
-        elegibles = list(set(elegibles) & set(io_elegibles))
-        return elegibles
+        if constraints.get('networks', None) is not None and constraints.get('i/o', None) is None and constraints.get(
+                'accelerators', None) is None:
+            eligible.extend(nw_eligible)
+        elif constraints.get('i/o', None) is not None and constraints.get('networks', None) is None and constraints.get(
+                'accelerators', None) is None:
+            eligible.extend(io_eligible)
+        elif constraints.get('accelerators', None) is not None and constraints.get('networks',
+                                                                                   None) is None and constraints.get(
+                'i/o', None) is None:
+            eligible.extend(ac_eligible)
+        elif constraints.get('networks', None) is not None and constraints.get('i/o',
+                                                                               None) is not None and constraints.get(
+                'accelerators', None) is not None:
+            eligible = list((set(nw_eligible) & set(io_eligible)) & set(ac_eligible))
+        elif constraints.get('networks', None) is not None and constraints.get('i/o',
+                                                                               None) is not None and constraints.get(
+                'accelerators', None) is None:
+            eligible = list(set(nw_eligible) & set(io_eligible))
+        elif constraints.get('networks', None) is None and constraints.get('i/o', None) is not None and constraints.get(
+                'accelerators', None) is not None:
+            eligible = list(set(ac_eligible) & set(io_eligible))
+        elif constraints.get('networks', None) is not None and constraints.get('i/o', None) is None and constraints.get(
+                'accelerators', None) is not None:
+            eligible = list(set(nw_eligible) & set(ac_eligible))
+        eligible = list(set(eligible))
+        return eligible
 
     def __get_all_nodes(self):
         uri = str('afos://<sys-id>/*/')
