@@ -84,15 +84,14 @@ class Controll():
 
         br_name = str("br-%s" % net_uuid.split('-')[0])
         vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
-            'http://172.16.7.128/virt-cirros-0.3.4-x86_64-disk.img', 'networks': [{
-            'mac': "d2:e3:ed:6f:e3:ef", 'intf_name': br_name}], "user-data": cinit, "ssh-key": sshk}
+            'http://172.16.7.128/virt-cirros-0.3.4-x86_64-disk.img', 'networks': [{'intf_name': br_name}], "user-data": cinit, "ssh-key": sshk}
 
         entity_definition = {'status': 'define', 'name': vm_name, 'version': 1, 'entity_data': vm_definition}
 
         json_data = json.dumps(entity_definition)
 
-        print("Press enter to define a vm")
-        input()
+        #print("Press enter to define a vm")
+        #input()
 
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, kvm.get('uuid'), vm_uuid))
         self.dstore.put(uri, json_data)
@@ -143,8 +142,8 @@ class Controll():
         else:
             kvm = search[0]
 
-        print("Press enter to stop vm")
-        input()
+        #print("Press enter to stop vm")
+        #input()
 
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, kvm.get('uuid'), vm_uuid))
         self.dstore.dput(uri)
@@ -206,6 +205,24 @@ class Controll():
                   (node_uuid, brctl.get('uuid'), net_id))
         self.dstore.put(uri, json_data)
 
+    def delete_network(self, node_uuid, net_id):
+        time.sleep(1)
+
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
+        nws = [x for x in all_plugins if x.get('type') == 'network']
+        print("locating brctl plugin")
+        search = [x for x in nws if 'brctl' in x.get('name')]
+        print(search)
+        if len(search) == 0:
+            print("Plugin was not loaded")
+            exit(0)
+        else:
+            brctl = search[0]
+
+        uri = str('dfos://<sys-id>/%s/network/%s/networks/%s#status=remove' % (node_uuid, brctl.get('uuid'), net_id))
+        self.dstore.dput(uri)
+
     def main(self):
 
         uri = str('afos://<sys-id>/*/')
@@ -246,9 +263,15 @@ class Controll():
         self.vm_destroy(vm_dst_node, vm2_uuid)
         self.vm_destroy(vm_src_node, vm_uuid)
 
+
         #self.migrate_vm(vm_src_node, vm_dst_node, vm_uuid)
 
-        input()
+        input("press enter to destroy vxlan")
+
+        self.delete_network(vm_src_node, net_uuid)
+        self.delete_network(vm_dst_node, net_uuid)
+
+        input("press enter to exit")
 
         exit(0)
 
