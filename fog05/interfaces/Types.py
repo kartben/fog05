@@ -10,6 +10,9 @@ class KeyValue(TopicType):
     def gen_key(self):
         return self.key
 
+    def __str__(self):
+        return "KeyValue(version = {0}, key = {1}, value = {2}, sid = {3})".format(self.version, self.key, self.value, self.sid)
+
 
 class StoreInfo(TopicType):
     def __init__(self, sid, sroot, shome):
@@ -20,6 +23,9 @@ class StoreInfo(TopicType):
     def gen_key(self):
         return self.sid
 
+    def __str__(self):
+        return "StoreInfo(sid = {0}, root = {1}, home= {2})".format(self.sid, self.sroot, self.shome)
+
 
 class CacheMiss(TopicType):
     def __init__(self, source_sid, key):
@@ -28,6 +34,9 @@ class CacheMiss(TopicType):
 
     def gen_key(self):
        return self.key
+
+    def __str__(self):
+        return "CacheMiss(source_sid = {0}, key = {1})".format(self.source_sid, self.key)
 
 class CacheHit(TopicType):
     def __init__(self, source_sid, dest_sid, key, value, version):
@@ -39,3 +48,6 @@ class CacheHit(TopicType):
 
     def gen_key(self):
        return self.key
+
+    def __str__(self):
+        return "CacheHit(source_sid = {0}, dest_sid = {1}, key = {2}, value = {3}, version = {4})".format(self.source_sid, self.dest_sid, self.key, self.value, self.version)

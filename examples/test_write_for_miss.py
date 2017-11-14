@@ -24,6 +24,8 @@ class TestCache():
         self.ahome = str("afos://<sys-id>/%s" % self.nuuid)
         self.astore = DStore(self.auuid, self.aroot, self.ahome, 1024)
 
+        print("Actual Store Id = {0}".format(self.astore.store_id))
+        print("Desired Store Id = {0}".format(self.dstore.store_id))
         self.nodes = {}
 
         self.populateNodeInformation()

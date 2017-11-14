@@ -1,11 +1,11 @@
 from dds import *
 from fog05.interfaces.Types import *
-
+import sys
 
 def cache_discovered(dr):
     for (s, i) in dr.take(all_samples()):
         if i.valid_data:
-            print(">> FOSStoreInfo(uri = {0})".format(s.sid))
+            print(str(s))
 
 def cache_disappeared():
     print("Lost one cache")
@@ -13,26 +13,26 @@ def cache_disappeared():
 def handle_remote_put(dr):
     for (s, i) in dr.take(all_samples()):
         if i.valid_data:
-            print("FOSKeyValuye(uri = {0})".format(s.key))
+            print(str(s))
 
 
 def handle_miss(dr):
     for (s, i) in dr.take(all_samples()):
         if i.valid_data:
-            print("FOSStoreMiss(uri = {0})".format(s.key))
+            print(str(s))
 
 
 def handle_hit(dr):
     for (s, i) in dr.take(all_samples()):
         if i.valid_data:
-            print("FOSStoreHit(uri = {0})".format(s.key))
+            print(str(s))
 
 
-def start_tlog():
+def start_tlog(root):
     dds_runtime = Runtime.get_runtime()
     dp = Participant(0)
-    pub = Publisher(dp, [Partition(["fos://store$"])])
-    sub = Subscriber(dp, [Partition(["fos://store$"])])
+    pub = Publisher(dp, [Partition([root])])
+    sub = Subscriber(dp, [Partition([root])])
 
     store_info_topic = FlexyTopic(dp, "FOSStoreInfo")
     key_value_topic = FlexyTopic(dp, "FOSKeyValue")
@@ -78,6 +78,13 @@ def start_tlog():
                              [Reliable(), Volatile(), KeepAllHistory()], handle_hit)
 
 if __name__=='__main__':
-    start_tlog()
-    print("Press a Key to exit...")
-    input()
+    if len(sys.argv) > 1:
+        start_tlog(sys.argv[1])
+        print("Press 'x' or 'X' to exit...")
+        done = False
+        while done is False:
+            c = input()
+            if c.capitalize() == "X":
+                done = True
+    else:
+        print("USAGE:\n\tflog")

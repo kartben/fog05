@@ -10,6 +10,8 @@ import time
 class TestCache():
 
     def __init__(self):
+        self.duuid = 'd2'
+        self.auuid = 'a2'
         self.uuid = '2'
         sid = str(self.uuid)
 
@@ -17,12 +19,14 @@ class TestCache():
         # Desidered Store. containing the desidered state
         self.droot = "dfos://<sys-id>"
         self.dhome = str("dfos://<sys-id>/%s" % sid)
-        self.dstore = DStore(sid, self.droot, self.dhome, 1024)
+        # AC: Notice that store IDs have to be unique, if that is not the case
+        #     a store may mistaken a remote request for its own.
+        self.dstore = DStore(self.duuid , self.droot, self.dhome, 1024)
 
         # Actual Store, containing the Actual State
         self.aroot = "afos://<sys-id>"
         self.ahome = str("afos://<sys-id>/%s" % sid)
-        self.astore = DStore(sid, self.aroot, self.ahome, 1024)
+        self.astore = DStore(self.auuid , self.aroot, self.ahome, 1024)
 
         self.nodes = {}
 
@@ -35,17 +39,29 @@ class TestCache():
         v = self.dstore.get("dfos://<sys-id>/1/test1")
         print(v)
 
+        input("Next...")
+
         v = self.dstore.get("dfos://<sys-id>/1/test2")
         print(v)
+
+        input("Next...")
 
         v = self.dstore.get("dfos://<sys-id>/1/test3")
         print(v)
 
+        input("Next...")
+
+
         v = self.astore.get("afos://<sys-id>/1/")
         print(v)
 
+        input("Next...")
+
+
         v = self.astore.get("afos://<sys-id>/1/test1")
         print(v)
+
+        input("Next...")
 
         # a resolve operates over a trivial URI not over a wildcard
         # v = self.astore.get("afos://<sys-id>/*/test2")
@@ -54,6 +70,7 @@ class TestCache():
         v = self.astore.get("afos://<sys-id>/1/test2")
         print(v)
 
+        input("Next...")
 
 
         input()

@@ -18,8 +18,8 @@ class DController (Controller, Observer):
 
         self.dds_runtime = Runtime.get_runtime()
         self.dp = Participant(0)
-        self.pub = Publisher(self.dp, [Partition(["fos://store$"])])
-        self.sub = Subscriber(self.dp, [Partition(["fos://store$"])])
+        self.pub = Publisher(self.dp, [Partition([self.__store.root])])
+        self.sub = Subscriber(self.dp, [Partition([self.__store.root])])
 
         self.store_info_topic = FlexyTopic(self.dp, "FOSStoreInfo")
         self.key_value_topic = FlexyTopic(self.dp, "FOSKeyValue")
@@ -82,7 +82,7 @@ class DController (Controller, Observer):
                     h = CacheHit(self.__store.store_id, d.source_sid, d.key, v, self.__store.get_version(d.key))
                     self.hit_writer.write(h)
                 else:
-                    print(">>> Could not resolve remote miss on key {0}".format(d.key))
+                    print(">>> Store {0} not resolve remote miss on key {1}".format(self.__store.store_id, d.key))
 
 
     def handle_remove(self, uri):
@@ -179,6 +179,8 @@ class DController (Controller, Observer):
 
         for (d, i) in samples:
             if i.valid_data:
+                print("Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                print("I was looking to resolve uri: {0}".format(uri))
                 if d.key == uri and d.dest_sid == self.__store.store_id:
                     return (d.value, d.version)
 
@@ -186,7 +188,7 @@ class DController (Controller, Observer):
 
 
     def start(self):
-        print("Advertising Store..")
+        print("Advertising Store with Id {0}".format(self.__store.store_id))
         info = StoreInfo(sid = self.__store.store_id, sroot = self.__store.root, shome = self.__store.home)
         self.store_info_writer.write(info)
 
