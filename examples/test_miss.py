@@ -32,16 +32,26 @@ class TestCache():
 
         input("Press enter to try miss handling")
 
-        v = json.loads(self.astore.get("afos://<sys-id>/1/"))
+        v = self.dstore.get("dfos://<sys-id>/1/test1")
         print(v)
 
-        v = json.loads(self.astore.get("afos://<sys-id>/1/test1"))
+        v = self.dstore.get("dfos://<sys-id>/1/test2")
         print(v)
 
-        v = json.loads(self.astore.get("afos://<sys-id>/*/test2"))
+        v = self.dstore.get("dfos://<sys-id>/1/test3")
         print(v)
 
-        v = json.loads(self.astore.get("afos://<sys-id>/1/test2"))
+        v = self.astore.get("afos://<sys-id>/1/")
+        print(v)
+
+        v = self.astore.get("afos://<sys-id>/1/test1")
+        print(v)
+
+        # a resolve operates over a trivial URI not over a wildcard
+        # v = self.astore.get("afos://<sys-id>/*/test2")
+        # print(v)
+
+        v = self.astore.get("afos://<sys-id>/1/test2")
         print(v)
 
 

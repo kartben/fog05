@@ -10,18 +10,19 @@ import time
 class TestCache():
 
     def __init__(self):
-        self.uuid = '1'
-
+        self.auuid = 'a1'
+        self.duuid = 'd1'
+        self.nuuid = '1'
 
         # Desidered Store. containing the desidered state
         self.droot = "dfos://<sys-id>"
-        self.dhome = str("dfos://<sys-id>/%s" % self.uuid)
-        self.dstore = DStore(self.uuid, self.droot, self.dhome, 1024)
+        self.dhome = str("dfos://<sys-id>/%s" % self.nuuid)
+        self.dstore = DStore(self.duuid, self.droot, self.dhome, 1024)
 
         # Actual Store, containing the Actual State
         self.aroot = "afos://<sys-id>"
-        self.ahome = str("afos://<sys-id>/%s" % self.uuid)
-        self.astore = DStore(self.uuid, self.aroot, self.ahome, 1024)
+        self.ahome = str("afos://<sys-id>/%s" % self.nuuid)
+        self.astore = DStore(self.auuid, self.aroot, self.ahome, 1024)
 
         self.nodes = {}
 
@@ -68,12 +69,13 @@ class TestCache():
         self.astore.put(uri, json.dumps(val))
 
 
-        print("My UUID is %s" % self.uuid)
+        print("My UUID is %s" % self.duuid)
 
         print("###################################### Desidered Store ######################################")
         print(self.dstore)
         print("#############################################################################################")
 
+        print("My UUID is %s" % self.auuid)
         print("###################################### Actual Store #########################################")
         print(self.astore)
         print("#############################################################################################")
