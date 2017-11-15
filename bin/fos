@@ -1,4 +1,5 @@
 import sys
+from jsonschema import validate
 from fog05.DStore import *
 
 class Fos(object):
@@ -58,15 +59,30 @@ class Fos(object):
         if parameters[1] == 'list':
             uri = str('afos://<sys-id>/*/')
             print(uri)
-            nodes = self.astore.get(uri)
+            nodes = self.astore.get(uri)[0] ## se below for information on this
             print(nodes)
         else:
-            uri = str('afos://<sys-id>/%s/' % parameters[1])
+            uri = str('afos://<sys-id>/%s/' % parameters[1])[0] ## this is because the resolver return a tuple with
+            # value and version
             print(uri)
             node = self.astore.get(uri)
             print(node)
 
     def __network_command(self, parameters):
+        '''
+        Should validate parameters with proper json schema and then if everything is fine should execute the command
+        ...
+        try:
+            validate({manifest, schema)
+        except ValidationError as e:
+            print("There is an error in the manifest file %s" % e.strerror)
+            return
+        ...
+
+
+        :param parameters:
+        :return:
+        '''
         print(parameters)
 
     def __entity_command(self, parameters):
