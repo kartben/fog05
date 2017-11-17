@@ -315,7 +315,7 @@ class Linux(OSPlugin):
         for line in p.stdout:
             line = line.decode()
             if "model name" in line:
-                return re.sub(".*model name.*:", "", line, 1)
+                return re.sub(".*model name.*:", "", line, 1).strip()
         return ""
 
     def __get_frequency_from_cpuinfo(self):

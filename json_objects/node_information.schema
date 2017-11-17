@@ -90,9 +90,7 @@
                                     "description":"io filename eg. stdio ",
                                     "type":"string"
                                 }
-                            },
-                            "minItems":1,
-                            "uniqueItems":false
+                            }
                         }
                     },
                     "accelerator":{
