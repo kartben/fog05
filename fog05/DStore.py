@@ -197,39 +197,46 @@ class DStore(Store):
 
         # @TODO: Need to resolve this miss
         if len(data) == 0:
-            print("this is a miss")
-            return
-        else:
-
-            if values == None:
-                uri_values = uri_values.split('&')
-                for tokens in uri_values:
-                    v = tokens.split('=')[-1]
-                    k = tokens.split('=')[0]
-                    if len(k.split('.')) < 2:
-                        data.update({k: v})
-                    else:
-                        d = self.dot2dict(k, v)
-
-                        data = self.data_merge(data, d)
-                        #data.update(d) #not very safe #
+            data = self.get(uri)
+            if data is None:
+                return
             else:
-                values = json.loads(values)
-                data = self.data_merge(data, values)
-                '''
-                for k in values.keys():
-                    v = values.get(k)
-                    if type(v) == list:
-                        old_v = data.get(k)
-                        v = old_v + v
+                self.__unchecked_store_value(uri, data[0], data[1])
+                for key in self.__local_cache:
+                    if fnmatch.fnmatch(key, uri):
+                        data = json.loads(self.__local_cache.get(key)[0])
+                version = self.next_version(uri)
 
+        if values == None:
+            uri_values = uri_values.split('&')
+            for tokens in uri_values:
+                v = tokens.split('=')[-1]
+                k = tokens.split('=')[0]
+                if len(k.split('.')) < 2:
                     data.update({k: v})
-                '''
+                else:
+                    d = self.dot2dict(k, v)
+
+                    data = self.data_merge(data, d)
+                    #data.update(d) #not very safe #
+        else:
+            values = json.loads(values)
+            data = self.data_merge(data, values)
+            '''
+            for k in values.keys():
+                v = values.get(k)
+                if type(v) == list:
+                    old_v = data.get(k)
+                    v = old_v + v
+
+                data.update({k: v})
+            '''
 
         value = json.dumps(data)
         self.__unchecked_store_value(uri, value , version)
         self.__controller.onDput(uri, value, version)
         self.notify_observers(uri, value, version)
+        return True
 
 
 
@@ -300,8 +307,6 @@ class DStore(Store):
             if isinstance(updates, list):
                 names = [x.get('name') for x in updates]
                 item_same_name = [item for item in base if item.get('name') in [x.get('name') for x in updates]]
-                print (names)
-                print (item_same_name)
                 if all(isinstance(x, dict) for x in updates) and len(
                         [item for item in base if item.get('name') in [x.get('name') for x in updates]]) > 0:
                     for e in base:

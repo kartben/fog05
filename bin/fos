@@ -6,15 +6,6 @@ class Fos(object):
     def __init__(self):
         self.uuid = str(uuid.uuid4())
 
-        print(" _____            ____   ____\n"
-              "|  ___|__   __ _ / __ \ | ___|\n"
-              "| |_ / _ \ / _` | | /| ||___ \ \n"
-              "|  _| (_) | (_| | |/_| | ___) |\n"
-              "|_|  \___/ \__, |\____/ |____/ \n"
-              "           |___/ \n")
-
-
-
     def __initialize(self):
         self.droot = "dfos://<sys-id>"
         self.dhome = str("dfos://<sys-id>/%s" % self.uuid)
@@ -50,23 +41,113 @@ class Fos(object):
 
         return r.get(action, None)
 
+    def __node_plugins_list(self,node_uuid):
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        plugins = self.astore.get(uri)
+        if plugins is not None:
+            plugins = json.loads(plugins[0]).get('plugins')
+            print('+-----------------------PLUGINS-------------------------+')
+            for p in plugins:
+                print('+-------------------------------------------------------+')
+                print("| Name %s" % p.get('name'))
+                print("| UUID %s" % p.get('uuid'))
+                print("| Type %s" % p.get('type'))
+            print('+-------------------------------------------------------+')
+        else:
+            print("No node or plugins found")
+
+    def __send_add_plugin(self,node_uuid, name, type):
+        val = {'plugins': [{'name': name, 'version': 1, 'uuid': '',
+                            'type': type, 'status': 'add'}]}
+        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        print(uri)
+        # print(self.dstore.get(uri))
+
+        r = self.dstore.dput(uri, json.dumps(val)) ### destination says:
+        # >> Received old version of dfos://<sys-id>/e2b94d56-f4e1-99fa-886e-c1e3124496f9/plugins
+        if r is None:
+            print("Resolved failed")
+        elif r:
+            print("Plugin added")
+
     def __node_command(self, parameters):
         # TODO return None even if there are nodes in the system
         if len(parameters) < 2:
             print("Should specify node UUID or list")
             return
+        if len(parameters) > 3:
+            if parameters[2] == 'plugins':
+                if parameters[3] == 'list':
+                    self.__node_plugins_list(parameters[1])
+                    return
+                elif parameters[3] == 'add':
+                    # should specify name and type (or maybe uuid and then the command will resolve
+                    if len(parameters) == 6:
+                        plugin_name = parameters[4]
+                        plugin_type = parameters[5]
+                        if plugin_type in ['network', 'runtime']:
+                            self.__send_add_plugin(parameters[1],plugin_name,plugin_type)
+                            return
+                        else:
+                            print("Type %s not supported" % plugin_type)
+                            return
+                    else:
+                        print("Should specify plugin name and type [network|runtime]")
+                        return
+
+
 
         if parameters[1] == 'list':
             uri = str('afos://<sys-id>/*/')
             print(uri)
             nodes = self.astore.get(uri)[0] ## se below for information on this
+            ## this not work
             print(nodes)
         else:
-            uri = str('afos://<sys-id>/%s/' % parameters[1])[0] ## this is because the resolver return a tuple with
+            uri = str('afos://<sys-id>/%s/' % parameters[1]) ## this is because the resolver return a tuple with
             # value and version
-            print(uri)
+            print("Uri: %s" % uri)
             node = self.astore.get(uri)
-            print(node)
+            if node is not None:
+                node = json.loads(node[0])
+                '''
+                 for k in node:
+                    v = node.get(k)
+                    if isinstance(v, str):
+                        print("| {:<8}  {:<10}  {:<0}".format(k, v, '|'))
+                    elif isinstance(v, list):
+                        for v2 in v:
+                            if isinstance(v2, str):
+                                print("| {:<8}  {:<10}  {:<0}".format(k, v2, '|'))
+                            elif isinstance(v2,dict):
+                                for k3 in v2:
+                                    v3 = v2.get(k3)
+                                    if isinstance(v3, str):
+                                        print("| {:<8}  {:<10}  {:<0}".format(k3, v3, '|'))
+                
+                '''
+                print('+-------------------------------------------------------+')
+                print('| UUID : %s \t\t|' % node.get('uuid'))
+                print('| Name: %s \t\t|' % node.get('name'))
+                print('+-------------------------------------------------------+')
+                '''
+                uri = uri+'plugins'
+                print(uri)
+                p = self.astore.get(uri)
+                if p is not None:
+                    print('+-----------------------PLUGINS-------------------------+')
+                    p = json.loads(p[0])
+                    p = p.get('plugins')
+                    for plug in p:
+                        print('+-------------------------------------------------------+')
+                        print("| Name %s" % plug.get('name'))
+                        print("| UUID %s" % plug.get('uuid'))
+                    print('+-------------------------------------------------------+')
+                else:
+                    print("No plugin found on this node")
+                '''
+            else:
+                print("Node not found!!")
 
     def __network_command(self, parameters):
         '''
