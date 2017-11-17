@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "title": "Generic Definition",
+  "description": "application definition schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "desciption": "describe the action, so the desidered lifecycle state"
+    },
+    "name": {
+      "type": "string"
+    },
+    "uuid": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "need": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "proximity": {
+            "type": "object"
+          },
+          "manifest": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -13,7 +13,7 @@
     },
     "uuid": {
       "type": "string"
-    }
+    },
     "type": {
       "type": "string",
       "description": "describe the type, can be an entity (vm, uk, be, us, ros....) or an application"
