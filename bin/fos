@@ -27,12 +27,6 @@ class Fos(object):
         #uri = str('afos://<sys-id>/*/')
         #self.astore.observe(uri, self.nodeDiscovered)
 
-    def nodeDiscovered(self, uri, value, v=None):
-        #value = json.loads(value)
-        if uri != str('fos://<sys-id>/%s/' % self.uuid):
-            print("New Node Discovered: %s" % value.get('uuid'))
-            self.nodes.update({len(self.nodes) + 1: {value.get('uuid'): value}})
-
     def print_nodes(self):
         uri = str('afos://<sys-id>/*/')
         nodes = json.loads(self.astore.get(uri))
@@ -217,6 +211,103 @@ class Fos(object):
                     print("%s" % ve.message)
                     return
                 print("manifest Ok")
+        ##################### with specified node uuid ########################
+        if len(parameters) == 4:
+            if parameters[1] == 'add':
+                manifest = json.loads(self.__read_file(parameters[2]))
+                try:
+                    validate(manifest, network_schema)
+                except ValidationError as ve:
+                    print("Manifest is not correct")
+                    print("%s" % ve.message)
+                    return
+                print("manifest Ok")
+                node_uuid = parameters[3]
+                self.__send_add_network(node_uuid, manifest)
+        ########################################################################
+
+    def __search_plugin_by_name(self, name, node_uuid):
+        uri = str('afos://%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
+        search = [x for x in all_plugins if name in x.get('name')]
+        if len(search) == 0:
+            return None
+        else:
+            return search[0]
+
+
+    def __send_add_network(self,node_uuid, manifest):
+
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
+        print(all_plugins)
+        nws = [x for x in all_plugins if x.get('type') == 'network']
+        if len(nws) == 0:
+            print("No network plugin loaded on node, aborting")
+            return
+        brctl = nws[0]  # will use the first plugin
+
+        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        print(uri)
+
+        json_data = json.dumps(manifest)
+        uri = str('dfos://<sys-id>/%s/network/%s/networks/%s' %
+                  (node_uuid, brctl.get('uuid'), manifest.get('uuid')))
+        r = self.dstore.put(uri, json_data)
+        if r is None:
+            print("Resolved failed")
+        elif r:
+            print("network added")
+
+    def __send_add_entity(self, node_uuid, manifest):
+
+        handler = None
+        t = manifest.get('type')
+        if t == "kvm":
+            handler = self.__search_plugin_by_name('KVM', node_uuid)
+        elif t == "container":
+            handler = self.__search_plugin_by_name('LXD', node_uuid)
+        elif t == "native":
+            handler = self.__search_plugin_by_name('native', node_uuid)
+        elif t == "ros2":
+            handler = self.__search_plugin_by_name('ros2', node_uuid)
+        elif t == "usvc":
+            print("microservice not yet")
+        else:
+            print("type not recognized")
+
+        if handler is None:
+            return False
+
+        entity_uuid = manifest.get("uuid")
+        entity_definition = manifest
+        json_data = json.dumps(entity_definition)
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
+        self.dstore.put(uri, json_data)
+        while True:
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, handler.get('uuid'), entity_uuid))
+            entity_info = json.loads(self.astore.get(uri))
+            if entity_info is not None and entity_info.get("status") == "defined":
+                break
+        uri = str(
+            'dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (node_uuid, handler.get('uuid'), entity_uuid))
+        self.dstore.dput(uri)
+        while True:
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, handler.get('uuid'), entity_uuid))
+            entity_info = json.loads(self.astore.get(uri))
+            if entity_info is not None and entity_info.get("status") == "configured":
+                break
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, handler.get('uuid'), entity_uuid))
+        self.dstore.dput(uri)
+        while True:
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, handler.get('uuid'), entity_uuid))
+            entity_info = json.loads(self.astore.get(uri))
+            if entity_info is not None and entity_info.get("status") == "run":
+                break
+
 
     def __entity_command(self, parameters):
         entity_schema = Schemas.entity_schema
@@ -230,6 +321,21 @@ class Fos(object):
                     print("%s" % ve.message)
                     return
                 print("manifest Ok")
+
+        ##################### with specified node uuid ########################
+        if len(parameters) == 4:
+            if parameters[1] == 'add':
+                manifest = json.loads(self.__read_file(parameters[2]))
+                try:
+                    validate(manifest, entity_schema)
+                except ValidationError as ve:
+                    print("Manifest is not correct")
+                    print("%s" % ve.message)
+                    return
+                print("manifest Ok")
+                node_uuid = parameters[3]
+                self.__send_add_entity(node_uuid, manifest)
+        ########################################################################
 
     def __application_command(self, parameters):
         app_schema = Schemas.app_schema
@@ -284,6 +390,8 @@ class Fos(object):
         fos network add <path to network json manifest>
             create a new network in the system
 
+            @GB just for test the command accept a node_uuid to create a network on the node
+
         fos network remove <uuid>
             remove the specified network
         ---------
@@ -298,6 +406,8 @@ class Fos(object):
         
         fos entity add <path to entity json manifest>
             create a new entity in the system
+
+             @GB just for test the command accept a node_uuid to deploy the entity on the node
  
         fos entity remove <uuid>
             remove the specified entity from the system
