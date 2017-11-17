@@ -26,7 +26,7 @@ class KVMLibvirt(RuntimePlugin):
         self.LOG_DIR = "logs"
         self.HOME = str("runtime/%s/entity" % self.uuid)
         self.startRuntime()
-
+        self.conn = None
 
 
     def startRuntime(self):
@@ -177,7 +177,12 @@ class KVMLibvirt(RuntimePlugin):
 
                 #self.agent.getOSPlugin().executeCommand(rm_temp_cmd)
 
-            self.conn.defineXML(vm_xml)
+            try:
+                self.conn.defineXML(vm_xml)
+            except libvirt.libvirtError as err:
+                self.conn = libvirt.open("qemu:///system")
+                self.conn.defineXML(vm_xml)
+
             entity.onConfigured(vm_xml)
             self.current_entities.update({entity_uuid: entity})
 
@@ -399,7 +404,12 @@ class KVMLibvirt(RuntimePlugin):
             entity.state = State.LANDING
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
             vm_xml = self.__generate_dom_xml(entity)
-            self.conn.defineXML(vm_xml)
+
+            try:
+                self.conn.defineXML(vm_xml)
+            except libvirt.libvirtError as err:
+                self.conn = libvirt.open("qemu:///system")
+                self.conn.defineXML(vm_xml)
             self.agent.getOSPlugin().executeCommand(qemu_cmd)
             self.agent.getOSPlugin().createFile(entity.cdrom)
             self.current_entities.update({entity_uuid: entity})
@@ -461,7 +471,6 @@ class KVMLibvirt(RuntimePlugin):
 
             # ## ACTUAL MIGRATIION ##################
             dst_host = str('qemu+ssh://%s/system' % dst_ip)
-            print(dst_host)
             dest_conn = libvirt.open(dst_host)
             if dest_conn is None:
                 self.agent.logger.error('beforeMigrateEntityActions()', 'KVM Plugin - Before Migration Source: Error on libvirt connection')
@@ -549,7 +558,12 @@ class KVMLibvirt(RuntimePlugin):
         return ':'.join(map(lambda x: "%02x" % x, mac))
 
     def __lookup_by_uuid(self, uuid):
-        domains = self.conn.listAllDomains(0)
+        try:
+            domains = self.conn.listAllDomains(0)
+        except libvirt.libvirtError as err:
+            self.conn = libvirt.open("qemu:///system")
+            domains = self.conn.listAllDomains(0)
+
         if len(domains) != 0:
             for domain in domains:
                 if str(uuid) == domain.UUIDString():
