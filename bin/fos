@@ -1,6 +1,7 @@
 import sys
-from jsonschema import validate
+from jsonschema import validate, ValidationError
 from fog05.DStore import *
+from fog05 import Schemas
 
 class Fos(object):
     def __init__(self):
@@ -30,6 +31,11 @@ class Fos(object):
         uri = str('afos://<sys-id>/*/')
         nodes = json.loads(self.astore.get(uri))
         print(nodes)
+
+    def __read_file(self, file_path):
+        with open(file_path, 'r') as f:
+            data = f.read()
+        return data
 
     def __entry_point(self, action):
         r = {
@@ -179,6 +185,8 @@ class Fos(object):
                         return
 
     def __network_command(self, parameters):
+        #network_schema = json.loads(self.__read_file('/home/ubuntu/FogOS/json_objects/network_define.schema'))
+        network_schema = Schemas.network_schema
         '''
         Should validate parameters with proper json schema and then if everything is fine should execute the command
         ...
@@ -194,6 +202,18 @@ class Fos(object):
         :return:
         '''
         print(parameters)
+
+        if len(parameters) == 3:
+            if parameters[1] == 'add':
+                manifest = json.loads(self.__read_file(parameters[2]))
+                try:
+                    validate(manifest, network_schema)
+                except ValidationError as ve:
+                    print("Manifest is not correct")
+                    print("%s" % ve.message)
+                    return
+                print("manifest Ok")
+
 
     def __entity_command(self, parameters):
         print(parameters)

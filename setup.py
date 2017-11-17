@@ -7,5 +7,6 @@ setup(
     author='ATO',
     packages=['fog05','fog05/interfaces'],
     install_requires=['networkx','jsonschema'],
-    scripts=['bin/fos']
+    scripts=['bin/fos'],
+    include_package_data=True
 )
