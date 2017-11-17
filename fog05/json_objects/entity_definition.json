@@ -16,13 +16,13 @@
     }
     "type": {
       "type": "string",
-      "desciption": "describe the type, can be an entity (vm, uk, be, us, ros....) or an application"
+      "description": "describe the type, can be an entity (vm, uk, be, us, ros....) or an application"
     },
     "version": {
       "type": "int"
     },
     "entity_data": {
-      "type": "string",
+      "type": "object",
       "description": "depends on entity"
     },
     "constraints": {
