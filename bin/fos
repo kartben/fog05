@@ -1,11 +1,17 @@
+#!/usr/local/bin/python3
+
 import sys
 from jsonschema import validate, ValidationError
 from fog05.DStore import *
 from fog05 import Schemas
+import signal
+from fog05.fosagent import FosAgent
+import time
 
 class Fos(object):
     def __init__(self):
         self.uuid = str(uuid.uuid4())
+        self.agent = None
 
     def __initialize(self):
         self.droot = "dfos://<sys-id>"
@@ -31,6 +37,19 @@ class Fos(object):
         uri = str('afos://<sys-id>/*/')
         nodes = json.loads(self.astore.get(uri))
         print(nodes)
+
+    def __catch_signal(self,signal, frame):
+        if signal == 2:
+            if self.agent is not None:
+                self.agent.stop()
+            exit(0)
+
+    def __start_node(self):
+        signal.signal(signal.SIGINT, self.__catch_signal)
+        self.agent = FosAgent()
+        self.agent.run()
+        while True:
+            time.sleep(100)
 
     def __read_file(self, file_path):
         with open(file_path, 'r') as f:
@@ -199,11 +218,8 @@ class Fos(object):
                     return
                 print("manifest Ok")
 
-
     def __entity_command(self, parameters):
         entity_schema = Schemas.entity_schema
-
-
         if len(parameters) == 3:
             if parameters[1] == 'add':
                 manifest = json.loads(self.__read_file(parameters[2]))
@@ -214,8 +230,19 @@ class Fos(object):
                     print("%s" % ve.message)
                     return
                 print("manifest Ok")
+
     def __application_command(self, parameters):
-        print(parameters)
+        app_schema = Schemas.app_schema
+        if len(parameters) == 3:
+            if parameters[1] == 'add':
+                manifest = json.loads(self.__read_file(parameters[2]))
+                try:
+                    validate(manifest, app_schema)
+                except ValidationError as ve:
+                    print("Manifest is not correct")
+                    print("%s" % ve.message)
+                    return
+                print("manifest Ok")
 
     def main(self, argv):
 
@@ -228,7 +255,7 @@ class Fos(object):
         
         @GB I think at least system id should be always specified or can be read from a simple conf.ini file
         
-        eg.
+        usage:
 
         ---------
         fos node list
@@ -290,8 +317,18 @@ class Fos(object):
             remove the specified application from the system
         
         -------
-        
+
+        fos start
+            will start a node, UUID is loaded by the os plugin
+
+        -------
+
+
         '''
+
+        if argv[1] == 'start':
+            print("not yet")
+            #self.__start_node()
 
         action = self.__entry_point(argv[1])
         if action is None:
