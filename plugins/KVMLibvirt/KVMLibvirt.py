@@ -20,13 +20,14 @@ class KVMLibvirt(RuntimePlugin):
         self.name = name
         self.agent = agent
         self.agent.logger.info('__init__()', ' Hello from KVM Plugin')
-        self.BASE_DIR = "/opt/fos"
+        self.BASE_DIR = "/opt/fos/kvm"
         self.DISK_DIR = "disks"
         self.IMAGE_DIR = "images"
         self.LOG_DIR = "logs"
         self.HOME = str("runtime/%s/entity" % self.uuid)
-        self.startRuntime()
         self.conn = None
+        self.startRuntime()
+
 
 
     def startRuntime(self):
@@ -135,6 +136,7 @@ class KVMLibvirt(RuntimePlugin):
         else:
 
             vm_xml = self.__generate_dom_xml(entity)
+
             image_name = entity.image.split('/')[-1]
 
             wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))

@@ -12,13 +12,13 @@
       "type":"string"
     },
     "cpu":{
-      "type":"int"
+      "type":"integer"
     },
     "memory":{
-      "type":"int"
+      "type":"integer"
     },
     "disk_size":{
-      "type":"int"
+      "type":"integer"
     },
     "base_image":{
       "type":"string",

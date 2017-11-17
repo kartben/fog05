@@ -19,7 +19,7 @@
       "description": "describe the type, can be an entity (vm, uk, be, us, ros....) or an application"
     },
     "version": {
-      "type": "int"
+      "type": "integer"
     },
     "entity_data": {
       "type": "object",
@@ -38,7 +38,7 @@
                 "description": "specific i/o name (gpio/....)"
               },
               "number":{
-                "type":"int"
+                "type":"integer"
               }
             }
           }
@@ -53,7 +53,7 @@
                 "description":"necessary interface type (wlan, eth, filbus, tsn)"
               },
               "number":{
-                "type":"int"
+                "type":"integer"
               }
             }
           }
@@ -68,7 +68,7 @@
                 "description":"hw acceleator needed (netfpga, fpga, cuda, opencl...."
               },
               "number":{
-                "type":"int"
+                "type":"integer"
               }
             }
           }

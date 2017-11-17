@@ -43,7 +43,7 @@
                         "properties":{
                             "size":{
                                 "description" : "Node ram size",
-                                "type":"int"
+                                "type":"integer"
                             }
                         }
                     },
@@ -163,7 +163,7 @@
                                 },
                                 "intf_speed":{
                                     "description":"interface speed",
-                                    "type":"int"
+                                    "type":"integer"
                                 },
                                 "intf_type":{
                                     "description":"interface type eg. wired/wireless",

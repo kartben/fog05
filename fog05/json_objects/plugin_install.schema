@@ -8,7 +8,7 @@
       "type":"string"
     },
     "version":{
-      "type":"int"
+      "type":"integer"
     },
     "description":{
       "type":"string"

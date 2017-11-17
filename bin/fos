@@ -227,8 +227,13 @@ class Fos(object):
         ########################################################################
 
     def __search_plugin_by_name(self, name, node_uuid):
-        uri = str('afos://%s/plugins' % node_uuid)
-        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = self.astore.get(uri)
+        if all_plugins is None:
+            print("Cannot get plugin")
+            return None
+        all_plugins = all_plugins[0]
+        all_plugins = json.loads(all_plugins).get('plugins')
         search = [x for x in all_plugins if name in x.get('name')]
         if len(search) == 0:
             return None
@@ -263,20 +268,31 @@ class Fos(object):
 
         handler = None
         t = manifest.get('type')
-        if t == "kvm":
-            handler = self.__search_plugin_by_name('KVM', node_uuid)
-        elif t == "container":
-            handler = self.__search_plugin_by_name('LXD', node_uuid)
-        elif t == "native":
-            handler = self.__search_plugin_by_name('native', node_uuid)
-        elif t == "ros2":
-            handler = self.__search_plugin_by_name('ros2', node_uuid)
-        elif t == "usvc":
-            print("microservice not yet")
-        else:
-            print("type not recognized")
 
-        if handler is None:
+        try:
+            if t == "vm":
+                handler = self.__search_plugin_by_name('KVM', node_uuid)
+                validate(manifest.get("entity_data"), Schemas.vm_schema)
+            elif t == "container":
+                handler = self.__search_plugin_by_name('LXD', node_uuid)
+                validate(manifest.get("entity_data"), Schemas.container_schema)
+            elif t == "native":
+                handler = self.__search_plugin_by_name('native', node_uuid)
+                validate(manifest.get("entity_data"), Schemas.native_schema)
+            elif t == "ros2":
+                handler = self.__search_plugin_by_name('ros2', node_uuid)
+                validate(manifest.get("entity_data"), Schemas.ros2_schema)
+            elif t == "usvc":
+                print("microservice not yet")
+            else:
+                print("type not recognized")
+
+            if handler is None:
+                print("error on plugin for this type of entity")
+                return False
+        except ValidationError as ve:
+            print("Manifest is not correct")
+            print("%s" % ve.message)
             return False
 
         entity_uuid = manifest.get("uuid")
@@ -308,6 +324,7 @@ class Fos(object):
             if entity_info is not None and entity_info.get("status") == "run":
                 break
 
+        return True
 
     def __entity_command(self, parameters):
         entity_schema = Schemas.entity_schema

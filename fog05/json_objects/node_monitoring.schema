@@ -22,7 +22,7 @@
             "properties": {
               "current_frequency": {
                 "description": "current cpu frequency",
-                "type": "int"
+                "type": "integer"
               },
               "current_load": {
                 "description": "current cpu load",
@@ -102,13 +102,13 @@
                 "type": "long"
               },
               "dropout": {
-                "type": "long
+                "type": "long"
               }
             }
           }
         },
         "processes": {
-          "type": "int"
+          "type": "integer"
         },
         "plugins": {
           "type": "array",

@@ -14,7 +14,7 @@
           "type":"string"
         },
         "version":{
-          "type":"int"
+          "type":"integer"
         },
         "type":{
           "type":"string",
