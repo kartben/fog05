@@ -31,3 +31,13 @@ python dependencies:
 
 config dependencies:
 
+
+
+WARNING:
+
+if you use lxd from snap
+https://github.com/lxc/pylxd/issues/257
+export LXD_DIR=/var/snap/lxd/common/lxd/
+
+
+

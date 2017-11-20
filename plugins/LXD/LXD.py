@@ -152,6 +152,10 @@ class LXD(RuntimePlugin):
                 Below there is a try using a profile customized for network
             '''
             custom_profile_for_network = self.conn.profiles.create(entity_uuid)
+
+            #WAN=$(awk '$2 == 00000000 { print $1 }' /proc/net/route)
+            ## eno1
+
             dev = self.__generate_custom_profile_devices_configuration(entity)
             custom_profile_for_network.devices = dev
             custom_profile_for_network.save()
@@ -497,13 +501,42 @@ class LXD(RuntimePlugin):
                 '{% endfor %} ]'
         '''
         devices = {}
-        template_value = '{"name":"%s","type":"nic","parent":"%s","nictype":"bridged"}'
+        template_value_bridge = '{"name":"%s","type":"nic","parent":"%s","nictype":"bridged"}'
+        template_value_phy = '{"name":"%s","type":"nic","parent":"%s","nictype":"physical"}'
+
+        '''
+        # Create tenant's storage pool
+        # TODO: allow more storage backends
+    lxc storage create $TENANT dir
+
+    # Add a root disk to the tenant's profile
+    lxc profile device add $TENANT root disk path=/ pool=$TENANT
+        
+        '''
+
+        template_disk = '{"path":"/","type":"disk","pool":"%s"}'
+
         template_key = '%s'
         for n in entity.networks:
-            nw_v = json.loads(str(template_value % (n.get('intf_name'), n.get('br_name'))))
-            nw_k = str(template_key % n.get('intf_name'))
+            if self.agent.getOSPlugin().get_intf_type(n.get('br_name')) in ['ethernet']:
+                cmd = "sudo ip link add name %s link %s type macvlan"
+                veth_name = str('veth-%s' % entity.uuid[:5])
+                cmd = str(cmd % (veth_name, n.get('br_name')))
+                self.agent.getOSPlugin().executeCommand(cmd, True)
+                nw_v = json.loads(str(template_value_phy % (n.get('intf_name'), veth_name)))
+                nw_k = str(template_key % n.get('intf_name'))
+            elif self.agent.getOSPlugin().get_intf_type(n.get('br_name')) in ['wireless']:
+                nw_v = json.loads(str(template_value_phy % (n.get('intf_name'), n.get('br_name'))))
+                nw_k = str(template_key % n.get('intf_name'))
+            else:
+                nw_k = str(template_key % n.get('intf_name'))
+                nw_v = json.loads(str(template_value_bridge % (n.get('intf_name'), n.get('br_name'))))
+
             devices.update({nw_k: nw_v})
 
+        st_n = "root"
+        st_v = json.loads(str(template_disk % "default"))
+        devices.update({st_n: st_v})
 
         #devices = Environment().from_string(template)
         #devices = devices.render(networks=entity.networks)
