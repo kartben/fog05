@@ -5,6 +5,7 @@ import os
 from fog05.DStore import *
 import json
 import time
+import signal
 
 
 class Controll():
@@ -94,7 +95,7 @@ class Controll():
         #    'mac': "d2:e3:ed:6f:e3:ef", 'intf_name': "br0"}], "user-data": cinit, "ssh-key": sshk}
 
         vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
-            'https://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img', 'networks': [], "user-data":
+            'https://www.dropbox.com/s/z3mg72t2pgkz621/virt-cirros-0.3.4-x86_64-disk.img', 'networks': [], "user-data":
             None, "ssh-key": None}
 
         entity_definition = {'status': 'define', 'name': vm_name, 'version': 1, 'entity_data': vm_definition}
@@ -260,6 +261,14 @@ class Controll():
         input("press enter to destroy vm")
         self.vm_destroy(dst, vm_uuid)
 
+    def catch_signal(self, signal, frame):
+        if signal == 2:
+            if self.count == 0:
+                self.flag = not self.flag
+                self.count = self.count + 1
+            else:
+                exit(0)
+
     def main(self):
 
         uri = str('afos://<sys-id>/*/')
@@ -290,11 +299,29 @@ class Controll():
 
         self.vm_deploy(vm_src_node, vm_uuid)
 
+        signal.signal(signal.SIGINT, self.catch_signal)
+        self.current_vm_node = vm_src_node
+        dst_id = vm_dst_node
+        self.flag = True
+
+        while self.flag:
+            print(
+                "########################################################################################################")
+            input(
+                "##################################### press enter to migrate brain #####################################")
+            print(
+                "########################################################################################################")
+
+            self.migrate_vm(self.current_vm_node, dst_id, vm_uuid)
+            t_id = str(self.current_vm_node)
+            self.current_vm_node = str(dst_id)
+            dst_id = str(t_id)
+
+        #self.migrate_vm(vm_src_node, vm_dst_node, vm_uuid)
+
         input()
 
-        self.migrate_vm(vm_src_node, vm_dst_node, vm_uuid)
-
-        input()
+        self.vm_destroy(self.current_vm_node, vm_uuid)
 
         exit(0)
 
