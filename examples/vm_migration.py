@@ -259,6 +259,15 @@ class Controll():
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (src, kvm_src.get('uuid'), vm_uuid))
         self.dstore.dput(uri, json_data)
 
+        #while True:
+        #    print("Waiting migration to complete...")
+        #    time.sleep(1)
+        #    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (dst, kvm_dst.get('uuid'), vm_uuid))
+        #    print(uri)
+        #    vm_info = json.loads(self.astore.get(uri))
+        #    if vm_info is not None and vm_info.get("status") == "run":
+        #        break
+
         #input("press enter to destroy vm")
         #self.vm_destroy(dst, vm_uuid)
 
@@ -314,6 +323,7 @@ class Controll():
             input()
 
             self.migrate_vm(src_id, dst_id, vm_uuid)
+            time.sleep(5)
             temp = src_id
             src_id = dst_id
             dst_id = temp
