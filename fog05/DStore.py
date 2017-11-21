@@ -247,7 +247,11 @@ class DStore(Store):
 
     def remove(self, uri):
         self.__controller.onRemove(uri)
-        self.__local_cache.pop(uri)
+        try:
+            self.__local_cache.pop(uri)
+        except KeyError:
+            print(">>>> KeyError on pop")
+            pass
 
     def remote_remove(self, uri):
         try:

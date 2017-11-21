@@ -114,8 +114,10 @@ class KVMLibvirt(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
-            self.current_entities.pop(entity_uuid, None)
-            #self.__pop_actual_store(entity_uuid)
+            if(self.current_entities.pop(entity_uuid, None)) is None:
+                self.agent.logger.warning('undefineEntity()', 'KVM Plugin - pop from entities dict returned none')
+
+            self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefineEntity()', '[ DONE ] KVM Plugin - Undefine a VM uuid %s ' % entity_uuid)
             return True
 
@@ -380,7 +382,7 @@ class KVMLibvirt(RuntimePlugin):
                 self.agent.logger.error('migrateEntity()', 'KVM Plugin - Entity not exists')
                 raise EntityNotExistingException("Enitity not existing",
                                                  str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.getState() != State.RUNNING:
+        elif entity.getState() not in [State.RUNNING, State.TAKING_OFF]:
             self.agent.logger.error('migrateEntity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
@@ -412,6 +414,7 @@ class KVMLibvirt(RuntimePlugin):
             except libvirt.libvirtError as err:
                 self.conn = libvirt.open("qemu:///system")
                 self.conn.defineXML(vm_xml)
+
             self.agent.getOSPlugin().executeCommand(qemu_cmd)
             self.agent.getOSPlugin().createFile(entity.cdrom)
             self.current_entities.update({entity_uuid: entity})
@@ -517,14 +520,16 @@ class KVMLibvirt(RuntimePlugin):
                 Here the plugin also update to the current status, and remove unused keys
                 '''
                 self.agent.logger.info('afterMigrateEntityActions()', ' KVM Plugin - After Migration Destination: Updating state')
-                entity.state = State.RUNNING
+                entity.onStart()
                 self.current_entities.update({entity_uuid: entity})
 
                 uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
                 vm_info = json.loads(self.agent.dstore.get(uri))
                 vm_info.pop('dst')
                 vm_info.update({"status": "run"})
+
                 self.__update_actual_store(entity_uuid, vm_info)
+                self.current_entities.update({entity_uuid: entity})
 
                 return True
             else:
@@ -622,9 +627,15 @@ class KVMLibvirt(RuntimePlugin):
         value = json.dumps(value)
         self.agent.astore.put(uri, value)
 
-    def __pop_actual_store(self, uri,):
+    def __pop_actual_store(self, uri):
+        e = uri
         uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, uri))
         self.agent.astore.remove(uri)
+        uri = str("%s/%s/%s" % (self.agent.dhome, self.HOME, e))
+        self.agent.dstore.remove(uri)
+
+
+
 
 
 

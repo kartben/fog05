@@ -271,8 +271,8 @@ class Linux(OSPlugin):
         '''
 
 
-        #p = psutil.Popen('sudo cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE)
-        p = psutil.Popen('sudo cat /etc/machine-id'.split(), stdout=PIPE)
+        p = psutil.Popen('sudo cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE)
+        #p = psutil.Popen('sudo cat /etc/machine-id'.split(), stdout=PIPE)
         # p = psutil.Popen('sudo cat '.split(), stdout=PIPE)
         res = ""
         for line in p.stdout:
