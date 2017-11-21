@@ -86,10 +86,16 @@ class Controll():
         # virt-cirros-0.3.4-x86_64-disk.img
         # cirros-0.3.5-x86_64-disk.img
         # xenial-server-cloudimg-amd64-disk1.img
+        # http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img
+        # http://172.16.7.128/virt-cirros-0.3.4-x86_64-disk.img
+
+        #vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
+        #    'http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img', 'networks': [{
+        #    'mac': "d2:e3:ed:6f:e3:ef", 'intf_name': "br0"}], "user-data": cinit, "ssh-key": sshk}
 
         vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
-            'http://172.16.7.128/virt-cirros-0.3.4-x86_64-disk.img', 'networks': [{
-            'mac': "d2:e3:ed:6f:e3:ef", 'intf_name': "br0"}], "user-data": cinit, "ssh-key": sshk}
+            'https://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img', 'networks': [], "user-data":
+            None, "ssh-key": None}
 
         entity_definition = {'status': 'define', 'name': vm_name, 'version': 1, 'entity_data': vm_definition}
 

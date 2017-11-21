@@ -427,7 +427,7 @@ class KVMLibvirt(RuntimePlugin):
             fognode_uuid = json.loads(self.agent.dstore.get(uri)).get("dst")
 
             uri = str('afos://<sys-id>/%s/plugins' % fognode_uuid)
-            all_plugins = json.loads(self.agent.astore.get(uri)).get('plugins')
+            all_plugins = json.loads(self.agent.astore.get(uri)).get('plugins') # TODO: solve this ASAP
 
             runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
             search = [x for x in runtimes if 'KVMLibvirt' in x.get('name')]
@@ -445,7 +445,7 @@ class KVMLibvirt(RuntimePlugin):
                                         'ready')
                 time.sleep(1)
                 uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (dst, kvm.get('uuid'), entity_uuid))
-                vm_info = json.loads(self.agent.astore.get(uri))
+                vm_info = json.loads(self.agent.astore.get(uri)) # TODO: solve this ASAP
                 if vm_info is not None:
                     if vm_info.get("status") == "landing":
                         flag = True
@@ -453,8 +453,16 @@ class KVMLibvirt(RuntimePlugin):
             entity.state = State.TAKING_OFF
             self.current_entities.update({entity_uuid: entity})
             uri = str("afos://<sys-id>/%s/" % fognode_uuid)
-            dst_node_info = json.loads(self.agent.astore.get(uri))
 
+            dst_node_info = self.agent.astore.get(uri) # TODO: solve this ASAP
+            if isinstance(dst_node_info,tuple):
+                dst_node_info = dst_node_info[0]
+            dst_node_info = dst_node_info.replace("'", '"')
+            print(dst_node_info)
+            dst_node_info = json.loads(dst_node_info)
+            ## json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+            # dst_node_info = json.loads(self.agent.astore.get(uri)[0])
+            ##
             dom = self.__lookup_by_uuid(entity_uuid)
             nw = dst_node_info.get('network')
 
@@ -539,6 +547,7 @@ class KVMLibvirt(RuntimePlugin):
             value = json.loads(value)
             action = value.get('status')
             entity_data = value.get('entity_data')
+            print(type(entity_data))
             react_func = self.__react(action)
             if react_func is not None and entity_data is None:
                 react_func(uuid)
@@ -550,7 +559,7 @@ class KVMLibvirt(RuntimePlugin):
                     if action == 'landing':
                         react_func(entity_data, dst=True)
                     else:
-                        react_func(entity_data)
+                            react_func(entity_data)
 
     def __random_mac_generator(self):
         mac = [0x00, 0x16, 0x3e,
