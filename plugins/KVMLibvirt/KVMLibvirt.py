@@ -366,13 +366,13 @@ class KVMLibvirt(RuntimePlugin):
                     dom = self.__lookup_by_uuid(entity_uuid)
                     if dom is None:
                         self.agent.logger.info('migrateEntity()', ' KVM Plugin - Domain not already in this host')
-                        time.sleep(10)
+                        time.sleep(5)
                     else:
                         if dom.isActive() == 1:
                             break
                         else:
                             self.agent.logger.info('migrateEntity()', ' KVM Plugin - Domain in this host but not running')
-                            time.sleep(10)
+                            time.sleep(5)
 
                 self.afterMigrateEntityActions(entity_uuid, True)
                 self.agent.logger.info('migrateEntity()', '[ DONE ] KVM Plugin - Migrate a VM uuid %s ' % entity_uuid)
