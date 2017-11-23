@@ -17,6 +17,13 @@
     "description": {
       "type": "string"
     },
+    "networks":{
+      "type":"array",
+      "items":{
+        "type":"string",
+        "description":"manifest for each network"
+      }
+    },
     "components": {
       "type": "array",
       "items": {
