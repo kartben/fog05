@@ -21,6 +21,8 @@ class brctl(NetworkPlugin):
         self.BASE_DIR = "/opt/fos/brctl"
         self.DHCP_DIR = "dhcp"
         self.HOME = str("network/%s" % self.uuid)
+        file_dir = os.path.dirname(__file__)
+        self.DIR = os.path.abspath(file_dir)
 
         if self.agent.getOSPlugin().dirExists(self.BASE_DIR):
             if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR)):
@@ -91,7 +93,7 @@ class brctl(NetworkPlugin):
             file_name = str("%s_dnsmasq.pid" % br_name)
             pid_file_path = str("%s/%s/%s" % (self.BASE_DIR, self.DHCP_DIR, file_name))
 
-            dhcp_cmd = self.__generate_dnsmaq_script(br_name,address[1], address[2], address[0],pid_file_path)
+            dhcp_cmd = self.__generate_dnsmaq_script(br_name, address[1], address[2], address[0],pid_file_path)
             dhcp_cmd = str("%s/%s/%s" % (self.BASE_DIR, self.DHCP_DIR, dhcp_cmd))
 
             self.agent.getOSPlugin().executeCommand(ifcmd, True)
@@ -241,8 +243,7 @@ class brctl(NetworkPlugin):
         return r.get(action, None)
 
     def __generate_vxlan_shutdown_script(self, net_uuid):
-        template_sh = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
-                                                                      'templates', 'vxlan_destroy.sh'))
+        template_sh = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'vxlan_destroy.sh'))
         br_name = str("br-%s" % net_uuid.split('-')[0])
         vxlan_name = str("vxl-%s" % net_uuid.split('-')[0])
         file_name = str("%s_dnsmasq.pid" % br_name)
@@ -258,8 +259,7 @@ class brctl(NetworkPlugin):
         return file_name
 
     def __generate_dnsmaq_script(self, br_name, start_addr, end_addr, listen_addr, pid_file):
-        template_sh = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
-                                                                      'templates', 'dnsmasq.sh'))
+        template_sh = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'dnsmasq.sh'))
         dnsmasq_sh = Environment().from_string(template_sh)
         dnsmasq_sh = dnsmasq_sh.render(bridge_name=br_name, dhcp_start=start_addr,
                                 dhcp_end=end_addr, listen_addr=listen_addr, pid_path=pid_file)
@@ -272,8 +272,7 @@ class brctl(NetworkPlugin):
         return file_name
 
     def __generate_vxlan_script(self, net_uuid):
-        template_sh = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
-                                                                      'templates', 'vxlan_creation.sh'))
+        template_sh = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'vxlan_creation.sh'))
         net_sh = Environment().from_string(template_sh)
         br_name = str("br-%s" % net_uuid.split('-')[0])
         vxlan_name = str("vxl-%s" % net_uuid.split('-')[0])

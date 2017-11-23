@@ -32,6 +32,8 @@ class Linux(OSPlugin):
         self.pm = None
         self.agent = agent
         self.agent.logger.info('__init__()', ' Hello from GNU\Linux Plugin')
+        file_dir = os.path.dirname(__file__)
+        self.DIR = os.path.abspath(file_dir)
         self.distro = self.__check_distro()
         if self.distro == "":
             self.agent.logger.warning('__init__()', 'Distribution not recognized, cannot install packages')
@@ -52,15 +54,12 @@ class Linux(OSPlugin):
 
     def addKnowHost(self, hostname, ip):
         self.agent.logger.info('addKnowHost()', ' OS Plugin add to hosts file')
-        add_cmd = str("sudo %s -a %s %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts',
-                                                         'manage_hosts.sh'),
-                                            hostname, ip))
+        add_cmd = str("sudo %s -a %s %s" % (os.path.join(self.DIR, 'scripts', 'manage_hosts.sh'), hostname, ip))
         self.executeCommand(add_cmd, True)
 
     def removeKnowHost(self, hostname):
         self.agent.logger.info('removeKnowHost()', ' OS Plugin remove from hosts file')
-        del_cmd = str("sudo %s -d %s" % (os.path.join(sys.path[0], 'plugins', self.name, 'scripts', 'manage_hosts.sh'),
-                                         hostname))
+        del_cmd = str("sudo %s -d %s" % (os.path.join(self.DIR, 'scripts', 'manage_hosts.sh'), hostname))
         self.executeCommand(del_cmd, True)
 
     def dirExists(self, path):

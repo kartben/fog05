@@ -17,6 +17,8 @@ class RandomMANO(MANOPlugin):
         self.agent = agent
         self.agent.logger.info('__init__()', ' Hello from RandomMano Plugin')
         self.HOME = str("mano/%s" % self.uuid)
+        file_dir = os.path.dirname(__file__)
+        self.DIR = os.path.abspath(file_dir)
         self.startRuntime()
 
     def onboard_application(self, application_uuid, application_manifest):

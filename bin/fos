@@ -38,9 +38,9 @@ class Fos(object):
                 self.agent.stop()
             exit(0)
 
-    def __start_node(self):
+    def __start_node(self, plugin_path):
         signal.signal(signal.SIGINT, self.__catch_signal)
-        self.agent = FosAgent()
+        self.agent = FosAgent(plugins_path=plugin_path)
         self.agent.run()
         while True:
             time.sleep(100)
@@ -352,6 +352,10 @@ class Fos(object):
                 print("manifest Ok")
                 node_uuid = parameters[3]
                 self.__send_add_entity(node_uuid, manifest)
+            if parameters[1] == 'migrate':
+                dst_node = parameters[3]
+                entity_uuid = parameters[2]
+                # TODO: should get the current node of the entity
         ########################################################################
 
 
@@ -446,7 +450,7 @@ class Fos(object):
         
         -------
 
-        fos start
+        fos start <plugin path>
             will start a node, UUID is loaded by the os plugin
 
         -------
@@ -455,8 +459,12 @@ class Fos(object):
         '''
 
         if argv[1] == 'start':
-            print("not yet")
-            #self.__start_node()
+            if len(argv) < 3:
+                print("You should specify plugin path!!")
+                exit(-1)
+            else:
+                sys.path.append(os.path.abspath(argv[2]))
+                self.__start_node(argv[2])
 
         action = self.__entry_point(argv[1])
         if action is None:

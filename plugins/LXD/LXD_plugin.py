@@ -1,7 +1,7 @@
 import sys
 import os
 import uuid
-sys.path.append(os.path.join(sys.path[0],'interfaces'))
+
 from fog05.interfaces.States import State
 from fog05.interfaces.RuntimePlugin import *
 from LXDEntity import LXDEntity
@@ -25,6 +25,8 @@ class LXD(RuntimePlugin):
         self.IMAGE_DIR = "images"
         self.LOG_DIR = "logs"
         self.HOME = str("runtime/%s/entity" % self.uuid)
+        file_dir = os.path.dirname(__file__)
+        self.DIR = os.path.abspath(file_dir)
         self.conn = None
         self.startRuntime()
 
@@ -80,7 +82,7 @@ class LXD(RuntimePlugin):
         elif len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
             entity = LXDEntity(entity_uuid, kwargs.get('name'), kwargs.get('networks'), kwargs.get('base_image'),
-                               kwargs.get('user-data'), kwargs.get('ssh-key'), kwargs.get('docker_file'),
+                               kwargs.get('user-data'), kwargs.get('ssh-key'), kwargs.get('storage'),
                                kwargs.get("profiles"))
         else:
             return None
@@ -205,7 +207,6 @@ class LXD(RuntimePlugin):
             profile = self.conn.profiles.get(entity_uuid)
             profile.delete()
 
-            ## pylxd.exceptions.LXDAPIException: Profile is currently in use
 
             self.agent.getOSPlugin().removeFile(str("%s/%s/%s") % (self.BASE_DIR, self.IMAGE_DIR, entity.image))
 
@@ -508,14 +509,14 @@ class LXD(RuntimePlugin):
         '''
         # Create tenant's storage pool
         # TODO: allow more storage backends
-    lxc storage create $TENANT dir
+        lxc storage create $TENANT dir
 
-    # Add a root disk to the tenant's profile
-    lxc profile device add $TENANT root disk path=/ pool=$TENANT
+        # Add a root disk to the tenant's profile
+        lxc profile device add $TENANT root disk path=/ pool=$TENANT
         
         '''
 
-        template_disk = '{"path":"/","type":"disk","pool":"%s"}'
+        template_disk = '{"path":"%s","type":"disk","pool":"%s"}'
 
         template_key = '%s'
         for n in entity.networks:
@@ -535,9 +536,15 @@ class LXD(RuntimePlugin):
 
             devices.update({nw_k: nw_v})
 
-        st_n = "root"
-        st_v = json.loads(str(template_disk % "default"))
-        devices.update({st_n: st_v})
+        if entity.storage is None or len(entity.storage) == 0:
+            st_n = "root"
+            st_v = json.loads(str(template_disk % ("/","default")))
+            devices.update({st_n: st_v})
+        else:
+            for s in entity.storage:
+                st_n = s.get("name")
+                st_v = json.loads(str(template_disk % (s.get("path"), s.get("pool"))))
+                devices.update({st_n: st_v})
 
         #devices = Environment().from_string(template)
         #devices = devices.render(networks=entity.networks)
@@ -568,9 +575,9 @@ class LXD(RuntimePlugin):
             'undefine': self.undefineEntity,
             'stop': self.stopEntity,
             'resume': self.resumeEntity,
-            'run': self.runEntity,
-            'landing': self.migrateEntity,
-            'taking_off': self.migrateEntity
+            'run': self.runEntity
+            #'landing': self.migrateEntity,
+            #'taking_off': self.migrateEntity
         }
 
         return r.get(action, None)

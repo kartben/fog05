@@ -17,6 +17,8 @@ class Native(RuntimePlugin):
         self.agent = agent
         self.agent.logger.info('__init__()', ' Hello from Native Plugin')
         self.HOME = str("runtime/%s/entity" % self.uuid)
+        file_dir = os.path.dirname(__file__)
+        self.DIR = os.path.abspath(file_dir)
         self.startRuntime()
 
     def startRuntime(self):

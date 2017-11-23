@@ -147,7 +147,7 @@ class Controll():
         # creating the manifest for the vm
         vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
             'http://172.16.7.128/virt-cirros-0.3.4-x86_64-disk.img', 'networks': [{
-            'mac': "d2:e3:ed:6f:e3:ef", 'intf_name': "br0"}], "user-data": cinit, "ssh-key": sshk}
+            'mac': "d2:e3:ed:6f:e3:ef", 'intf_name': "virbr0"}], "user-data": cinit, "ssh-key": sshk}
 
         entity_definition = {'status': 'define', 'name': vm_name, 'version': 1, 'entity_data': vm_definition}
 

@@ -1,5 +1,6 @@
 #import imp
 import importlib
+import importlib.machinery
 import os
 import sys
 
@@ -19,7 +20,6 @@ class PluginLoader(object):
             if not os.path.isdir(location) or not self.MainModule + ".py" in os.listdir(location):
                 continue
 
-            print(location)
             info = os.path.join(location,self.MainModule + ".py") ##importlib.abc.find_module(self.MainModule,
             # [location])
             # #.find_module(
@@ -33,6 +33,7 @@ class PluginLoader(object):
 
         module = importlib.machinery.SourceFileLoader(name['name'], name['info']).load_module()
         #module = importlib.abc.import_module(self.MainModule,  *name["info"])
+        sys.path.append(os.path.abspath(name['info']))
         return module
         #imp.load_module(self.MainModule,)
 

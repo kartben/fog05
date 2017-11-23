@@ -147,7 +147,7 @@ class Controll():
         # creating the manifest for the container
         container_definition = {'name': container_name, 'uuid': container_uuid, 'base_image':
             'http://172.16.7.128/ubuntu_container.tar.xz', 'networks': [{
-            'br_name':'br0', 'intf_name': "eth0"}], "user-data": cinit, "ssh-key": sshk}
+            'br_name':'virbr0', 'intf_name': "eth0"}], "user-data": cinit, "ssh-key": sshk}
 
         entity_definition = {'status': 'define', 'name': container_name, 'version': 1, 'entity_data': container_definition}
 

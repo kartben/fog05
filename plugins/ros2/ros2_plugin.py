@@ -22,6 +22,9 @@ class ROS2(RuntimePlugin):
         self.NODLETS_DIR = "nodlets"
         self.LOG_DIR = "logs"
 
+        file_dir = os.path.dirname(__file__)
+        self.DIR = os.path.abspath(file_dir)
+
         self.HOME = str("runtime/%s/entity" % self.uuid)
         self.startRuntime()
 
@@ -316,15 +319,13 @@ class ROS2(RuntimePlugin):
                 react_func(entity_data)
 
     def __generate_build_script(self, path, space):
-        template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
-                                                                      'templates', 'build_ros.sh'))
+        template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'build_ros.sh'))
         vm_xml = Environment().from_string(template_xml)
         vm_xml = vm_xml.render(node_path=path, space=space)
         return vm_xml
 
     def __generate_run_script(self, cmd, dir):
-        template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
-                                                                      'templates', 'run_ros.sh'))
+        template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR,'templates', 'run_ros.sh'))
         vm_xml = Environment().from_string(template_xml)
         vm_xml = vm_xml.render(command=cmd, path=dir)
         return vm_xml

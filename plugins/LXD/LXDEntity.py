@@ -6,7 +6,7 @@ from fog05.interfaces.Entity import Entity
 
 class LXDEntity(Entity):
 
-    def __init__(self, uuid, name, networks, image, user_file, ssh_key, docker_file, profiles):
+    def __init__(self, uuid, name, networks, image, user_file, ssh_key, storage, profiles):
 
         super(LXDEntity, self).__init__()
         self.uuid = uuid
@@ -15,7 +15,7 @@ class LXDEntity(Entity):
         self.image = image
         self.user_file = user_file
         self.ssh_key = ssh_key
-        self.docker_file = docker_file
+        self.storage =  storage
         self.profiles = profiles
         self.conf = None
 

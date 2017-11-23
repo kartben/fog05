@@ -21,6 +21,14 @@
     },
     "gateway":{
       "type":"string"
+    },
+    "vxlan_id":{
+      "type":"integer",
+      "description":"The vxlan id"
+    },
+    "multicast_address":{
+      "type":"string",
+      "description":"the vxlan multicast address"
     }
   }
 }

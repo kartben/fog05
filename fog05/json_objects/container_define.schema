@@ -23,15 +23,23 @@
       "type":"string",
       "description":"ssh key to login to the machine"
     },
-    "docker_file":{
-      "type":"string",
-      "description":"if needed docker file for deploy"
-    },
-    "profiles":{
-      "type":"array",
-      "items":{
-        "type":"string"
+    "storage":{
+      "type":"object",
+      "description":"the storage for the container",
+      "properties":{
+        "name":{
+          "type":"string"
+        },
+        "path":{
+          "type":"string"
+        },
+        "pool":{
+          "type":"string"
+        }
       }
+    },
+    "profile":{
+      "type":"string"
     },
     "networks":{
       "type":"array",

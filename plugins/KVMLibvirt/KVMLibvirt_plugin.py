@@ -1,7 +1,6 @@
 import sys
 import os
 import uuid
-sys.path.append(os.path.join(sys.path[0],'interfaces'))
 from fog05.interfaces.States import State
 from fog05.interfaces.RuntimePlugin import *
 from KVMLibvirtEntity import KVMLibvirtEntity
@@ -25,6 +24,8 @@ class KVMLibvirt(RuntimePlugin):
         self.IMAGE_DIR = "images"
         self.LOG_DIR = "logs"
         self.HOME = str("runtime/%s/entity" % self.uuid)
+        file_dir = os.path.dirname(__file__)
+        self.DIR = os.path.abspath(file_dir)
         self.conn = None
         self.startRuntime()
 
@@ -143,8 +144,7 @@ class KVMLibvirt(RuntimePlugin):
 
             wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
 
-            conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(sys.path[0], 'plugins', self.name,
-                                                                   'templates',
+            conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
                                                                  'create_config_drive.sh'), entity.name, entity_uuid))
 
             rm_temp_cmd = str("rm")
@@ -254,7 +254,7 @@ class KVMLibvirt(RuntimePlugin):
             '''
             Then after boot should update the `actual store` with the run status of the vm  
             '''
-            log_filename = str("%s/%s/%s_log.log" % (self.BASE_DIR,self.LOG_DIR, entity_uuid))
+            log_filename = str("%s/%s/%s_log.log" % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
             if entity.user_file is not None:
                 self.__wait_boot(log_filename, True)
             else:
@@ -614,8 +614,7 @@ class KVMLibvirt(RuntimePlugin):
                         return found
 
     def __generate_dom_xml(self, entity):
-        template_xml = self.agent.getOSPlugin().readFile(os.path.join(sys.path[0], 'plugins', self.name,
-                                                                      'templates', 'vm.xml'))
+        template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'vm.xml'))
         vm_xml = Environment().from_string(template_xml)
         vm_xml = vm_xml.render(name=entity.name, uuid=entity.uuid, memory=entity.ram,
                                cpu=entity.cpu, disk_image=entity.disk,
