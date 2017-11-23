@@ -39,13 +39,20 @@
         "type":"object",
         "properties":{
           "mac_address":{
-            "type":"string"
+            "type":"string",
+            "description":"mac address of the interface inside the container"
           },
           "intf_name":{
-            "type":"string"
+            "type":"string",
+            "description":"name of the network interface inside the container"
           },
           "br_name":{
-            "type":"string"
+            "type":"string",
+            "description":"name of the bridge to use"
+          },
+          "network_uuid":{
+            "type":"string",
+            "description":"uuid of the network to use"
           }
         }
       }

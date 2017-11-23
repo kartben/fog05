@@ -41,7 +41,12 @@
             "type":"string"
           },
           "intf_name":{
-            "type":"string"
+            "type":"string",
+            "description":"name of the virtual bridge to be used"
+          },
+          "network_uuid":{
+            "type":"string",
+            "description":"uuid of the network to use"
           }
         }
       }

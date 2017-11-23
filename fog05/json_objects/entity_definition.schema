@@ -72,6 +72,10 @@
               }
             }
           }
+        },
+        "arch":{
+          "type":"string",
+          "description":"required cpu architecture"
         }
       }
     },

@@ -89,7 +89,12 @@
                                 "io_file":{
                                     "description":"io filename eg. stdio ",
                                     "type":"string"
+                                },
+                                "available":{
+                                    "type":"boolean",
+                                    "description":"if this device is available or is assigned to an entity"
                                 }
+                            }
                             }
                         }
                     },
@@ -111,6 +116,10 @@
                                     "items":{
                                         "type":"string"
                                     }
+                                },
+                                "available":{
+                                    "type":"boolean",
+                                    "description":"if this device is available or is assigned to an entity"
                                 }
                             }
                         }
@@ -168,6 +177,10 @@
                                 "intf_type":{
                                     "description":"interface type eg. wired/wireless",
                                     "type":"string"
+                                },
+                                "available":{
+                                    "type":"boolean",
+                                    "description":"if this device is available or is assigned to an entity"
                                 }
                             }
                         }

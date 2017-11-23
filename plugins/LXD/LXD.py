@@ -497,7 +497,8 @@ class LXD(RuntimePlugin):
                 '{"name": "eth{{loop.index -1}}",' \
                 '"type" : "nic",'  \
                 '"parent": "{{ net.intf_name }}",' \
-                '"nictype": "bridged" }}' \
+                '"nictype": "bridged" ,' \
+                '"hwaddr" : {{ net.mac }} }"
                 '{% endfor %} ]'
         '''
         devices = {}

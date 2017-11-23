@@ -354,6 +354,7 @@ class Fos(object):
                 self.__send_add_entity(node_uuid, manifest)
         ########################################################################
 
+
     def __application_command(self, parameters):
         app_schema = Schemas.app_schema
         if len(parameters) == 3:
