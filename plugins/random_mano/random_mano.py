@@ -340,6 +340,11 @@ class RandomMANO(MANOPlugin):
         constraints = entity_manifest.get("constraints", None)
         if constraints is None:
             return nodes
+
+        arch = constraints.get("arch")
+        if arch is not None:
+            nodes = [x for x in nodes if x.get('hardware_specifications').get('cpu')[0].get('arch') == arch]
+
         for node in nodes:
             nw_constraints = constraints.get('networks', None)
             node_nw = node.get('network', None)
