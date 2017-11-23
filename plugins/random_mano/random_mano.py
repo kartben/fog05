@@ -352,7 +352,7 @@ class RandomMANO(MANOPlugin):
                 for nw_c in nw_constraints:
                     t = nw_c.get('type')
                     n = nw_c.get('number')
-                    nws = [x for x in node_nw if x.get('type') == t]
+                    nws = [x for x in node_nw if x.get('type') == t and x.get('available') is True]
                     if len(nws) >= n:
                         nw_eligible.append(node.get('uuid'))
             io_constraints = constraints.get('i/o', None)
@@ -361,13 +361,13 @@ class RandomMANO(MANOPlugin):
                 for io_c in io_constraints:
                     t = io_c.get('type')
                     n = io_c.get('number')
-                    ios = [x for x in node_io if x.get('io_type') == t]
+                    ios = [x for x in node_io if x.get('io_type') == t and x.get('available') is True]
                     if len(ios) >= n:
                         io_eligible.append(node.get('uuid'))
             ac_constraints = constraints.get('accelerators', None)
             node_ac = node.get('accelerator', None)
             if ac_constraints is not None and node_ac is not None:
-                node_ac = [x.get('supported_library') for x in node_ac]
+                node_ac = [x.get('supported_library') for x in node_ac and x.get('available') is True]
                 node_sl = []
                 for sl in node_ac:
                     node_sl.extend(sl)
