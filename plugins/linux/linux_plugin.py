@@ -166,12 +166,14 @@ class Linux(OSPlugin):
 
     def getProcessorInformation(self):
         cpu = []
-        for i in range(0, psutil.cpu_count(logical=False)):
+        for i in range(0, psutil.cpu_count()):
             model = self.__get_processor_name()
             try:
                 frequency = psutil.cpu_freq(percpu=True)
                 if len(frequency) == 0:
                     frequency = self.__get_frequency_from_cpuinfo()
+                elif len(frequency) == 1:
+                    frequency = frequency[0][2]
                 else:
                     frequency = frequency[i][2]
             except AttributeError:
