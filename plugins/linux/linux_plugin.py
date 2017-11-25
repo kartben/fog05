@@ -7,7 +7,7 @@ import re
 import platform
 import netifaces
 import shutil
-from socket import *
+import socket
 import os
 import sys
 # platform.linux_distribution()
@@ -211,9 +211,9 @@ class Linux(OSPlugin):
         for k in intfs:
             intf_info = psutil.net_if_addrs().get(k)
 
-            ipv4_info = [x for x in intf_info if x[0] == AddressFamily.AF_INET]
-            ipv6_info = [x for x in intf_info if x[0] == AddressFamily.AF_INET6]
-            l2_info = [x for x in intf_info if x[0] == AddressFamily.AF_PACKET]
+            ipv4_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET]
+            ipv6_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET6]
+            l2_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_PACKET]
 
             if len(ipv4_info) > 0:
                 ipv4_info = ipv4_info[0]
