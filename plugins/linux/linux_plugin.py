@@ -203,7 +203,6 @@ class Linux(OSPlugin):
         # TODO implement this
         return []
 
-
     def getNetworkInformations(self):
         # {'default': {2: ('172.16.0.1', 'brq2376512c-13')}, 2: [('10.0.0.1', 'eno4', True), ('172.16.0.1', 'brq2376512c-13', True), ('172.16.1.1', 'brqf110e342-9b', False), ('10.0.0.1', 'eno4', False)]}
 
