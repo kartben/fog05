@@ -14,6 +14,10 @@
     "command": {
       "type": "string"
     },
+    "source":{
+      "type":"string",
+      "description":"url for the zipped native application"
+    },
     "args": {
       "type": "array",
       "items": {

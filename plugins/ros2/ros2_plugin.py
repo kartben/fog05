@@ -319,16 +319,16 @@ class ROS2(RuntimePlugin):
                 react_func(entity_data)
 
     def __generate_build_script(self, path, space):
-        template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'build_ros.sh'))
-        vm_xml = Environment().from_string(template_xml)
-        vm_xml = vm_xml.render(node_path=path, space=space)
-        return vm_xml
+        template_sh = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'build_ros.sh'))
+        ros2_build = Environment().from_string(template_sh)
+        ros2_build = ros2_build.render(node_path=path, space=space)
+        return ros2_build
 
     def __generate_run_script(self, cmd, dir):
-        template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR,'templates', 'run_ros.sh'))
-        vm_xml = Environment().from_string(template_xml)
-        vm_xml = vm_xml.render(command=cmd, path=dir)
-        return vm_xml
+        template_sh = self.agent.getOSPlugin().readFile(os.path.join(self.DIR,'templates', 'run_ros.sh'))
+        ros2_run = Environment().from_string(template_sh)
+        ros2_run = ros2_run.render(command=cmd, path=dir)
+        return ros2_run
 
     def __shell_source(self, script):
         """Sometime you want to emulate the action of "source" in bash,
@@ -342,11 +342,12 @@ class ROS2(RuntimePlugin):
 
     def __convert(self, data):
         data_type = type(data)
-
-        if data_type == bytes: return data.decode()
-        if data_type in (str, int): return str(data)
-
-        if data_type == dict: data = data.items()
+        if data_type == bytes:
+            return data.decode()
+        if data_type in (str, int):
+            return str(data)
+        if data_type == dict:
+            data = data.items()
         return data_type(map(self.convert, data))
 
     def __react(self, action):

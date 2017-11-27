@@ -5,9 +5,7 @@ from fog05.interfaces.Entity import Entity
 
 
 class NativeEntity(Entity):
-
-    def __init__(self, uuid, name, command, args, outfile):
-
+    def __init__(self, uuid, name, command, source, args, outfile):
         super(NativeEntity, self).__init__()
         self.uuid = uuid
         self.name = name
@@ -15,6 +13,9 @@ class NativeEntity(Entity):
         self.args = args
         self.outfile = outfile
         self.pid = -1
+        self.source = source
+        self.process = None
+
 
     def onConfigured(self):
         self.state = State.CONFIGURED
@@ -26,7 +27,7 @@ class NativeEntity(Entity):
         self.pid = pid
         self.process = process
         self.state = State.RUNNING
-    
+
     def onStop(self):
         self.pid = -1
         self.process = None
@@ -37,3 +38,9 @@ class NativeEntity(Entity):
 
     def onResume(self):
         self.state = State.RUNNING
+
+    def afterMigrate(self):
+        raise Exception("Cannot migrate Native")
+
+    def beforeMigrate(self):
+        raise Exception("Cannot migrate Native")
