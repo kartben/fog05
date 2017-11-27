@@ -32,6 +32,11 @@ Run `python3 setup.py install`
 
 ### How to run:
 
+
+There are two ways to run a fog05 node
+
+1st:
+
 Open a python3 interpreter
     
     $ python3
@@ -41,5 +46,11 @@ Open a python3 interpreter
     ....
     >>> a.stop()
 
-You can pass to the constructor the plugins directory `FosAgent(plugins_path="/path/to/plugins)`
+You can pass to the constructor the plugins directory `FosAgent(plugins_path="/path/to/plugins")`
 or debug=False to have logging on file
+
+2nd:
+
+Using the fos command
+    
+    $ fos start <path_to_plugins>
