@@ -197,10 +197,12 @@ class Linux(OSPlugin):
         return disks
 
     def getIOInformations(self):
-        raise NotImplemented
+        return self.__get_io_devices()
 
     def getAcceleratorsInformations(self):
-        raise NotImplemented
+        # TODO implement this
+        return []
+
 
     def getNetworkInformations(self):
         # {'default': {2: ('172.16.0.1', 'brq2376512c-13')}, 2: [('10.0.0.1', 'eno4', True), ('172.16.0.1', 'brq2376512c-13', True), ('172.16.1.1', 'brqf110e342-9b', False), ('10.0.0.1', 'eno4', False)]}
@@ -336,6 +338,15 @@ class Linux(OSPlugin):
             if "cpu MHz" in line:
                 return float(re.sub(".*cpu MHz.*:", "", line, 1))
         return 0.0
+
+    def __get_io_devices(self):
+        dev = []
+        gpio_path = "/sys/class/gpio" #gpiochip0
+        gpio_devices = files = [f for f in os.listdir(gpio_path) if f not in ['export', 'unexport']]
+        for d in gpio_devices:
+            dev.append({"name": d,"io_type": "gpio", "io_file" : gpio_path+os.path.sep+d, "available": True})
+
+        return dev
 
     def __check_distro(self):
 

@@ -178,18 +178,20 @@ class FosAgent(Agent):
         node_info.update({'ram': self.__osPlugin.getMemoryInformation()})
         node_info.update({'disks': self.__osPlugin.getDisksInformation()})
         node_info.update({'network': self.__osPlugin.getNetworkInformations()})
+        node_info.update({'io': self.__osPlugin.getIOInformations()})
+        node_info.update({'accelerator': self.__osPlugin.getAcceleratorsInformations()})
 
         uri = str('%s/' % self.ahome)
         self.astore.put(uri, json.dumps(node_info))
 
     def __react_to_cache(self, uri, value, v):
-        print ("###########################")
-        print ("##### I'M an Observer #####")
-        print ("## Key: %s" % uri)
-        print ("## Value: %s" % value)
-        print ("## V: %s" % v)
-        print ("###########################")
-        print ("###########################")
+        print("###########################")
+        print("##### I'M an Observer #####")
+        print("## Key: %s" % uri)
+        print("## Value: %s" % value)
+        print("## V: %s" % v)
+        print("###########################")
+        print("###########################")
 
     def __react_to_plugins(self, uri, value, v):
         self.logger.info('__react_to_plugins()', ' Received a plugin action on Desidered Store URI: %s Value: %s '
