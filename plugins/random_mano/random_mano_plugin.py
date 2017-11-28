@@ -343,6 +343,10 @@ class RandomMANO(MANOPlugin):
         if constraints is None:
             return nodes
 
+        o_s = constraints.get('os')
+        if o_s is not None:
+            nodes = [x for x in nodes if x.get('os') == o_s]
+
         arch = constraints.get("arch")
         if arch is not None:
             nodes = [x for x in nodes if x.get('hardware_specifications').get('cpu')[0].get('arch') == arch]

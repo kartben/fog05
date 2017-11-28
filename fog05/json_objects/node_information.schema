@@ -12,6 +12,10 @@
             "description": "Name of the node",
             "type": "string"
         },
+        "os":{
+            "description": "os running on node",
+            "type": "string"
+        },
         "hardware_specifications": {
                 "type":"object",
                 "properties" :{

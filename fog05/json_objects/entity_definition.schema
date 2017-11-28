@@ -76,6 +76,10 @@
         "arch":{
           "type":"string",
           "description":"required cpu architecture"
+        },
+        "os":{
+          "type":"string",
+          "description":"required os"
         }
       }
     },
