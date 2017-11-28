@@ -60,8 +60,7 @@
           },
           "type":{
             "type":"string",
-            "description":"type of the network interface needed, is this is present network_uuid br_name should not be
-            present"
+            "description":"type of the network interface needed, is this is present network_uuid br_name should not be present"
           },
           "network_uuid":{
             "type":"string",
