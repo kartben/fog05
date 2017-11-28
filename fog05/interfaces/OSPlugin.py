@@ -226,6 +226,9 @@ class OSPlugin(Plugin):
     def set_interface_available(self, intf_name):
         raise NotImplemented
 
+    def get_intf_type(self, name):
+        raise NotImplemented
+
 class ProcessNotExistingException(Exception):
     def __init__(self, message, errors):
 
