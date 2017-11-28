@@ -360,6 +360,66 @@ class Linux(OSPlugin):
     def __get_acc_devices(self):
         return []
 
+    def __find_interface_by_name(self, dev_name, dev_list):
+        for i, dev in enumerate(dev_list):
+            if dev.get('intf_name') == dev_name:
+                return i, dev
+        return None, None
+
+    def set_interface_unaviable(self, intf_name):
+        i, interface_info = self.__find_interface_by_name(intf_name, self.nw_devices)
+        if i is not None and interface_info is not None:
+            interface_info.update({'available': False})
+            self.nw_devices[i] = interface_info
+            return True
+        return False
+
+    def set_interface_available(self, intf_name):
+        i, interface_info = self.__find_interface_by_name(intf_name, self.nw_devices)
+        if i is not None and interface_info is not None:
+            interface_info.update({'available': True})
+            self.nw_devices[i] = interface_info
+            return True
+        return False
+
+    def __find_dev_by_name(self, dev_name, dev_list):
+        for i, dev in enumerate(dev_list):
+            if dev.get('name') == dev_name:
+                return i, dev
+        return None, None
+
+    def set_io_unaviable(self, io_name):
+        i, io_info = self.__find_interface_by_name(io_name, self.io_devices)
+        if i is not None and io_info is not None:
+            io_info.update({'available': False})
+            self.io_devices[i] = io_info
+            return True
+        return False
+
+    def set_io_available(self, io_name):
+        i, io_info = self.__find_interface_by_name(io_name, self.io_devices)
+        if i is not None and io_info is not None:
+            io_info.update({'available': True})
+            self.io_devices[i] = io_info
+            return True
+        return False
+
+    def set_accelerator_unaviable(self, acc_name):
+        i, acc_info = self.__find_interface_by_name(acc_name, self.accelerator_devices)
+        if i is not None and acc_info is not None:
+            acc_info.update({'available': False})
+            self.accelerator_devices[i] = acc_info
+            return True
+        return False
+
+    def set_accelerator_available(self, acc_name):
+        i, acc_info = self.__find_interface_by_name(acc_name, self.accelerator_devices)
+        if i is not None and acc_info is not None:
+            acc_info.update({'available': True})
+            self.accelerator_devices[i] = acc_info
+            return True
+        return False
+
     def __check_distro(self):
 
         lsb = "/etc/lsb-release"
