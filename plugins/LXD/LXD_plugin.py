@@ -1,7 +1,7 @@
 import sys
 import os
 import uuid
-
+from packaging import version
 from fog05.interfaces.States import State
 from fog05.interfaces.RuntimePlugin import *
 from LXDEntity import LXDEntity
@@ -519,7 +519,7 @@ class LXD(RuntimePlugin):
         template_disk = '{"path":"%s","type":"disk","pool":"%s"}'
 
         template_key = '%s'
-        for n in entity.networks:
+        for n in entity.networks: #TODO add on manifest infomation about network
             if self.agent.getOSPlugin().get_intf_type(n.get('br_name')) in ['ethernet']:
                 cmd = "sudo ip link add name %s link %s type macvlan"
                 veth_name = str('veth-%s' % entity.uuid[:5])
@@ -527,28 +527,31 @@ class LXD(RuntimePlugin):
                 self.agent.getOSPlugin().executeCommand(cmd, True)
                 nw_v = json.loads(str(template_value_phy % (n.get('intf_name'), veth_name)))
                 nw_k = str(template_key % n.get('intf_name'))
+                #self.agent.getOSPlugin().set_interface_unaviable(n.get('br_name'))
             elif self.agent.getOSPlugin().get_intf_type(n.get('br_name')) in ['wireless']:
                 nw_v = json.loads(str(template_value_phy % (n.get('intf_name'), n.get('br_name'))))
                 nw_k = str(template_key % n.get('intf_name'))
+                self.agent.getOSPlugin().set_interface_unaviable(n.get('br_name'))
             else:
                 nw_k = str(template_key % n.get('intf_name'))
                 nw_v = json.loads(str(template_value_bridge % (n.get('intf_name'), n.get('br_name'))))
 
             devices.update({nw_k: nw_v})
 
-        if entity.storage is None or len(entity.storage) == 0:
-            st_n = "root"
-            st_v = json.loads(str(template_disk % ("/","default")))
-            devices.update({st_n: st_v})
-        else:
-            for s in entity.storage:
-                st_n = s.get("name")
-                st_v = json.loads(str(template_disk % (s.get("path"), s.get("pool"))))
+        lxd_version = self.conn.host_info['environment']['server_version']
+        if version.parse(lxd_version) >= version.parse("2.20"):
+            if entity.storage is None or len(entity.storage) == 0:
+                st_n = "root"
+                st_v = json.loads(str(template_disk % ("/","default")))
                 devices.update({st_n: st_v})
+            else:
+                for s in entity.storage:
+                    st_n = s.get("name")
+                    st_v = json.loads(str(template_disk % (s.get("path"), s.get("pool"))))
+                    devices.update({st_n: st_v})
 
         #devices = Environment().from_string(template)
         #devices = devices.render(networks=entity.networks)
-        print(devices)
         return devices
 
     def __generate_container_dict(self, entity):

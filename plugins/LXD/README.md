@@ -25,6 +25,8 @@ package dependencies:
 python dependencies:
 
 - pylxd
+- packaging
+- jinja2
 
 
 ---
