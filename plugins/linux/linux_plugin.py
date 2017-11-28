@@ -35,12 +35,19 @@ class Linux(OSPlugin):
         file_dir = os.path.dirname(__file__)
         self.DIR = os.path.abspath(file_dir)
         self.distro = self.__check_distro()
+        self.io_devices = []
+        self.nw_devices = []
+        self.accelerator_devices = []
         if self.distro == "":
             self.agent.logger.warning('__init__()', 'Distribution not recognized, cannot install packages')
         else:
             self.agent.logger.info('__init__()', ' Running on %s' % self.distro)
             self.pm = self.__get_package_manager(self.distro)
             self.agent.logger.info('__init__()', ' Package manger %s loaded! ' % self.pm.name)
+
+        self.io_devices = self.__get_io_devices()
+        self.nw_devices = self.__get_nw_devices()
+        self.accelerator_devices = self.__get_acc_devices()
 
     def executeCommand(self, command, blocking=False):
         self.agent.logger.info('executeCommand()', str(' OS Plugin executing command %s' % command))
@@ -197,62 +204,14 @@ class Linux(OSPlugin):
         return disks
 
     def getIOInformations(self):
-        return self.__get_io_devices()
+        return self.io_devices
+
 
     def getAcceleratorsInformations(self):
-        # TODO implement this
-        return []
+        return self.accelerator_devices
 
     def getNetworkInformations(self):
-        # {'default': {2: ('172.16.0.1', 'brq2376512c-13')}, 2: [('10.0.0.1', 'eno4', True), ('172.16.0.1', 'brq2376512c-13', True), ('172.16.1.1', 'brqf110e342-9b', False), ('10.0.0.1', 'eno4', False)]}
-
-        nets = []
-        intfs = psutil.net_if_stats().keys()
-        gws = netifaces.gateways().get(2)
-        for k in intfs:
-            intf_info = psutil.net_if_addrs().get(k)
-
-            ipv4_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET]
-            ipv6_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET6]
-            l2_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_PACKET]
-
-            if len(ipv4_info) > 0:
-                ipv4_info = ipv4_info[0]
-                ipv4 = ipv4_info[1]
-                ipv4mask = ipv4_info[2]
-                search_gw = [x[0] for x in gws if x[1] == k]
-                if len(search_gw) > 0:
-                    ipv4gateway = search_gw[0]
-                else:
-                    ipv4gateway = ''
-
-            else:
-                ipv4 = ''
-                ipv4gateway = ''
-                ipv4mask = ''
-
-            if len(ipv6_info) > 0:
-                ipv6_info = ipv6_info[0]
-                ipv6 = ipv6_info[1]
-                ipv6mask = ipv6_info[2]
-            else:
-                ipv6 = ''
-                ipv6mask = ''
-
-            if len(l2_info) > 0:
-                l2_info = l2_info[0]
-                mac = l2_info[1]
-            else:
-                mac = ''
-
-            speed = psutil.net_if_stats().get(k)[2]
-            inft_conf = {'ipv4_address': ipv4, 'ipv4_netmask': ipv4mask, "ipv4_gateway": ipv4gateway, "ipv6_address":
-                ipv6, 'ipv6_netmask': ipv6mask}
-
-            nets.append({'intf_name': k, 'inft_configuration': inft_conf, 'intf_mac_address': mac, 'intf_speed':
-                speed, "type": self.get_intf_type(k)})
-
-        return nets
+        return self.nw_devices
 
     def getUUID(self):
         # $ blkid / dev / sda1
@@ -346,6 +305,60 @@ class Linux(OSPlugin):
             dev.append({"name": d,"io_type": "gpio", "io_file" : gpio_path+os.path.sep+d, "available": True})
 
         return dev
+
+    def __get_nw_devices(self):
+        # {'default': {2: ('172.16.0.1', 'brq2376512c-13')}, 2: [('10.0.0.1', 'eno4', True), ('172.16.0.1', 'brq2376512c-13', True), ('172.16.1.1', 'brqf110e342-9b', False), ('10.0.0.1', 'eno4', False)]}
+
+        nets = []
+        intfs = psutil.net_if_stats().keys()
+        gws = netifaces.gateways().get(2)
+        for k in intfs:
+            intf_info = psutil.net_if_addrs().get(k)
+
+            ipv4_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET]
+            ipv6_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET6]
+            l2_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_PACKET]
+
+            if len(ipv4_info) > 0:
+                ipv4_info = ipv4_info[0]
+                ipv4 = ipv4_info[1]
+                ipv4mask = ipv4_info[2]
+                search_gw = [x[0] for x in gws if x[1] == k]
+                if len(search_gw) > 0:
+                    ipv4gateway = search_gw[0]
+                else:
+                    ipv4gateway = ''
+
+            else:
+                ipv4 = ''
+                ipv4gateway = ''
+                ipv4mask = ''
+
+            if len(ipv6_info) > 0:
+                ipv6_info = ipv6_info[0]
+                ipv6 = ipv6_info[1]
+                ipv6mask = ipv6_info[2]
+            else:
+                ipv6 = ''
+                ipv6mask = ''
+
+            if len(l2_info) > 0:
+                l2_info = l2_info[0]
+                mac = l2_info[1]
+            else:
+                mac = ''
+
+            speed = psutil.net_if_stats().get(k)[2]
+            inft_conf = {'ipv4_address': ipv4, 'ipv4_netmask': ipv4mask, "ipv4_gateway": ipv4gateway, "ipv6_address":
+                ipv6, 'ipv6_netmask': ipv6mask}
+
+            nets.append({'intf_name': k, 'inft_configuration': inft_conf, 'intf_mac_address': mac, 'intf_speed':
+                        speed, "type": self.get_intf_type(k), 'available': True})
+
+        return nets
+
+    def __get_acc_devices(self):
+        return []
 
     def __check_distro(self):
 
