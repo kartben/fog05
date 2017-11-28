@@ -208,6 +208,24 @@ class OSPlugin(Plugin):
     def removeKnowHost(self, hostname):
         raise NotImplemented
 
+    def set_io_unaviable(self, io_name):
+       raise NotImplemented
+
+    def set_io_available(self, io_name):
+        raise NotImplemented
+
+    def set_accelerator_unaviable(self, acc_name):
+        raise NotImplemented
+
+    def set_accelerator_available(self, acc_name):
+        raise NotImplemented
+
+    def set_interface_unaviable(self, intf_name):
+        raise NotImplemented
+
+    def set_interface_available(self, intf_name):
+        raise NotImplemented
+
 class ProcessNotExistingException(Exception):
     def __init__(self, message, errors):
 
