@@ -66,18 +66,36 @@ class brctl(NetworkPlugin):
         self.brmap.update({br_uuid, name})
         return br_uuid, name
 
-    def createVirtualNetwork(self, network_name, net_uuid, ip_range=None, has_dhcp=False, gateway=None):
+    def createVirtualNetwork(self, network_name, net_uuid, ip_range=None, has_dhcp=False, gateway=None, manifest=None):
 
         net = self.netmap.get(net_uuid, None)
         if net is not None:
             raise NetworkAlreadyExistsException("%s network already exists" % net_uuid)
 
+        info = {}
+        pi = []
+
+        info.update({'name': network_name})
+        info.update({'interfaces': pi})
+        info.update({'uuid': net_uuid})
+        info.update({'has_dhcp': has_dhcp})
+        info.update({'ip_range': ip_range})
+        info.update({'gateway': gateway})
         #brcmd = str('sudo brctl addbr %s-net', network_name)
         #net_uuid = uuid
         #
         br_name = str("br-%s" % net_uuid.split('-')[0])
-        vxlan_file = self.__generate_vxlan_script(net_uuid)
+
+        vxlan_file, vxlan_dev, vxlan_id, vxlan_mcast = self.__generate_vxlan_script(net_uuid, manifest)
         self.agent.getOSPlugin().executeCommand(str("%s/%s" % (self.BASE_DIR, vxlan_file)), True)
+
+        info.update({'virtual_device': br_name})
+        info.update({'vxlan_dev': vxlan_dev})
+        info.update({'vxlan_id': vxlan_id})
+        info.update({'multicast_address': vxlan_mcast})
+
+
+
 
         #self.agent.getOSPlugin().executeCommand(brcmd)
 
@@ -99,8 +117,7 @@ class brctl(NetworkPlugin):
             self.agent.getOSPlugin().executeCommand(ifcmd, True)
             self.agent.getOSPlugin().executeCommand(dhcp_cmd)
 
-
-        self.netmap.update({net_uuid: {'network_name': network_name, 'intf': []}})
+        self.netmap.update({net_uuid: info})
 
         return network_name, net_uuid
 
@@ -188,6 +205,9 @@ class brctl(NetworkPlugin):
             self.deleteVirtualNetwork(k)
         return True
 
+    def getNetworkInfo(self, network_uuid):
+        raise NotImplemented
+
     def __cird2block(self, cird):
         '''
             Convert cird subnet to first address (for router), dhcp avaiable range, netmask
@@ -228,7 +248,8 @@ class brctl(NetworkPlugin):
         ip_range = kwargs.get('ip_range')
         has_dhcp = kwargs.get('has_dhcp')
         gw = kwargs.get('gateway')
-        self.createVirtualNetwork(name,net_uuid,ip_range,has_dhcp,gw)
+        manifest = kwargs
+        self.createVirtualNetwork(name, net_uuid, ip_range, has_dhcp, gw, manifest)
 
     def __parse_manifest_for_remove(self, **kwargs):
         net_uuid = kwargs.get('uuid')
@@ -271,18 +292,31 @@ class brctl(NetworkPlugin):
 
         return file_name
 
-    def __generate_vxlan_script(self, net_uuid):
+    def __generate_vxlan_script(self, net_uuid, manifest=None):
         template_sh = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'vxlan_creation.sh'))
         net_sh = Environment().from_string(template_sh)
         br_name = str("br-%s" % net_uuid.split('-')[0])
         vxlan_name = str("vxl-%s" % net_uuid.split('-')[0])
-        vxlan_id = len(self.netmap)+1
-        mcast_addr = str("239.0.0.%d" % vxlan_id)
+
+        if manifest is not None:
+            vxl_id_manifest = manifest.get('vxlan_id')
+            if vxl_id_manifest is not None:
+                vxlan_id = vxl_id_manifest
+            else:
+                vxlan_id = len(self.netmap) + 1
+            vxl_mcast_manifest = manifest.get('multicast_address')
+            if vxl_mcast_manifest is not None:
+                mcast_addr = vxl_mcast_manifest
+            else:
+                mcast_addr = str("239.0.0.%d" % vxlan_id)
+        else:
+            vxlan_id = len(self.netmap) + 1
+            mcast_addr = str("239.0.0.%d" % vxlan_id)
 
         net_sh = net_sh.render(bridge_name=br_name, vxlan_intf_name=vxlan_name,
-                                group_id=vxlan_id, mcast_group_address=mcast_addr)
+                               group_id=vxlan_id, mcast_group_address=mcast_addr)
         self.agent.getOSPlugin().storeFile(net_sh, self.BASE_DIR, str("%s.sh" % net_uuid.split('-')[0]))
         chmod_cmd = str("chmod +x %s/%s" % (self.BASE_DIR, str("%s.sh" % net_uuid.split('-')[0])))
         self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
 
-        return str("%s.sh" % net_uuid.split('-')[0])
+        return str("%s.sh" % net_uuid.split('-')[0]), vxlan_name, vxlan_id, mcast_addr

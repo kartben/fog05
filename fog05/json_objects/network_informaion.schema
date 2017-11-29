@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "title": "Define virtual network",
+  "description": "Information for creating a virtual network",
+  "type":"object",
+  "properties":{
+    "status":{
+      "type":"string"
+    },
+    "virtual_device":{
+      "type":"string",
+      "description":"the virtual bridge associated to the networl"
+    },
+    "interfaces":{
+      "type":"array",
+      "items":{
+        "type":"string"
+      }
+    },
+    "name":{
+      "type":"string"
+    },
+    "uuid":{
+      "type":"string"
+    },
+    "ip_range":{
+      "type":"string"
+    },
+    "has_dhcp":{
+      "type":"string"
+    },
+    "gateway":{
+      "type":"string"
+    },
+    "vxlan_id":{
+      "type":"integer",
+      "description":"The vxlan id"
+    },
+    "vxlan_dev":{
+      "type":"integer",
+      "description":"The vxlan id"
+    },
+    "multicast_address":{
+      "type":"string",
+      "description":"the vxlan multicast address"
+    }
+  }
+}
+
