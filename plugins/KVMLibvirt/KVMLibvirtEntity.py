@@ -28,7 +28,7 @@ class KVMLibvirtEntity(Entity):
         self.state = State.CONFIGURED
 
     def onClean(self):
-        self.state =  State.DEFINED
+        self.state = State.DEFINED
 
     def onStart(self):
         self.state = State.RUNNING

@@ -42,11 +42,19 @@
           },
           "intf_name":{
             "type":"string",
-            "description":"name of the virtual bridge to be used"
+            "description":"name of network interface"
+          },
+           "br_name":{
+            "type":"string",
+            "description":"name of the bridge to use present only in case of neither network_uuid and type are not present"
+          },
+          "type":{
+            "type":"string",
+            "description":"type of the network interface needed, is this is present network_uuid br_name should not be present"
           },
           "network_uuid":{
             "type":"string",
-            "description":"uuid of the network to use"
+            "description":"uuid of the network to use present if type and "
           }
         }
       }

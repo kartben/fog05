@@ -138,8 +138,19 @@ class KVMLibvirt(RuntimePlugin):
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
 
-            vm_xml = self.__generate_dom_xml(entity)
 
+            nets = entity.networks
+            for n in nets:
+                if n.get('type') in ['wifi']:
+                    n.update({'direct_intf': None})
+                    # TODO get available interface from os plugin
+                if n.get('network_uuid') is not None:
+                    br_name = self.agent.getNetworkPlugin()[0].get((self.agent.getNetworkPlugin()[0].keys()[0])).getNetworkInfo(n.get('network_uuid')).get('virtual_device')
+                    n.update({'br_name': br_name})
+                if n.get('intf_name') is None:
+                    n.update({'intf_name': entity.name+"0"})
+
+            vm_xml = self.__generate_dom_xml(entity)
             image_name = entity.image.split('/')[-1]
 
             wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))

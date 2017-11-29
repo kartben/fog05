@@ -21,7 +21,7 @@ class Agent(object):
     def getRuntimePlugin(self, runtime_uuid):
         raise NotImplementedError
 
-    def getNetworkPlugin(self,cnetwork_uuid):
+    def getNetworkPlugin(self, cnetwork_uuid):
         raise NotImplementedError
 
     def listRuntimePlugins(self):

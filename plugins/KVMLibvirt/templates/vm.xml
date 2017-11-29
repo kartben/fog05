@@ -29,7 +29,7 @@
             <address bus="0" controller="0" target="0" type="drive" unit="0"/>
         </disk>
 
-        {% if iso_image is defined%}
+        {% if iso_image is defined %}
         <disk device="cdrom" type="file">
             <source file="{{ iso_image }}"/>
             <driver name="qemu" type="raw"/>
@@ -50,17 +50,25 @@
         {% endfor %}
 
         {% for net in networks %}
-
+         {% if net.type is defined %}
+        <devices>
+            <interface type='direct' trustGuestRxFilters='no'>
+                <source dev='{{ net.direct_intf }}' mode='vepa'/>
+            </interface>
+        </devices>
+            {% else %}
         <interface type='bridge'>
             {% if net.mac is defined %}
             <mac address='{{ net.mac }}'/>
             {% endif %}
-            <source network='default' bridge='{{ net.intf_name }}'/>
-            <target dev='{{ name }}0'/>
+            <source network='default' bridge='{{ net.br_name }}'/>
+            <target dev='{{ net.intf_name }}'/>
             <model type='virtio'/>
-            <alias name='net{{loop.index}}'/>
+            <alias name='net{{loop.index}}/>
             <!-- <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/> -->
         </interface>
+         {% endif %}
+
         {% endfor %}
         <serial type='file'>
             <source path='/opt/fos/kvm/logs/{{ uuid }}_log.log'/>

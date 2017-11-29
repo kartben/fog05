@@ -121,6 +121,12 @@ class FosAgent(Agent):
     def getOSPlugin(self):
         return self.__osPlugin
 
+    def getNetworkPlugin(self, cnetwork_uuid):
+        if cnetwork_uuid is None:
+            return self.__nwPlugins
+        else:
+            return self.__nwPlugins.get(cnetwork_uuid)
+
     def __load_runtime_plugin(self, plugin_name):
         self.logger.info('__load_runtime_plugin()', 'Loading a Runtime plugin: %s' % plugin_name)
         rt = self.pl.locatePlugin(plugin_name)
