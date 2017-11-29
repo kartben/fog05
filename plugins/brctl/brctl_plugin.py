@@ -181,7 +181,7 @@ class brctl(NetworkPlugin):
         net = self.netmap.get(network_uuid, None)
         if net is None:
             raise BridgeAssociatedToNetworkException("%s network not exists" % network_uuid)
-        if len(net.get('intf')) > 0:
+        if len(net.get('interfaces')) > 0:
             raise NetworkHasPendingInterfacesException("%s has pending interfaces" % network_uuid)
 
         shutdown_file = self.__generate_vxlan_shutdown_script(network_uuid)
@@ -206,7 +206,9 @@ class brctl(NetworkPlugin):
         return True
 
     def getNetworkInfo(self, network_uuid):
-        raise NotImplemented
+        if network_uuid is None:
+            return self.netmap
+        return self.netmap.get(network_uuid)
 
     def __cird2block(self, cird):
         '''

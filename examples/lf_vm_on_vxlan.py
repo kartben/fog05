@@ -39,6 +39,55 @@ class Controll():
         self.nodes = {}
 
 
+    def create_network(self, node_uuid, net_id, master=True):
+        time.sleep(1)
+        val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
+                            'type': 'network', 'status': 'add'}]}
+        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        self.dstore.dput(uri, json.dumps(val))
+        time.sleep(1)
+
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
+        print(all_plugins)
+        nws = [x for x in all_plugins if x.get('type') == 'network']
+        print(nws)
+        print("locating brctl plugin")
+        search = [x for x in nws if 'brctl' in x.get('name')]
+        print(search)
+        if len(search) == 0:
+            print("Plugin was not loaded")
+            exit()
+        else:
+            brctl = search[0]
+
+        if master:
+            net_data = {'status':'add', 'name': 'test', 'uuid': net_id, 'ip_range': '192.168.128.0/24', 'has_dhcp':True}
+        else:
+            net_data = {'status':'add', 'name': 'test', 'uuid': net_id}
+
+        json_data = json.dumps(net_data)
+        uri = str('dfos://<sys-id>/%s/network/%s/networks/%s' %
+                  (node_uuid, brctl.get('uuid'), net_id))
+        self.dstore.put(uri, json_data)
+
+    def delete_network(self, node_uuid, net_id):
+        time.sleep(1)
+
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
+        nws = [x for x in all_plugins if x.get('type') == 'network']
+        print("locating brctl plugin")
+        search = [x for x in nws if 'brctl' in x.get('name')]
+        print(search)
+        if len(search) == 0:
+            print("Plugin was not loaded")
+            exit(0)
+        else:
+            brctl = search[0]
+
+        uri = str('dfos://<sys-id>/%s/network/%s/networks/%s#status=remove' % (node_uuid, brctl.get('uuid'), net_id))
+        self.dstore.dput(uri)
 
 
     def nodeDiscovered(self, uri, value, v = None):
@@ -87,8 +136,7 @@ class Controll():
             id = list(n.keys())[0]
             print("%d - %s : %s" % (k, n.get(id).get('name'), id))
 
-
-    def vm_deploy(self, node_uuid, vm_uuid):
+    def vm_deploy(self, node_uuid, vm_uuid, net_uuid=None):
         '''
         This method make the destination node load the correct plugins,
         and then deploy the vm to the node
@@ -107,11 +155,11 @@ class Controll():
         self.dstore.dput(uri, json.dumps(val))  # Writing to the desidered store of the destination node
                                                 # the manifest of the plugin to load, in this case KVM
 
-        time.sleep(1)
-        val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
-                            'type': 'network', 'status': 'add'}]}
-        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
-        self.dstore.dput(uri, json.dumps(val))  # Writing to the desidered store of the destination node
+        #time.sleep(1)
+        #val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
+        #                    'type': 'network', 'status': 'add'}]}
+        #uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        #self.dstore.dput(uri, json.dumps(val))  # Writing to the desidered store of the destination node
                                                 # the manifest of the plugin to load, in this case bridge-utils
 
         time.sleep(1)
@@ -145,7 +193,12 @@ class Controll():
 
 
         # creating the manifest for the vm
-        vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
+        if net_uuid is not None:
+            vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
+                'http://192.168.1.142/virt-cirros-0.3.4-x86_64-disk.img', 'networks': [{
+                'mac': "d2:e3:ed:6f:e3:ef", 'network_uuid': net_uuid}], "user-data": cinit, "ssh-key": sshk}
+        else:
+            vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
             'http://192.168.1.142/virt-cirros-0.3.4-x86_64-disk.img', 'networks': [{
             'mac': "d2:e3:ed:6f:e3:ef", 'br_name': "virbr0"}], "user-data": cinit, "ssh-key": sshk}
 
@@ -272,14 +325,20 @@ class Controll():
         if vm_dst_node is not None:
             vm_dst_node = list(vm_dst_node.keys())[0]
 
+        net_uuid = str(uuid.uuid4())
+        # net creation
+        self.create_network(vm_dst_node, net_uuid, False)
+        input()
+
         # deploy the vm
-        self.vm_deploy(vm_dst_node, vm_uuid)
+        self.vm_deploy(vm_dst_node, vm_uuid, net_uuid)
 
         input()
 
-        # offload the vm
+        # offload the vm and network
         self.vm_destroy(vm_dst_node, vm_uuid)
-
+        input()
+        self.delete_network(vm_dst_node, net_uuid)
         input()
 
         exit(0)

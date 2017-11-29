@@ -207,6 +207,13 @@ class LXD(RuntimePlugin):
             profile = self.conn.profiles.get(entity_uuid)
             profile.delete()
 
+            '''
+            {'wan': {'nictype': 'physical', 'name': 'wan', 'type': 'nic', 'parent': 'veth-af90f'}, 
+            'root': {'type': 'disk', 'pool': 'default', 'path': '/'}, 
+            'mgmt': {'nictype': 'bridged', 'name': 'mgmt', 'type': 'nic', 'parent': 'br-45873fb0'}}
+
+            '''
+
 
             self.agent.getOSPlugin().removeFile(str("%s/%s/%s") % (self.BASE_DIR, self.IMAGE_DIR, entity.image))
 
@@ -519,8 +526,19 @@ class LXD(RuntimePlugin):
         template_disk = '{"path":"%s","type":"disk","pool":"%s"}'
 
         template_key = '%s'
-        for n in entity.networks: #TODO add on manifest infomation about network
-            if self.agent.getOSPlugin().get_intf_type(n.get('br_name')) in ['ethernet']:
+        for i, n in enumerate(entity.networks):
+            if n.get('network_uuid') is not None:
+                nws = self.agent.getNetworkPlugin(None).get(list(self.agent.getNetworkPlugin(None).keys())[0])
+                # print(nws.getNetworkInfo(n.get('network_uuid')))
+                br_name = nws.getNetworkInfo(n.get('network_uuid')).get('virtual_device')
+                # print(br_name)
+                n.update({'br_name': br_name})
+                if n.get('intf_name') is None:
+                    n.update({'intf_name': "eth"+str(i)})
+                nw_k = str(template_key % n.get('intf_name'))
+                nw_v = json.loads(str(template_value_bridge % (n.get('intf_name'), n.get('br_name'))))
+
+            elif self.agent.getOSPlugin().get_intf_type(n.get('br_name')) in ['ethernet']:
                 cmd = "sudo ip link add name %s link %s type macvlan"
                 veth_name = str('veth-%s' % entity.uuid[:5])
                 cmd = str(cmd % (veth_name, n.get('br_name')))
@@ -533,6 +551,8 @@ class LXD(RuntimePlugin):
                 nw_k = str(template_key % n.get('intf_name'))
                 self.agent.getOSPlugin().set_interface_unaviable(n.get('br_name'))
             else:
+                if n.get('intf_name') is None:
+                    n.update({'intf_name': "eth" + str(i)})
                 nw_k = str(template_key % n.get('intf_name'))
                 nw_v = json.loads(str(template_value_bridge % (n.get('intf_name'), n.get('br_name'))))
 

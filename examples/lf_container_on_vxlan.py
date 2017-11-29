@@ -88,7 +88,7 @@ class Controll():
             print("%d - %s : %s" % (k, n.get(id).get('name'), id))
 
 
-    def container_deploy(self, node_uuid, container_uuid):
+    def container_deploy(self, node_uuid, container_uuid, net_uuid=None):
         '''
         This method make the destination node load the correct plugins,
         and then deploy the container to the node
@@ -107,11 +107,11 @@ class Controll():
         self.dstore.dput(uri, json.dumps(val))  # Writing to the desidered store of the destination node
                                                 # the manifest of the plugin to load, in this case Kcontainer
 
-        time.sleep(2)
-        val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
-                            'type': 'network', 'status': 'add'}]}
-        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
-        self.dstore.dput(uri, json.dumps(val))  # Writing to the desidered store of the destination node
+        #time.sleep(2)
+        #val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
+        #                    'type': 'network', 'status': 'add'}]}
+        #uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        #self.dstore.dput(uri, json.dumps(val))  # Writing to the desidered store of the destination node
                                                 # the manifest of the plugin to load, in this case bridge-utils
 
         time.sleep(1)
@@ -145,9 +145,15 @@ class Controll():
 
 
         # creating the manifest for the container
-        container_definition = {'name': container_name, 'uuid': container_uuid, 'base_image':
-            'http://192.168.1.142/ubuntu_container.tar.xz', 'networks': [{
-            'br_name':'virbr0', 'intf_name': "eth0"}], "user-data": cinit, "ssh-key": sshk}
+        if net_uuid is None:
+            container_definition = {'name': container_name, 'uuid': container_uuid, 'base_image':
+                'http://192.168.1.142/ubuntu_container.tar.xz', 'networks': [{
+                'br_name':'virbr0', 'intf_name': "eth0"}], "user-data": cinit, "ssh-key": sshk}
+        else:
+            container_definition = {'name': container_name, 'uuid': container_uuid, 'base_image':
+                'http://192.168.1.142/ubuntu_container.tar.xz', 'networks': [{
+                'network_uuid': net_uuid, 'intf_name': "eth0"}], "user-data": cinit, "ssh-key": sshk}
+
 
         entity_definition = {'status': 'define', 'name': container_name, 'version': 1, 'entity_data': container_definition}
 
@@ -247,6 +253,56 @@ class Controll():
         self.dstore.dput(uri, json_data)
         #self.dstore.remove(uri)
 
+    def create_network(self, node_uuid, net_id, master=True):
+        time.sleep(1)
+        val = {'plugins': [{'name': 'brctl', 'version': 1, 'uuid': '',
+                            'type': 'network', 'status': 'add'}]}
+        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        self.dstore.dput(uri, json.dumps(val))
+        time.sleep(1)
+
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
+        print(all_plugins)
+        nws = [x for x in all_plugins if x.get('type') == 'network']
+        print(nws)
+        print("locating brctl plugin")
+        search = [x for x in nws if 'brctl' in x.get('name')]
+        print(search)
+        if len(search) == 0:
+            print("Plugin was not loaded")
+            exit()
+        else:
+            brctl = search[0]
+
+        if master:
+            net_data = {'status':'add', 'name': 'test', 'uuid': net_id, 'ip_range': '192.168.128.0/24', 'has_dhcp':True}
+        else:
+            net_data = {'status':'add', 'name': 'test', 'uuid': net_id}
+
+        json_data = json.dumps(net_data)
+        uri = str('dfos://<sys-id>/%s/network/%s/networks/%s' %
+                  (node_uuid, brctl.get('uuid'), net_id))
+        self.dstore.put(uri, json_data)
+
+    def delete_network(self, node_uuid, net_id):
+        time.sleep(1)
+
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
+        nws = [x for x in all_plugins if x.get('type') == 'network']
+        print("locating brctl plugin")
+        search = [x for x in nws if 'brctl' in x.get('name')]
+        print(search)
+        if len(search) == 0:
+            print("Plugin was not loaded")
+            exit(0)
+        else:
+            brctl = search[0]
+
+        uri = str('dfos://<sys-id>/%s/network/%s/networks/%s#status=remove' % (node_uuid, brctl.get('uuid'), net_id))
+        self.dstore.dput(uri)
+
 
     def main(self):
 
@@ -272,14 +328,19 @@ class Controll():
         if container_dst_node is not None:
             container_dst_node = list(container_dst_node.keys())[0]
 
+        net_uuid = str(uuid.uuid4())
+        # net creation
+        self.create_network(container_dst_node, net_uuid, False)
+        input()
         # deploy the container
-        self.container_deploy(container_dst_node, container_uuid)
+        self.container_deploy(container_dst_node, container_uuid, net_uuid)
 
         input()
 
         # offload the container
         self.container_destroy(container_dst_node, container_uuid)
-
+        input()
+        self.delete_network(container_dst_node, net_uuid)
         input()
 
         exit(0)

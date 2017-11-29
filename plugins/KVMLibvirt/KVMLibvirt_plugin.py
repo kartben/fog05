@@ -138,17 +138,18 @@ class KVMLibvirt(RuntimePlugin):
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
 
-
-            nets = entity.networks
-            for n in nets:
+            for i, n in enumerate(entity.networks):
                 if n.get('type') in ['wifi']:
                     n.update({'direct_intf': None})
                     # TODO get available interface from os plugin
                 if n.get('network_uuid') is not None:
-                    br_name = self.agent.getNetworkPlugin()[0].get((self.agent.getNetworkPlugin()[0].keys()[0])).getNetworkInfo(n.get('network_uuid')).get('virtual_device')
+                    nws = self.agent.getNetworkPlugin(None).get(list(self.agent.getNetworkPlugin(None).keys())[0])
+                    #print(nws.getNetworkInfo(n.get('network_uuid')))
+                    br_name = nws.getNetworkInfo(n.get('network_uuid')).get('virtual_device')
+                    #print(br_name)
                     n.update({'br_name': br_name})
                 if n.get('intf_name') is None:
-                    n.update({'intf_name': entity.name+"0"})
+                    n.update({'intf_name': entity.name+str(i)})
 
             vm_xml = self.__generate_dom_xml(entity)
             image_name = entity.image.split('/')[-1]
@@ -472,7 +473,7 @@ class KVMLibvirt(RuntimePlugin):
             if isinstance(dst_node_info,tuple):
                 dst_node_info = dst_node_info[0]
             dst_node_info = dst_node_info.replace("'", '"')
-            print(dst_node_info)
+            #print(dst_node_info)
             dst_node_info = json.loads(dst_node_info)
             ## json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
             # dst_node_info = json.loads(self.agent.astore.get(uri)[0])
@@ -563,7 +564,7 @@ class KVMLibvirt(RuntimePlugin):
             value = json.loads(value)
             action = value.get('status')
             entity_data = value.get('entity_data')
-            print(type(entity_data))
+            #print(type(entity_data))
             react_func = self.__react(action)
             if react_func is not None and entity_data is None:
                 react_func(uuid)

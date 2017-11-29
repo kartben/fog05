@@ -496,12 +496,19 @@ class FosAgent(Agent):
         self.logger.info('__exit_gracefully()', 'Received signal: %d' % signal)
         self.logger.info('__exit_gracefully()', 'fosAgent exiting...')
         keys = list(self.__rtPlugins.keys())
+        # TODO fix try catch
         for k in keys:
-            self.__rtPlugins.get(k).stopRuntime()
-
+            try:
+                self.__rtPlugins.get(k).stopRuntime()
+            except Exception:
+                pass
         keys = list(self.__nwPlugins.keys())
         for k in keys:
-            self.__nwPlugins.get(k).stopNetwork()
+            try:
+                self.__nwPlugins.get(k).stopNetwork()
+            except Exception:
+                pass
+
         self.logger.info('__exit_gracefully()', '[ DONE ] Bye')
         #sys.exit(0)
 
