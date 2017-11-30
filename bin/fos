@@ -441,6 +441,9 @@ class Fos(object):
         --------
         fos application list
             list of applications in current system
+
+        fos application <uuid> tree
+            all info about components of the application, tree way
         
         fos application add <path to application json manifest>
             add an application in the current system

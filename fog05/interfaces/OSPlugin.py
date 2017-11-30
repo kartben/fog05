@@ -208,6 +208,9 @@ class OSPlugin(Plugin):
     def removeKnowHost(self, hostname):
         raise NotImplemented
 
+    def get_intf_type(self, name):
+        raise NotImplemented
+
     def set_io_unaviable(self, io_name):
        raise NotImplemented
 

@@ -206,7 +206,6 @@ class Linux(OSPlugin):
     def getIOInformations(self):
         return self.io_devices
 
-
     def getAcceleratorsInformations(self):
         return self.accelerator_devices
 

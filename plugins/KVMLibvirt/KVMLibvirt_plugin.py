@@ -140,7 +140,12 @@ class KVMLibvirt(RuntimePlugin):
 
             for i, n in enumerate(entity.networks):
                 if n.get('type') in ['wifi']:
-                    n.update({'direct_intf': None})
+
+                    nw_ifaces =  self.agent.getOSPlugin().getNetworkInformations()
+                    for iface in nw_ifaces:
+                        if self.agent.getOSPlugin().get_intf_type(iface.get('intf_name')) == 'wireless' and iface.get('available') is True:
+                            self.agent.getOSPlugin().set_interface_unaviable(iface.get('intf_name'))
+                            n.update({'direct_intf': iface.get('intf_name')})
                     # TODO get available interface from os plugin
                 if n.get('network_uuid') is not None:
                     nws = self.agent.getNetworkPlugin(None).get(list(self.agent.getNetworkPlugin(None).keys())[0])
