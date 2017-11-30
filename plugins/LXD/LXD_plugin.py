@@ -512,6 +512,7 @@ class LXD(RuntimePlugin):
         devices = {}
         template_value_bridge = '{"name":"%s","type":"nic","parent":"%s","nictype":"bridged"}'
         template_value_phy = '{"name":"%s","type":"nic","parent":"%s","nictype":"physical"}'
+        template_value_macvlan = '{"name":"%s","type":"nic","parent":"%s","nictype":"macvlan"}'
 
         '''
         # Create tenant's storage pool
@@ -526,6 +527,7 @@ class LXD(RuntimePlugin):
         template_disk = '{"path":"%s","type":"disk","pool":"%s"}'
 
         template_key = '%s'
+        template_key2 = "eth%d"
         for i, n in enumerate(entity.networks):
             if n.get('network_uuid') is not None:
                 nws = self.agent.getNetworkPlugin(None).get(list(self.agent.getNetworkPlugin(None).keys())[0])
@@ -535,25 +537,31 @@ class LXD(RuntimePlugin):
                 n.update({'br_name': br_name})
                 if n.get('intf_name') is None:
                     n.update({'intf_name': "eth"+str(i)})
-                nw_k = str(template_key % n.get('intf_name'))
+                #nw_k = str(template_key % n.get('intf_name'))
+                nw_k = str(template_key2 % i)
                 nw_v = json.loads(str(template_value_bridge % (n.get('intf_name'), n.get('br_name'))))
 
             elif self.agent.getOSPlugin().get_intf_type(n.get('br_name')) in ['ethernet']:
-                cmd = "sudo ip link add name %s link %s type macvlan"
-                veth_name = str('veth-%s' % entity.uuid[:5])
-                cmd = str(cmd % (veth_name, n.get('br_name')))
-                self.agent.getOSPlugin().executeCommand(cmd, True)
-                nw_v = json.loads(str(template_value_phy % (n.get('intf_name'), veth_name)))
-                nw_k = str(template_key % n.get('intf_name'))
+                #if n.get('')
+                #cmd = "sudo ip link add name %s link %s type macvlan"
+                #veth_name = str('veth-%s' % entity.uuid[:5])
+                #cmd = str(cmd % (veth_name, n.get('br_name')))
+                #self.agent.getOSPlugin().executeCommand(cmd, True)
+                #nw_v = json.loads(str(template_value_phy % (n.get('intf_name'), veth_name)))
+                nw_v = json.loads(str(template_value_macvlan % (n.get('intf_name'), n.get('br_name'))))
+                #nw_k = str(template_key % n.get('intf_name'))
+                nw_k = str(template_key2 % i)
                 #self.agent.getOSPlugin().set_interface_unaviable(n.get('br_name'))
             elif self.agent.getOSPlugin().get_intf_type(n.get('br_name')) in ['wireless']:
                 nw_v = json.loads(str(template_value_phy % (n.get('intf_name'), n.get('br_name'))))
-                nw_k = str(template_key % n.get('intf_name'))
+                #nw_k = str(template_key % n.get('intf_name'))
+                nw_k = str(template_key2 % i)
                 self.agent.getOSPlugin().set_interface_unaviable(n.get('br_name'))
             else:
                 if n.get('intf_name') is None:
                     n.update({'intf_name': "eth" + str(i)})
-                nw_k = str(template_key % n.get('intf_name'))
+                #nw_k = str(template_key % n.get('intf_name'))
+                nw_k = str(template_key2 % i)
                 nw_v = json.loads(str(template_value_bridge % (n.get('intf_name'), n.get('br_name'))))
 
             devices.update({nw_k: nw_v})

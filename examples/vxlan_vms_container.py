@@ -82,10 +82,11 @@ class Controll():
         # cirros-0.3.5-x86_64-disk.img
         # xenial-server-cloudimg-amd64-disk1.img
         # 192.168.1.142
+        # 172.16.7.128
         #br_name = str("br-%s" % net_uuid.split('-')[0])
 
         vm_definition = {'name': vm_name, 'uuid': vm_uuid, 'cpu': 1, 'memory': 512, 'disk_size': 10, 'base_image':
-            'http://172.16.7.128/brain.qcow2', 'networks': [{'network_uuid': net_uuid}],
+            'http://192.168.1.142/brain.qcow2', 'networks': [{'network_uuid': net_uuid}],
             "user-data": cinit, "ssh-key": sshk}
 
         entity_definition = {'status': 'define', 'name': vm_name, 'version': 1, 'entity_data': vm_definition}
