@@ -185,6 +185,10 @@
                                 "available":{
                                     "type":"boolean",
                                     "description":"if this device is available or is assigned to an entity"
+                                },
+                                "default_gw":{
+                                    "type":"boolean",
+                                    "description":"if this device is the default gateway"
                                 }
                             }
                         }

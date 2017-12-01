@@ -73,10 +73,10 @@ class Controll():
             exit()
         else:
             native = search[0]
-        app_name = 'led'
+        app_name = 'pi_morse'
         app_uuid = str(uuid.uuid4())
-        app_definition = {'name': app_name, 'source': 'https://www.dropbox.com/s/mtp2h6ktpeqmcwo/led.zip',
-                        'command': 'start.sh', 'args': [], 'uuid': app_uuid}
+        app_definition = {'name': app_name, 'source': 'https://www.dropbox.com/s/mf0x8pbpsy4p4qi/pi_morse.zip',
+                        'command': 'pi_morse.py', 'args': [], 'uuid': app_uuid}
         entity_definition = {'status': 'define', 'name': app_name, 'version': 1, 'entity_data': app_definition}
 
         json_data = json.dumps(entity_definition)

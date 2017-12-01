@@ -10,6 +10,7 @@ import random
 import time
 import re
 import libvirt
+import ipaddress
 
 class KVMLibvirt(RuntimePlugin):
 
@@ -475,7 +476,7 @@ class KVMLibvirt(RuntimePlugin):
             uri = str("afos://<sys-id>/%s/" % fognode_uuid)
 
             dst_node_info = self.agent.astore.get(uri) # TODO: solve this ASAP
-            if isinstance(dst_node_info,tuple):
+            if isinstance(dst_node_info, tuple):
                 dst_node_info = dst_node_info[0]
             dst_node_info = dst_node_info.replace("'", '"')
             #print(dst_node_info)
@@ -488,7 +489,9 @@ class KVMLibvirt(RuntimePlugin):
 
             dst_hostname = dst_node_info.get('name')
 
-            dst_ip = [x for x in nw if x.get("inft_configuration").get("ipv4_gateway") != ""]
+
+
+            dst_ip = [x for x in nw if x.get("default_gw") is True]
             # TODO: or x.get("inft_configuration").get("ipv6_gateway") for ip_v6
             if len(dst_ip) == 0:
                 return False
@@ -650,10 +653,8 @@ class KVMLibvirt(RuntimePlugin):
         uri = str("%s/%s/%s" % (self.agent.dhome, self.HOME, e))
         self.agent.dstore.remove(uri)
 
-
-
-
-
+    def __netmask_to_cidr(self, netmask):
+        return sum([bin(int(x)).count('1') for x in netmask.split('.')])
 
     def __react(self, action):
         r = {
