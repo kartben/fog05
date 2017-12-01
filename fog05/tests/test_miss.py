@@ -7,6 +7,7 @@ import dds
 import json
 import time
 
+###
 def test_miss(sid, root, home):
 
     sroot = "fos://{0}".format(root)
@@ -55,3 +56,6 @@ if __name__ == "__main__":
         test_miss(sys.argv[1], sys.argv[2], sys.argv[3])
     else:
         print('USAGE:\n\tpython3 test_miss.py <sid> <store-root> <store-home>')
+        print('\nExample:\n\ttpython3 test_miss.py 1 root home')
+        print('\n\ttpython3 test_miss.py 2 root home')
+        print('\n\ttpython3 test_miss.py 3 root home')
