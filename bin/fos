@@ -98,7 +98,8 @@ class Fos(object):
             if parameters[1] == 'list':
                 uri = str('afos://<sys-id>/*/')
                 print(uri)
-                nodes = self.astore.get(uri)[0]  ## se below for information on this
+                nodes = self.astore.getAll(uri)
+                ## se below for information on this
                 ## this not work
                 print(nodes)
             else:
