@@ -1,0 +1,11 @@
+{
+  "status": "define",
+  "name": "night_light",
+  "version": 1,
+  "entity_data": {
+    "name": "night_light",
+    "source": "https://www.dropbox.com/s/oo2b293bq8do7de/night_light.zip",
+    "command": "led_sensor.py", "args": [], "uuid": "5b2338d3-30cd-4976-836d-4bd61fe0a50f"
+  }
+}
+

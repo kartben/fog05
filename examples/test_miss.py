@@ -61,8 +61,13 @@ class TestCache():
         v = self.astore.get("afos://<sys-id>/1/test1")
         print(v)
 
+        print(self.astore.get("afos://<sys-id>/1/*"))
+
         input("Next...")
 
+        print("Local wildcard")
+        print(self.astore.get("afos://<sys-id>/1/*"))
+        print("###")
         # a resolve operates over a trivial URI not over a wildcard
         # v = self.astore.get("afos://<sys-id>/*/test2")
         # print(v)
