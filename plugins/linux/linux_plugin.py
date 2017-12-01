@@ -299,11 +299,21 @@ class Linux(OSPlugin):
     def __get_io_devices(self):
         dev = []
         gpio_path = "/sys/class/gpio" #gpiochip0
-        gpio_devices = files = [f for f in os.listdir(gpio_path) if f not in ['export', 'unexport']]
+        gpio_devices = [f for f in os.listdir(gpio_path) if f not in ['export', 'unexport']]
         for d in gpio_devices:
-            dev.append({"name": d,"io_type": "gpio", "io_file" : gpio_path+os.path.sep+d, "available": True})
+            dev.append({"name": d, "io_type": "gpio", "io_file": gpio_path+os.path.sep+d, "available": True})
 
         return dev
+
+    def __get_default_gw(self):
+        cmd = str("sudo %s" % (os.path.join(self.DIR, 'scripts', 'default_gw.sh')))
+        p = psutil.Popen(cmd.split(), stdout=PIPE)
+        p.wait()
+        iface = ""
+        for line in p.stdout:
+            iface = line.decode().strip()
+
+        return iface
 
     def __get_nw_devices(self):
         # {'default': {2: ('172.16.0.1', 'brq2376512c-13')}, 2: [('10.0.0.1', 'eno4', True), ('172.16.0.1', 'brq2376512c-13', True), ('172.16.1.1', 'brqf110e342-9b', False), ('10.0.0.1', 'eno4', False)]}
@@ -311,6 +321,10 @@ class Linux(OSPlugin):
         nets = []
         intfs = psutil.net_if_stats().keys()
         gws = netifaces.gateways().get(2)
+
+        default_gw = self.__get_default_gw()
+        if default_gw == "":
+            self.agent.logger.warning('__get_nw_devices()', 'Default gw not found!!')
         for k in intfs:
             intf_info = psutil.net_if_addrs().get(k)
 
@@ -351,8 +365,12 @@ class Linux(OSPlugin):
             inft_conf = {'ipv4_address': ipv4, 'ipv4_netmask': ipv4mask, "ipv4_gateway": ipv4gateway, "ipv6_address":
                 ipv6, 'ipv6_netmask': ipv6mask}
 
-            nets.append({'intf_name': k, 'inft_configuration': inft_conf, 'intf_mac_address': mac, 'intf_speed':
-                        speed, "type": self.get_intf_type(k), 'available': True})
+            iface_info = {'intf_name': k, 'inft_configuration': inft_conf, 'intf_mac_address': mac, 'intf_speed':
+                          speed, "type": self.get_intf_type(k), 'available': True, "default_gw": False}
+            if k == default_gw:
+                iface_info.update({'available': False})
+                iface_info.update({'default_gw': True})
+            nets.append(iface_info)
 
         return nets
 
