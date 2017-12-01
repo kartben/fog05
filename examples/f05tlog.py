@@ -7,8 +7,8 @@ def cache_discovered(dr):
         if i.valid_data:
             print(str(s))
 
-def cache_disappeared():
-    print("Lost one cache")
+def cache_discovery_event(r, s):
+    print("Cache discovery event")
 
 def log_samples(dr):
     for (s, i) in dr.take(all_samples()):
@@ -34,7 +34,7 @@ def start_tlog(root):
                                          [Reliable(), Transient(), KeepLastHistory(1)],
                                         log_samples)
 
-    store_info_reader.on_liveliness_changed(cache_disappeared)
+    store_info_reader.on_liveliness_changed(cache_discovery_event)
 
     key_value_writer = FlexyWriter(pub,
                                         key_value_topic,

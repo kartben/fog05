@@ -87,7 +87,13 @@ class DStore(Store):
 
 
     def is_stored_value(self, uri):
-        return fnmatch.fnmatch(uri, self.home)
+        if uri.startswith(self.home):
+            return True
+        else:
+            l = len(self.home)
+            p = uri[:l]
+            return fnmatch.fnmatch(self.home, p)
+
 
     def is_cached_value(self, uri):
         return  not self.is_stored_value(uri)
@@ -278,10 +284,10 @@ class DStore(Store):
     def getAll(self, uri):
         xs = []
         for k,v in self.__store.items():
-            if fnmatch.fnmatch(uri, k):
+            if fnmatch.fnmatch(k, uri):
                 xs.append((k, v[0], v[1]))
         for k,v in self.__local_cache.items():
-            if fnmatch.fnmatch(uri, k):
+            if fnmatch.fnmatch(k, uri):
                 xs.append((k, v[0], v[1]))
 
         return xs
