@@ -108,6 +108,11 @@ class Store(object):
         """
         raise NotImplementedError
 
+    def getAll(self, uri):
+        """
+                :return: [(uri,value)]
+        """
+        raise NotImplementedError
     def remove(self, uri):
         """
             removes the entry associated to this URI from the distributed cache.

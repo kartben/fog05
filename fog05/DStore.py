@@ -12,11 +12,13 @@ class DStore(Store):
         self.home = home
         self.store_id = store_id
         self.__store = {} # This stores URI whose prefix is **home**
+        self.discovered_stores = [] # list of discovered stores not including self
         self.__cache_size = cache_size
         self.__local_cache = {} # this is a cache that stores up
                                 # to __cache_size entry for URI whose prefix is not **home**
         self.__observers = {}
         self.__controller = DController(self)
+
         self.__controller.start()
 
         '''
@@ -114,8 +116,6 @@ class DStore(Store):
         else:
             if uri in self.__local_cache:
                 v = self.__local_cache[uri]
-
-
         return v
 
     def next_version(self, uri):
@@ -275,7 +275,20 @@ class DStore(Store):
         else:
             return v[0]
 
+    def getAll(self, uri):
+        xs = []
+        for k,v in self.__store.items():
+            if fnmatch.fnmatch(uri, v):
+                xs.append((k, v[0], v[1]))
+        for k,v in self.__local_cache.items():
+            if fnmatch.fnmatch(uri, v):
+                xs.append((k, v[0], v[1]))
 
+        return xs
+
+    def resolveAll(self, uri):
+        xs = self.__controller.resolveAll(uri)
+        return xs + self.getAll(uri)
 
     def miss_handler(self, action):
         pass

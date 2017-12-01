@@ -51,3 +51,27 @@ class CacheHit(TopicType):
 
     def __str__(self):
         return "CacheHit(source_sid = {0}, dest_sid = {1}, key = {2}, value = {3}, version = {4})".format(self.source_sid, self.dest_sid, self.key, self.value, self.version)
+
+class CacheMissMV(TopicType):
+    def __init__(self, source_sid, key):
+        self.source_sid = source_sid
+        self.key = key
+
+    def gen_key(self):
+       return self.key
+
+    def __str__(self):
+        return "CacheMissME(source_sid = {0}, key = {1})".format(self.source_sid, self.key)
+
+class CacheHitMV(TopicType):
+    def __init__(self, source_sid, dest_sid, key, kvave):
+        self.source_sid = source_sid
+        self.dest_sid = dest_sid
+        self.key = key
+        self.kvave= kvave # (key, value, version)
+
+    def gen_key(self):
+       return self.key
+
+    def __str__(self):
+        return "CacheHit(source_sid = {0}, dest_sid = {1}, kvave= {2})".format(self.source_sid, self.dest_sid, self.kvave)

@@ -1,7 +1,9 @@
 from fog05.interfaces.Store import *
 from fog05.interfaces.Types import *
 from dds import *
-import json
+import copy
+
+# import json
 
 import time
 import uuid
@@ -68,7 +70,25 @@ class DController (Controller, Observer):
                                        self.hit_topic,
                                        [Reliable(), Volatile(), KeepAllHistory()], None)
 
+        self.missmv_topic = FlexyTopic(self.dp, "FOSStoreMissMV")
 
+        self.missmv_writer = FlexyWriter(self.pub,
+                                         self.missmv_topic,
+                                         [Reliable(), Volatile(), KeepAllHistory()])
+
+        self.missmv_reader = FlexyReader(self.sub,
+                                         self.missmv_topic,
+                                         [Reliable(), Volatile(), KeepAllHistory()], lambda r: self.handle_miss_mv(r))
+
+        self.hitmv_topic = FlexyTopic(self.dp, "FOSStoreHitMV")
+
+        self.hitmv_writer = FlexyWriter(self.pub,
+                                        self.hitmv_topic,
+                                        [Reliable(), Volatile(), KeepAllHistory()])
+
+        self.hitmv_reader = FlexyReader(self.sub,
+                                        self.hitmv_topic,
+                                        [Reliable(), Volatile(), KeepAllHistory()], None)
 
 
     def handle_miss(self, r):
@@ -83,6 +103,17 @@ class DController (Controller, Observer):
                     self.hit_writer.write(h)
                 else:
                     print(">>> Store {0} not resolve remote miss on key {1}".format(self.__store.store_id, d.key))
+
+
+    def handle_miss_mv(self, r):
+        print('>>>> Handling Miss MV for store {0}'.format(self.__store.store_id))
+        samples = r.take(all_samples())
+        for (d, i) in samples:
+            if i.valid_data and (d.source_sid != self.__store.store_id):
+                xs = self.__store.getAll(d.key)
+                print('>>>> Serving Miss')
+                h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
+                self.hit_writer.write(h)
 
 
     def handle_remove(self, uri):
@@ -110,12 +141,15 @@ class DController (Controller, Observer):
                     print(">>>>>> Ignoring remote put as it is a self-put")
 
 
+
     def cache_discovered(self,reader):
         samples = reader.read(DDS_NOT_READ_SAMPLE_STATE)
         for (d, i) in samples:
             if i.valid_data:
                 rsid = d.sid
-                print(">>> Discovered new store with id: " +  rsid)
+                if rsid != self.__store.store_id:
+                    self.__store.discovered_stores.append(rsid)
+                    print(">>> Discovered new store with id: " +  rsid)
 
 
 
@@ -123,8 +157,15 @@ class DController (Controller, Observer):
         print(">>> Cache Disappeared")
         samples = reader.read(DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE | DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE)
         for (d, i) in samples:
-            if d is not None:
-                d.print_vars()
+            if i.valid_data:
+                rsid = d.sid
+                if rsid != self.__store.store_id:
+                    if rsid in self.__store.discovered_stores:
+                        self.__store.discovered_stores.remove(rsid)
+                        print(">>> Store with id {0} has disappeared".format(rsid))
+                    else:
+                        print(">>> Store with id {0} has disappeared, but for some reason we did not know it...")
+
 
     def onPut(self, uri, val, ver):
         print(">> uri: " + uri)
@@ -159,6 +200,59 @@ class DController (Controller, Observer):
 
     def onConflict(self):
         print("onConflict Not yet...")
+
+    def resolveAll(self, uri, timeout = None):
+        print('>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
+
+        print(">> Trying to resolve %s" % uri)
+        """
+            Tries to resolve this URI (with wildcards) across the distributed caches
+            :param uri: the URI to be resolved
+            :return: the [value], if something is found
+        """
+        # @TODO: This should be in the config...
+
+        if timeout is None:
+            timeout = dds_secs(1)
+
+        m = CacheMissMV(self.__store.store_id, uri)
+        self.missmv_writer.write(m)
+
+        peers = copy.deepcopy(self.__store.discovered_stores)
+        maxRetries = len(peers)
+        retries = 0
+        values = []
+        while (peers != [] and retries < maxRetries):
+            samples = self.hitmv_reader.stake(new_samples(), timeout)
+
+            for (d, i) in samples:
+                if d.source_sid in peers:
+                    peers.remove(d.source_sid)
+
+                if i.valid_data:
+                    print("Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    print("I was looking to resolve uri: {0}".format(uri))
+                    # source_sid, dest_sid, key, kvave):
+                    if d.key == uri and d.dest_sid == self.__store.store_id:
+                        values = values + d.kvave
+
+                retries += 1
+
+        # now we need to consolidate values
+
+        filtered_values = []
+        for (k,va,ve) in values:
+            key = k
+            value = va
+            version = ve
+            for (a,b,c) in values:
+                if a == key and version < c:
+                    key = a
+                    value = b
+                    version = c
+            filtered_values.append((version, value, key))
+
+        return filtered_values
 
     def resolve(self, uri, timeout = None):
         print('>>>> Handling {0} Miss for store {1}'.format(uri, self.__store.store_id))
