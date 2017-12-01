@@ -278,10 +278,10 @@ class DStore(Store):
     def getAll(self, uri):
         xs = []
         for k,v in self.__store.items():
-            if fnmatch.fnmatch(uri, v):
+            if fnmatch.fnmatch(uri, v[0]):
                 xs.append((k, v[0], v[1]))
         for k,v in self.__local_cache.items():
-            if fnmatch.fnmatch(uri, v):
+            if fnmatch.fnmatch(uri, v[0]):
                 xs.append((k, v[0], v[1]))
 
         return xs
