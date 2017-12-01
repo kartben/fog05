@@ -10,19 +10,7 @@ def cache_discovered(dr):
 def cache_disappeared():
     print("Lost one cache")
 
-def handle_remote_put(dr):
-    for (s, i) in dr.take(all_samples()):
-        if i.valid_data:
-            print(str(s))
-
-
-def handle_miss(dr):
-    for (s, i) in dr.take(all_samples()):
-        if i.valid_data:
-            print(str(s))
-
-
-def handle_hit(dr):
+def log_samples(dr):
     for (s, i) in dr.take(all_samples()):
         if i.valid_data:
             print(str(s))
@@ -44,7 +32,7 @@ def start_tlog(root):
     store_info_reader = FlexyReader(sub,
                                          store_info_topic,
                                          [Reliable(), Transient(), KeepLastHistory(1)],
-                                         cache_discovered)
+                                        log_samples)
 
     store_info_reader.on_liveliness_changed(cache_disappeared)
 
@@ -55,7 +43,7 @@ def start_tlog(root):
     key_value_reader = FlexyReader(sub,
                                         key_value_topic,
                                         [Reliable(), Transient(), KeepLastHistory(1)],
-                                        handle_remote_put)
+                                   log_samples)
 
     miss_topic = FlexyTopic(dp, "FOSStoreMiss")
 
@@ -65,7 +53,7 @@ def start_tlog(root):
 
     miss_reader = FlexyReader(sub,
                                    miss_topic,
-                                   [Reliable(), Volatile(), KeepAllHistory()], handle_miss)
+                                   [Reliable(), Volatile(), KeepAllHistory()], log_samples)
 
     hit_topic = FlexyTopic(dp, "FOSStoreHit")
 
@@ -75,7 +63,27 @@ def start_tlog(root):
 
     hit_reader = FlexyReader(sub,
                              hit_topic,
-                             [Reliable(), Volatile(), KeepAllHistory()], handle_hit)
+                             [Reliable(), Volatile(), KeepAllHistory()], log_samples)
+
+    missmv_topic = FlexyTopic(dp, "FOSStoreMissMV")
+
+    missmv_writer = FlexyWriter(pub,
+                                     missmv_topic,
+                                     [Reliable(), Volatile(), KeepAllHistory()])
+
+    missmv_reader = FlexyReader(sub,
+                                     missmv_topic,
+                                     [Reliable(), Volatile(), KeepAllHistory()], lambda r: log_samples(r))
+
+    hitmv_topic = FlexyTopic(dp, "FOSStoreHitMV")
+
+    hitmv_writer = FlexyWriter(pub,
+                                    hitmv_topic,
+                                    [Reliable(), Volatile(), KeepAllHistory()])
+
+    hitmv_reader = FlexyReader(sub,
+                                    hitmv_topic,
+                                    [Reliable(), Volatile(), KeepAllHistory()], log_samples)
 
 if __name__=='__main__':
     if len(sys.argv) > 1:
