@@ -61,7 +61,7 @@ class CacheMissMV(TopicType):
        return self.key
 
     def __str__(self):
-        return "CacheMissME(source_sid = {0}, key = {1})".format(self.source_sid, self.key)
+        return "CacheMissMV(source_sid = {0}, key = {1})".format(self.source_sid, self.key)
 
 class CacheHitMV(TopicType):
     def __init__(self, source_sid, dest_sid, key, kvave):
@@ -74,4 +74,4 @@ class CacheHitMV(TopicType):
        return self.key
 
     def __str__(self):
-        return "CacheHit(source_sid = {0}, dest_sid = {1}, kvave= {2})".format(self.source_sid, self.dest_sid, self.kvave)
+        return "CacheHitMV(source_sid = {0}, dest_sid = {1}, key = {2}, kvave= {3})".format(self.source_sid, self.dest_sid, self.key, self.kvave)
