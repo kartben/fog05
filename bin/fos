@@ -29,7 +29,7 @@ class Fos(object):
 
     def print_nodes(self):
         uri = str('afos://<sys-id>/*/')
-        nodes = json.loads(self.astore.get(uri))
+        nodes = json.loads(self.astore.resolveAll(uri))
         print(nodes)
 
     def __catch_signal(self,signal, frame):
@@ -96,12 +96,14 @@ class Fos(object):
             return
         if len(parameters) == 2:
             if parameters[1] == 'list':
-                uri = str('afos://<sys-id>/*/')
+                uri = str('afos://<sys-id>/*')
                 print(uri)
-                nodes = self.astore.getAll(uri)
+                nodes = self.astore.resolveAll(uri)
+                print(self.astore.discovered_stores)
                 ## se below for information on this
                 ## this not work
                 print(nodes)
+                input()
             else:
                 uri = str('afos://<sys-id>/%s/' % parameters[1])  ## this is because the resolver return a tuple with
                 # value and version
@@ -147,6 +149,7 @@ class Fos(object):
                         print("| ## Interface: %s ##" % nw.get('intf_name'))
                         print("| ### MAC: %s " % nw.get('intf_mac_address'))
                         print("| ### type: %s " % nw.get('type'))
+                        print("| ### Default gateway: %s " % nw.get('default_gw'))
                         print("| ##### Interface Configuration #####")
                         print("| ###### Speed: %s " % intf_conf.get('intf_speed'))
                         print("| ###### IPV4: %s Netmask: %s Gateway: %s" % (intf_conf.get('ipv4_address'),
@@ -485,3 +488,4 @@ if __name__ == '__main__':
     else:
         c = Fos()
         c.main(sys.argv)
+

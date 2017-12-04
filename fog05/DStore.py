@@ -349,6 +349,11 @@ class DStore(Store):
                         base.update({k: updates.get(k)})
         return base
 
+    def on_store_discovered(self, sid):
+        raise NotImplemented
+
+    def on_store_disappeared(self, sid):
+        raise NotImplemented
 #
 # class DDSObserver(Observer):
 #

@@ -231,12 +231,12 @@ class DController (Controller, Observer):
         while (peers != [] and retries < maxRetries):
             samples = self.hitmv_reader.stake(all_samples(), timeout)
             timeout += dds_micros(250)
-            # print(">>>> Resolve loop #{0} got {1} samples".format(retries, len(samples)))
+            print(">>>> Resolve loop #{0} got {1} samples".format(retries, len(samples)))
             for (d, i) in samples:
 
                 if i.valid_data:
-                    # print("Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    # print("I was looking to resolve uri: {0}".format(uri))
+                    print("Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    print("I was looking to resolve uri: {0}".format(uri))
                     # Only remove if this was an answer for this key!
                     if d.source_sid in peers and uri == d.key:
                         peers.remove(d.source_sid)
@@ -246,7 +246,7 @@ class DController (Controller, Observer):
             retries += 1
 
         # now we need to consolidate values
-
+        print(values)
         filtered_values = []
         for (k,va,ve) in values:
             key = k

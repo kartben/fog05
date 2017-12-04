@@ -10,34 +10,34 @@ import time
 ###
 def test_miss(sid, root, home):
 
-    sroot = "fos://{0}".format(root)
-    shome= "fos://{0}/{1}".format(root, home)
+    sroot = "afos://{0}".format(root)
+    shome= "afos://{0}/{1}".format(root, home)
 
     store = DStore(sid, sroot, home, 1024)
 
-    uri_prefix = "fos://{0}/{1}/{2}".format(root, home, sid)
+    uri_prefix = "afos://{0}/{1}/{2}".format(root, home, sid)
     store.put(uri_prefix, 'I am a store fos://{0}/{1}/{2}!'.format(root, home, sid))
 
     print("Store written, press a key to continue")
     input()
     # local get
-    v = store.get(uri_prefix)
-    print('=========> store[{0}] = {1}'.format(uri_prefix, v))
-    print("\nStore get exectured, press a key to continue")
-    input()
+    #v = store.get(uri_prefix)
+    #print('=========> store[{0}] = {1}'.format(uri_prefix, v))
+    #print("\nStore get exectured, press a key to continue")
+    #input()
     # try get that need resolving
-    for id in store.discovered_stores:
-        uri = "fos://{0}/{1}/{2}".format(root, home, id)
-        v = store.get(uri)
-        print('=========> store[{0}] = {1}'.format(uri, v))
+    #for id in store.discovered_stores:
+    #    uri = "fos://{0}/{1}/{2}".format(root, home, id)
+    #    v = store.get(uri)
+    #    print('=========> store[{0}] = {1}'.format(uri, v))
 
-    print("\nStore remote get exectured, press a key to continue")
-    input()
+    #print("\nStore remote get exectured, press a key to continue")
+    #input()
     # try to get them in a single shot -- locally:
 
-    uri = "fos://{0}/{1}/*".format(root, home)
-    vs = store.getAll(uri)
-    print('=========> store[{0}] = {1}'.format(uri, vs))
+    uri = "afos://{0}/{1}/*".format(root, home)
+    #vs = store.getAll(uri)
+    #print('=========> store[{0}] = {1}'.format(uri, vs))
 
     print("\nStore local get-all exectured, press a key to continue")
     input()
