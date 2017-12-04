@@ -1,12 +1,17 @@
 #!/usr/local/bin/python3
 
 import sys
+
+from click import pass_obj, pass_context
 from jsonschema import validate, ValidationError
 from fog05.DStore import *
 from fog05 import Schemas
 import signal
 from fog05.fosagent import FosAgent
 import time
+import uuid
+
+
 
 class Fos(object):
     def __init__(self):
@@ -106,7 +111,7 @@ class Fos(object):
                 # value and version
                 print("Uri: %s" % uri)
                 node = self.astore.get(uri)
-                if node is not None:
+                if node is not None and len(node) > 0:
                     node = json.loads(node[0])
                     print('+-------------------------------------------------------+')
                     print('| UUID : %s \t\t|' % node.get('uuid'))
@@ -122,7 +127,7 @@ class Fos(object):
             if parameters[2] == 'info':
                 uri = str('afos://<sys-id>/%s/' % parameters[1])
                 node = self.astore.get(uri)
-                if node is not None:
+                if node is not None and len(node) > 0:
                     node = json.loads(node[0])
                     print('+-------------------------------------------------------+')
                     print('| UUID : %s \t\t|' % node.get('uuid'))

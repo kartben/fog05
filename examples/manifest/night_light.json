@@ -1,6 +1,7 @@
 {
   "status": "define",
   "name": "night_light",
+  "type":"native",
   "version": 1,
   "entity_data": {
     "name": "night_light",
