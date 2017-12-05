@@ -17,7 +17,7 @@ class DController (Controller, Observer):
 
     def __init__(self, store):
         super(DController, self).__init__()
-        logger = DLogger.instance
+        # self.logger =  DLogger.instance
         self.__store = store
 
         self.dds_runtime = Runtime.get_runtime()
@@ -56,7 +56,7 @@ class DController (Controller, Observer):
         self.key_value_reader = FlexyReader(self.sub,
                                             self.key_value_topic,
                                             state_qos,
-                                            lambda r: self.handle_remote_put(r))
+                                            self.handle_remote_put)
 
 
         self.miss_writer = FlexyWriter(self.pub,
@@ -65,7 +65,7 @@ class DController (Controller, Observer):
 
         self.miss_reader = FlexyReader(self.sub,
                                        self.miss_topic,
-                                       event_qos, lambda r: self.handle_miss(r))
+                                       event_qos, self.handle_miss)
 
 
         self.hit_writer = FlexyWriter(self.pub,
@@ -104,17 +104,17 @@ class DController (Controller, Observer):
                 print(str(s))
 
     def handle_miss(self, r):
-        self.logger.debug('DController.handle_miss','Handling Miss for store {0}'.format(self.__store.store_id))
+        print('DController.handle_miss','Handling Miss for store {0}'.format(self.__store.store_id))
         samples = r.take(all_samples())
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
                 v = self.__store.get_value(d.key)
                 if v is not None:
-                    self.logger.debug('DController.handle_miss', 'Serving Miss for {0}'.format(d.key))
+                    print('DController.handle_miss', 'Serving Miss for {0}'.format(d.key))
                     h = CacheHit(self.__store.store_id, d.source_sid, d.key, v, self.__store.get_version(d.key))
                     self.hit_writer.write(h)
                 else:
-                    self.logger.debug('DController.handle_miss', 'Store {0} not resolve remote miss on key {1}'.format(self.__store.store_id, d.key))
+                    print('DController.handle_miss', 'Store {0} did not resolve remote miss on key {1}'.format(self.__store.store_id, d.key))
 
 
     def handle_miss_mv(self, r):
@@ -141,7 +141,7 @@ class DController (Controller, Observer):
                 rsid = d.sid
                 rvalue = d.value
                 rversion = d.version
-                if rsid != self.__store.store_id and rkey.startswith(self.__store.root):
+                if rsid != self.__store.store_id and rkey.startswith(self.__store.home):
                     print(">>>>>>>> Handling remote put for key = " + rkey)
                     r = self.__store.update_value(rkey, rvalue, rversion)
                     if r:
