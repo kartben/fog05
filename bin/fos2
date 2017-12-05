@@ -1,0 +1,88 @@
+import sys
+
+from click import pass_obj, pass_context
+from jsonschema import validate, ValidationError
+from fog05.DStore import *
+from fog05 import Schemas
+import signal
+from fog05.fosagent import FosAgent
+import time
+import uuid
+import click
+
+
+class Store(object):
+    def __init__(self, aroot, droot, home):
+        self.aroot = aroot #"dfos://<sys-id>"
+        self.ahome = str("%s/%s" % (aroot, home)) #str("dfos://<sys-id>/%s" % self.uuid)
+
+        self.droot = droot  # "dfos://<sys-id>"
+        self.dhome = str("%s/%s" % (droot, home))  # str("dfos://<sys-id>/%s" % self.uuid)
+
+        self.actual = DStore(home, self.aroot, self.ahome, 1024)
+        self.desidered = DStore(home, self.droot, self.dhome, 1024)
+
+
+@click.group()
+@click.version_option('1.0')
+@click.pass_context
+def cli(ctx):
+
+    sid = str(uuid.uuid4())
+    ctx.obj = Store("afos://<sys-id>", "dfos://<sys-id>", sid)
+
+
+@cli.command()
+@click.argument('nodeid', required=False)
+@click.option('--list', '-l', required=False, default=False, is_flag=True, help="List all nodes available")
+@click.option('info', '-i', required=False, default=False, is_flag=True, help="Detailed info on a node")
+@click.option('plugin', '-p', required=False, default=False, is_flag=True, help="Action on node plugin")
+@click.option('add', '-a', required=False, default=False, is_flag=True, help="Add a plugin")
+@click.option('--name', '-n', required=False, help="Plugin name")
+@click.option('--type', '-t', required=False, default=False, type=click.Choice(['runtime', 'network']))
+@pass_obj
+def node(obj, nodeid, list, info, plugin, add, name, type):
+    store = obj
+    if nodeid is None and list is True:
+        uri = str('afos://<sys-id>/*/')
+        print(uri)
+        nodes = store.actual.resolveAll(uri)
+        print(store.actual.discovered_stores)
+        print(nodes)
+        return
+    elif list is False and nodeid is not None:
+        if info is False and plugin is False and add is False and name is None and type is False:
+            uri = str('afos://<sys-id>/%s/' % nodeid)
+            print("Uri: %s" % uri)
+            node = store.actual.get(uri)
+            if node is not None and len(node) > 0:
+                node = json.loads(node[0])
+                print('+-------------------------------------------------------+')
+                print('| UUID : %s \t\t|' % node.get('uuid'))
+                print('| Name: %s \t\t|' % node.get('name'))
+                print('+-------------------------------------------------------+')
+            else:
+                print("Node not found!!")
+            return
+        else:
+            if info is True:
+                print("Detailed node info")
+            if plugin is True:
+                print("Plugin action")
+                if add is True and name is not None and type is not False:
+                    print("Adding plugins %s %s" % (name,type))
+                elif add is False and name is not None:
+                    print("Error")
+                elif add is True and name is None:
+                    print("Missing plugin name")
+    else:
+        print("Error")
+
+
+if __name__ == '__main__':
+    cli()
+    #if len(sys.argv) < 2:
+    #    print("provide parameters")
+    #else:
+    #    c = Fos()
+    #    c.main(sys.argv)
