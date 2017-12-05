@@ -1,11 +1,14 @@
 {
-  "status": "define",
   "name": "pi_morse",
+  "type":"native",
+  "uuid": "5c6dda90-c90c-4258-a35a-5da71f35dd09",
   "version": 1,
   "entity_data": {
     "name": "pi_morse",
     "source": "https://www.dropbox.com/s/mf0x8pbpsy4p4qi/pi_morse.zip",
-    "command": "pi_morse.py", "args": [], "uuid": "5c6dda90-c90c-4258-a35a-5da71f35dd09"
+    "command": "pi_morse.py",
+    "args": [],
+    "uuid": "5c6dda90-c90c-4258-a35a-5da71f35dd09"
   }
 }
 

@@ -1,0 +1,14 @@
+{
+  "name": "ros2example",
+  "version": 1,
+  "uuid": "cc94fc46-d9c5-11e7-93e2-37e7365df772",
+  "type":"native",
+  "entity_data":{
+    "name": "publisher",
+    "command": "publisher_member_function",
+    "args": [],
+    "url": "https://www.dropbox.com/s/pusoqi6ihseodot/minimal_publisher.zip",
+    "uuid": "cc94fc46-d9c5-11e7-93e2-37e7365df772"
+  }
+}
+

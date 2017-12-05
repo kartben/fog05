@@ -1,0 +1,14 @@
+{
+  "name": "hello_example",
+  "version": 1,
+  "type":"native",
+  "uuid": "73d6fc08-d9c5-11e7-a8a0-c755946c40c0",
+  "entity_data": {
+    "name": "hello",
+    "source": "https://www.dropbox.com/s/pr6cj3e58j4xw6k/prova.zip",
+    "command": "hello",
+    "args": [],
+    "uuid": "73d6fc08-d9c5-11e7-a8a0-c755946c40c0"
+  }
+}
+
