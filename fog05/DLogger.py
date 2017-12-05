@@ -1,7 +1,8 @@
 import logging
 import time
 
-class DLogger:
+
+class DLogger(object):
     class __SingletonLogger:
         def __init__(self, file_name=None, debug=False):
 
@@ -16,7 +17,7 @@ class DLogger:
                 logging.basicConfig(format='[%(asctime)s] - [%(levelname)s] > %(message)s',
                                     level=logging.INFO)
             else:
-                logging.basicConfig(filename=self.LOGFILE,
+                logging.basicConfig(filename=self.log_file,
                                     format='[%(asctime)s] - [%(levelname)s] > %(message)s',
                                     level=logging.INFO)
 

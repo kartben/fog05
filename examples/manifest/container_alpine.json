@@ -1,0 +1,18 @@
+{
+  "name": "alpine_example",
+  "version": 1,
+  "type":"vm",
+  "uuid": "0be550dc-d9c4-11e7-aa21-d3df37fbfcfa",
+  "entity_data":{
+    "name": "alpine-linux",
+    "uuid": "0be550dc-d9c4-11e7-aa21-d3df37fbfcfa",
+    "cpu": 1,
+    "memory": 512,
+    "disk_size": 5,
+    "base_image":"http://dl-4.alpinelinux.org/alpine/edge/releases/x86_64/alpine-minirootfs-3.7.0-x86_64.tar.gz",
+    "networks": [{"mac": "d2:e3:ed:6f:e3:ef", "br_name": "virbr0"}],
+    "user-data": "",
+    "ssh-key": ""
+  }
+}
+
