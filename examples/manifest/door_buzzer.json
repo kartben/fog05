@@ -1,11 +1,14 @@
 {
-  "status": "define",
   "name": "door_buzzer",
+  "type":"native",
   "version": 1,
+  "uuid": "ef545466-4873-4f39-8c86-a21c7b27a63a",
   "entity_data": {
     "name": "door_buzzer",
     "source": "https://www.dropbox.com/s/bbropkz9dkbol0v/door_buzzer.zip",
-    "command": "button_buzzer.py", "args": [], "uuid": "ef545466-4873-4f39-8c86-a21c7b27a63a"
+    "command": "button_buzzer.py",
+    "args": [],
+    "uuid": "ef545466-4873-4f39-8c86-a21c7b27a63a"
   }
 }
 
