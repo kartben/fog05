@@ -11,12 +11,12 @@ import time
 def test_miss(sid, root, home):
 
     sroot = "afos://{0}".format(root)
-    shome= "afos://{0}/{1}".format(root, home)
+    shome= "afos://{0}-{1}".format(root, home)
 
     store = DStore(sid, sroot, home, 1024)
 
-    uri_prefix = "afos://{0}/{1}/{2}".format(root, home, sid)
-    store.put(uri_prefix, 'I am a store fos://{0}/{1}/{2}!'.format(root, home, sid))
+    uri_prefix = "afos://{0}/{1}-{2}".format(root, home, sid)
+    store.put(uri_prefix, 'I am a store fos://{0}/{1}-{2}!'.format(root, home, sid))
 
     print("Store written, press a key to continue")
     input()
@@ -35,9 +35,9 @@ def test_miss(sid, root, home):
     #input()
     # try to get them in a single shot -- locally:
 
-    uri = "afos://{0}/{1}/*".format(root, home)
-    #vs = store.getAll(uri)
-    #print('=========> store[{0}] = {1}'.format(uri, vs))
+    uri = "afos://{0}/*".format(root, home)
+    vs = store.getAll(uri)
+    print('=========> store[{0}] = {1}'.format(uri, vs))
 
     print("\nStore local get-all exectured, press a key to continue")
     input()
@@ -47,6 +47,7 @@ def test_miss(sid, root, home):
 
     print("\nStore remote resolve-all exectured, press a key to continue")
     input()
+
 
 
 if __name__ == "__main__":

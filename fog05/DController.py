@@ -1,5 +1,6 @@
 from fog05.interfaces.Store import *
 from fog05.interfaces.Types import *
+from fog05.DLogger import *
 from dds import *
 import copy
 
@@ -16,6 +17,7 @@ class DController (Controller, Observer):
 
     def __init__(self, store):
         super(DController, self).__init__()
+        logger = DLogger.instance
         self.__store = store
 
         self.dds_runtime = Runtime.get_runtime()
@@ -26,14 +28,22 @@ class DController (Controller, Observer):
         self.store_info_topic = FlexyTopic(self.dp, "FOSStoreInfo")
         self.key_value_topic = FlexyTopic(self.dp, "FOSKeyValue")
 
+        self.hit_topic = FlexyTopic(self.dp, "FOSStoreHit")
+        self.miss_topic = FlexyTopic(self.dp, "FOSStoreMiss")
+
+        self.missmv_topic = FlexyTopic(self.dp, "FOSStoreMissMV")
+        self.hitmv_topic = FlexyTopic(self.dp, "FOSStoreHitMV")
+
+        state_qos = [Reliable(), TransientLocal(), KeepLastHistory(1)]
+        event_qos = [Reliable(), Volatile(), KeepAllHistory()]
 
         self.store_info_writer = FlexyWriter(self.pub,
                                              self.store_info_topic,
-                                            [Reliable(), TransientLocal(), KeepLastHistory(1)])
+                                            state_qos)
 
         self.store_info_reader = FlexyReader(self.sub,
                                             self.store_info_topic,
-                                            [Reliable(), TransientLocal(), KeepLastHistory(1)],
+                                             state_qos,
                                             self.cache_discovered)
 
 
@@ -41,79 +51,81 @@ class DController (Controller, Observer):
 
         self.key_value_writer = FlexyWriter(self.pub,
                                             self.key_value_topic,
-                                            [Reliable(), Transient(), KeepLastHistory(1)])
+                                            state_qos)
 
         self.key_value_reader = FlexyReader(self.sub,
                                             self.key_value_topic,
-                                            [Reliable(), Transient(), KeepLastHistory(1)],
+                                            state_qos,
                                             lambda r: self.handle_remote_put(r))
-
-
-        self.miss_topic = FlexyTopic(self.dp, "FOSStoreMiss")
 
 
         self.miss_writer = FlexyWriter(self.pub,
                                        self.miss_topic,
-                                       [Reliable(), Volatile(), KeepAllHistory()])
+                                       event_qos)
 
         self.miss_reader = FlexyReader(self.sub,
                                        self.miss_topic,
-                                       [Reliable(), Volatile(), KeepAllHistory()], lambda r: self.handle_miss(r))
+                                       event_qos, lambda r: self.handle_miss(r))
 
-        self.hit_topic = FlexyTopic(self.dp, "FOSStoreHit")
 
         self.hit_writer = FlexyWriter(self.pub,
                                        self.hit_topic,
-                                       [Reliable(), Volatile(), KeepAllHistory()])
+                                       event_qos)
 
         self.hit_reader = FlexyReader(self.sub,
                                        self.hit_topic,
-                                       [Reliable(), Volatile(), KeepAllHistory()], None)
+                                       event_qos, None)
 
-        self.missmv_topic = FlexyTopic(self.dp, "FOSStoreMissMV")
+
 
         self.missmv_writer = FlexyWriter(self.pub,
                                          self.missmv_topic,
-                                         [Reliable(), Volatile(), KeepAllHistory()])
+                                         event_qos)
 
         self.missmv_reader = FlexyReader(self.sub,
                                          self.missmv_topic,
-                                         [Reliable(), Volatile(), KeepAllHistory()], lambda r: self.handle_miss_mv(r))
+                                         event_qos, lambda r: self.handle_miss_mv(r))
 
-        self.hitmv_topic = FlexyTopic(self.dp, "FOSStoreHitMV")
+
 
         self.hitmv_writer = FlexyWriter(self.pub,
                                         self.hitmv_topic,
-                                        [Reliable(), Volatile(), KeepAllHistory()])
+                                        event_qos)
+
 
         self.hitmv_reader = FlexyReader(self.sub,
                                         self.hitmv_topic,
-                                        [Reliable(), Volatile(), KeepAllHistory()], None)
+                                        event_qos, None)
 
+
+    def log_samples(self, dr):
+        for (s, i) in dr.read(all_samples()):
+            if i.valid_data:
+                print(str(s))
 
     def handle_miss(self, r):
-        # print('>>>> Handling Miss for store {0}'.format(self.__store.store_id))
+        self.logger.debug('DController.handle_miss','Handling Miss for store {0}'.format(self.__store.store_id))
         samples = r.take(all_samples())
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
                 v = self.__store.get_value(d.key)
                 if v is not None:
-                    # print('>>>> Serving Miss for {0}'.format(d.key))
+                    self.logger.debug('DController.handle_miss', 'Serving Miss for {0}'.format(d.key))
                     h = CacheHit(self.__store.store_id, d.source_sid, d.key, v, self.__store.get_version(d.key))
                     self.hit_writer.write(h)
-                # else:
-                    # print(">>> Store {0} not resolve remote miss on key {1}".format(self.__store.store_id, d.key))
+                else:
+                    self.logger.debug('DController.handle_miss', 'Store {0} not resolve remote miss on key {1}'.format(self.__store.store_id, d.key))
 
 
     def handle_miss_mv(self, r):
-        # print('>>>> Handling Miss MV for store {0}'.format(self.__store.store_id))
+        print('>>>> Handling Miss MV for store {0}'.format(self.__store.store_id))
         samples = r.take(all_samples())
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
                 xs = self.__store.getAll(d.key)
-                # print('>>>> Serving Miss')
+                print('>>>> Serving Miss MV for key {0}'.format(d.key))
                 h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
-                self.hit_writer.write(h)
+                self.hitmv_writer.write(h)
 
 
     def handle_remove(self, uri):
@@ -130,25 +142,26 @@ class DController (Controller, Observer):
                 rvalue = d.value
                 rversion = d.version
                 if rsid != self.__store.store_id and rkey.startswith(self.__store.root):
-                    # print(">>>>>>>> Handling remote put for key = " + rkey)
+                    print(">>>>>>>> Handling remote put for key = " + rkey)
                     r = self.__store.update_value(rkey, rvalue, rversion)
                     if r:
-                        # print(">> Updated " + rkey)
+                        print(">> Updated " + rkey)
                         self.__store.notify_observers(rkey, rvalue, rversion)
-                #     else:
-                #         # print(">> Received old version of " + rkey)
-                # else:
-                #     # print(">>>>>> Ignoring remote put as it is a self-put")
+                    else:
+                        print(">> Received old version of " + rkey)
+                else:
+                    print(">>>>>> Ignoring remote put as it is a self-put")
 
 
 
     def cache_discovered(self,reader):
-        samples = reader.read(DDS_NOT_READ_SAMPLE_STATE)
+        print('New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
+        samples = reader.take(DDS_NOT_READ_SAMPLE_STATE)
 
         for (d, i) in samples:
             if i.valid_data:
                 rsid = d.sid
-                # print(">>> Discovered new store with id: " + rsid)
+                print(">>> Discovered new store with id: " + rsid)
                 if rsid != self.__store.store_id and not rsid in self.__store.discovered_stores:
                     self.__store.discovered_stores.append(rsid)
                     self.advertise_presence()
@@ -156,17 +169,18 @@ class DController (Controller, Observer):
 
 
     def cache_disappeared(self, reader, status):
-        # print(">>> Cache Lifecycle-Change")
-        samples = reader.read(DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE | DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE)
+        print(">>> Cache Lifecycle-Change")
+        print('Current Stores view = {0}'.format(self.__store.discovered_stores))
+        samples = reader.take(DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE | DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE)
         for (d, i) in samples:
             if i.valid_data:
                 rsid = d.sid
                 if rsid != self.__store.store_id:
                     if rsid in self.__store.discovered_stores:
                         self.__store.discovered_stores.remove(rsid)
-                    #     print(">>> Store with id {0} has disappeared".format(rsid))
-                    # else:
-                    #     print(">>> Store with id {0} has disappeared, but for some reason we did not know it...")
+                        print(">>> Store with id {0} has disappeared".format(rsid))
+                    else:
+                        print(">>> Store with id {0} has disappeared, but for some reason we did not know it...")
 
 
     def onPut(self, uri, val, ver):
@@ -208,9 +222,9 @@ class DController (Controller, Observer):
         # print("onConflict Not yet...")
 
     def resolveAll(self, uri, timeout = None):
-        # print('>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
+        print('>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
 
-        # print(">> Trying to resolve %s" % uri)
+        print(">> Trying to resolve %s" % uri)
         """
             Tries to resolve this URI (with wildcards) across the distributed caches
             :param uri: the URI to be resolved
@@ -218,8 +232,9 @@ class DController (Controller, Observer):
         """
         # @TODO: This should be in the config...
 
+        delta = dds_micros(250)
         if timeout is None:
-            timeout = dds_micros(250)
+            timeout = delta
 
         m = CacheMissMV(self.__store.store_id, uri)
         self.missmv_writer.write(m)
@@ -229,11 +244,16 @@ class DController (Controller, Observer):
         retries = 0
         values = []
         while (peers != [] and retries < maxRetries):
-            samples = self.hitmv_reader.stake(all_samples(), timeout)
-            timeout += dds_micros(250)
-            print(">>>> Resolve loop #{0} got {1} samples".format(retries, len(samples)))
-            for (d, i) in samples:
 
+            samples = self.hitmv_reader.stake(all_samples(), timeout)
+            timeout = timeout + delta
+
+            print(">>>> Resolve loop #{0} got {1} samples".format(retries, str(samples)))
+            for s in samples:
+                d = s[0]
+                i = s[1]
+                print("Is valid data: {0}".format(i.valid_data))
+                print("Key: {0}".format(d.key))
                 if i.valid_data:
                     print("Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
                     print("I was looking to resolve uri: {0}".format(uri))
@@ -246,7 +266,7 @@ class DController (Controller, Observer):
             retries += 1
 
         # now we need to consolidate values
-        print(values)
+        print("Resolved Values = {0}".format(values))
         filtered_values = []
         for (k,va,ve) in values:
             key = k
@@ -257,22 +277,24 @@ class DController (Controller, Observer):
                     key = a
                     value = b
                     version = c
-            filtered_values.append((version, value, key))
+            filtered_values.append((key, value, version))
 
+        print("Filtered Values = {0}".format(filtered_values))
         return filtered_values
 
     def resolve(self, uri, timeout = None):
-        # print('>>>> Handling {0} Miss for store {1}'.format(uri, self.__store.store_id))
+        print('>>>> Handling {0} Miss for store {1}'.format(uri, self.__store.store_id))
 
-        # print(">> Trying to resolve %s" % uri)
+        print(">> Trying to resolve %s" % uri)
         """
             Tries to resolve this URI on across the distributed caches
             :param uri: the URI to be resolved
             :return: the value, if something is found
         """
         # @TODO: This should be in the config...
+        delta = dds_micros(250)
         if timeout is None:
-            timeout = dds_micros(250)
+            timeout = delta
 
 
         m = CacheMiss(self.__store.store_id, uri)
@@ -285,13 +307,13 @@ class DController (Controller, Observer):
         v = ("", -1)
         while peers != [] and retries < maxRetries:
             samples = self.hit_reader.stake(new_samples(), timeout)
-            timeout += dds_micros(250)
-            # print(">>>> Resolve loop #{0} got {1}".format(retries, str(samples)))
+            timeout = timeout + delta
+            print(">>>> Resolve loop #{0} got {1}".format(retries, str(samples)))
 
             for (d, i) in samples:
                 if i.valid_data:
-                    # print("Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    # print("I was looking to resolve uri: {0}".format(uri))
+                    print("Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    print("I was looking to resolve uri: {0}".format(uri))
                     # Only remove if this was an answer for this key!
                     if d.source_sid in peers and uri == d.key:
                         peers.remove(d.source_sid)
@@ -306,7 +328,7 @@ class DController (Controller, Observer):
 
 
     def start(self):
-        # print("Advertising Store with Id {0}".format(self.__store.store_id))
+        print("Advertising Store with Id {0}".format(self.__store.store_id))
         self.advertise_presence()
 
     def advertise_presence(self):

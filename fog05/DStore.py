@@ -290,11 +290,25 @@ class DStore(Store):
             if fnmatch.fnmatch(k, uri):
                 xs.append((k, v[0], v[1]))
 
+        print(">>>>>> getAll({0}) = {1}".format(uri, xs))
         return xs
 
     def resolveAll(self, uri):
         xs = self.__controller.resolveAll(uri)
-        return xs + self.getAll(uri)
+        print(" Resolved list = {0}".format(xs))
+        ys  = self.getAll(uri)
+        ks = []
+        for x in xs:
+            ks.append(x[0])
+            print("resolved key = {0}".format(x[0]))
+
+        for y in ys:
+            print('merging key: {0}'.format(y[0]))
+            if y[0] not in ks:
+                print("Key is not present... Appending")
+                xs.append(y)
+
+        return xs
 
     def miss_handler(self, action):
         pass
