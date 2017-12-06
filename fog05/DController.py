@@ -17,7 +17,7 @@ class DController (Controller, Observer):
 
     def __init__(self, store):
         super(DController, self).__init__()
-        # self.logger =  DLogger.instance
+        self.logger = DLogger()
         self.__store = store
 
         self.dds_runtime = Runtime.get_runtime()

@@ -1,0 +1,11 @@
+{
+  "plugins": [
+    {
+      "name": "brctl",
+      "version": 1,
+      "uuid": "",
+      "type": "network",
+      "status": "add"
+    }
+  ]
+}

@@ -106,7 +106,7 @@ class FOSCli(object):
         if all_plugins is None:
             print("Cannot get plugin")
             return None
-        all_plugins = all_plugins[0]
+        #all_plugins = all_plugins
         all_plugins = json.loads(all_plugins).get('plugins')
         search = [x for x in all_plugins if name in x.get('name')]
         if len(search) == 0:
@@ -122,7 +122,7 @@ class FOSCli(object):
 
 
     def __send_define_entity(self, node_uuid, manifest):
-        manifest.update({'status': 'add'})
+        manifest.update({'status': 'define'})
         handler = None
         t = manifest.get('type')
 
@@ -241,7 +241,7 @@ class FOSCli(object):
         if node_list:
             uri = str('afos://<sys-id>/*/')
             print(uri)
-            nodes = self.store.actual.get(uri)  ## se below for information on this
+            nodes = self.store.actual.resolveAll(uri)  ## se below for information on this
             print(nodes)
             return
         if uuid is not None and plugin_action is False:
@@ -250,7 +250,7 @@ class FOSCli(object):
             print("Uri: %s" % uri)
             node = self.store.actual.get(uri)
             if node is not None and len(node) > 0:
-                node = json.loads(node[0])
+                node = json.loads(node)
                 print('+-------------------------------------------------------+')
                 print('| UUID : %s \t\t|' % node.get('uuid'))
                 print('| Name: %s \t\t|' % node.get('name'))
@@ -261,6 +261,9 @@ class FOSCli(object):
         if uuid is not None and plugin_action is True:
             if action == 'add':
                 print("Adding plugin from %s to %s" % (manifest, uuid))
+                #manifest = json.loads(self.__read_file(manifest))
+                uri = str('dfos://<sys-id>/%s/plugins' % uuid)
+                self.store.desidered.dput(uri, self.__read_file(manifest))
             if action == 'remove':
                 print("Removing plugin %s from %s" % (plugin_uuid, uuid))
 
@@ -398,7 +401,7 @@ class FOSCli(object):
                                  dest='plugin')
 
         node_plugin_grp = parser_node.add_mutually_exclusive_group(required=False)
-        node_plugin_grp.add_argument('-a', '--add', nargs='?', type=bool, default=False, help='add plugin')
+        node_plugin_grp.add_argument('-a', '--add', action='store_true', default=False, help='add plugin')
         node_plugin_grp.add_argument('-r', '--remove', nargs='?', type=bool, default=False, help='remove plugin')
 
         #parser_node.add_argument('-a', '--add', nargs='?', type=bool, default=False, help='add plugin', dest='action')

@@ -1,0 +1,11 @@
+{
+  "plugins": [
+    {
+      "name": "ros2",
+      "version": 1,
+      "uuid": "",
+      "type": "runtime",
+      "status": "add"
+    }
+  ]
+}

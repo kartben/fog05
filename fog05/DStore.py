@@ -127,8 +127,8 @@ class DStore(Store):
     def next_version(self, uri):
         nv = 0
         v = self.get_version(uri)
-        if v != None:
-            nv = v +1
+        if v is not None:
+            nv = v + 1
 
         return nv
 
@@ -143,7 +143,7 @@ class DStore(Store):
         succeeded = False
 
         current_version = self.get_version(uri)
-        print('Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
+        #print('Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
         if current_version != None:
             if current_version < version:
                 self.__unchecked_store_value(uri, value, version)
@@ -190,11 +190,12 @@ class DStore(Store):
 
     def dput(self, uri, values = None):
         data = self.get(uri)
-        print(">>> dput resolved {0} to {1}".format(uri, data))
+        ##print(">>> dput resolved {0} to {1}".format(uri, data))
         version = 0
         if data is None:
             data = {}
         else:
+            data = json.loads(data)
             version = self.next_version(uri)
 
         uri_values = ""
@@ -238,10 +239,10 @@ class DStore(Store):
                     #data.update(d) #not very safe #
         else:
             jvalues = json.loads(values)
-            print('dput delta value = {0}, data = {1}'.format(jvalues, data))
+            ##print('dput delta value = {0}, data = {1}'.format(jvalues, data))
             mdata = self.data_merge(data, jvalues)
 
-        print("dput merged data = {0}".format(mdata))
+        ##print("dput merged data = {0}".format(mdata))
 
         value = json.dumps(mdata)
         self.__unchecked_store_value(uri, value , version)
@@ -261,7 +262,7 @@ class DStore(Store):
         try:
             self.__local_cache.pop(uri)
         except KeyError:
-            print(">>>> KeyError on pop")
+            #print(">>>> KeyError on pop")
             pass
 
     def remote_remove(self, uri):
@@ -275,10 +276,10 @@ class DStore(Store):
         v = self.get_value(uri)
         if v == None:
             self.__controller.onMiss()
-            print("Resolving: {0}".format(uri))
+            #print("Resolving: {0}".format(uri))
             rv = self.__controller.resolve(uri)
             if rv != None:
-                print('URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
+                #print('URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
                 self.update_value(uri, rv[0], rv[1])
                 self.notify_observers(uri, rv[0], rv[1])
                 return rv[0]
@@ -296,22 +297,22 @@ class DStore(Store):
             if fnmatch.fnmatch(k, uri):
                 xs.append((k, v[0], v[1]))
 
-        print(">>>>>> getAll({0}) = {1}".format(uri, xs))
+        #print(">>>>>> getAll({0}) = {1}".format(uri, xs))
         return xs
 
     def resolveAll(self, uri):
         xs = self.__controller.resolveAll(uri)
-        print(" Resolved list = {0}".format(xs))
+        #print(" Resolved list = {0}".format(xs))
         ys  = self.getAll(uri)
         ks = []
         for x in xs:
             ks.append(x[0])
-            print("resolved key = {0}".format(x[0]))
+            #print("resolved key = {0}".format(x[0]))
 
         for y in ys:
-            print('merging key: {0}'.format(y[0]))
+            #print('merging key: {0}'.format(y[0]))
             if y[0] not in ks:
-                print("Key is not present... Appending")
+                #print("Key is not present... Appending")
                 xs.append(y)
 
         return xs
@@ -344,15 +345,16 @@ class DStore(Store):
         return ld[-1]
 
     def data_merge(self, base, updates):
-        print("data_merge base = {0}, updates= {1}".format(base, updates))
+        ##print("data_merge base = {0}, updates= {1}".format(base, updates))
+        ##print("type of base  = {0} update = {1}".format(type(base), type(updates)))
         if base is None or isinstance(base, int) or isinstance(base, str) or isinstance(base, float):
             base = updates
         elif isinstance(base, list):
             if isinstance(updates, list):
                 names = [x.get('name') for x in updates]
                 item_same_name = [item for item in base if item.get('name') in [x.get('name') for x in updates]]
-                print(names)
-                print(item_same_name)
+                ##print(names)
+                ##print(item_same_name)
                 if all(isinstance(x, dict) for x in updates) and len(
                         [item for item in base if item.get('name') in [x.get('name') for x in updates]]) > 0:
                     for e in base:
@@ -407,28 +409,28 @@ class DStore(Store):
 # class DDSObserver(Observer):
 #
 #     def onRemove(self, uri):
-#         print('Observer onRemove Called')
+#         #print('Observer onRemove Called')
 #
 #     def onConflict(self):
-#         print('Observer onConflict Called')
+#         #print('Observer onConflict Called')
 #
 #     def onDput(self, uri):
-#         print('Observer onDput Called')
+#         #print('Observer onDput Called')
 #
 #     def onPput(self, uri, value):
-#         print('Observer onPput Called')
+#         #print('Observer onPput Called')
 #
 #     def onMiss(self):
-#         print('Observer onMiss Called')
+#         #print('Observer onMiss Called')
 #
 #     def onGet(self, uri):
-#         print('Observer onGet Called')
+#         #print('Observer onGet Called')
 #
 #     def onObserve(self, uri, action):
-#         print('Observer onObserve Called')
+#         #print('Observer onObserve Called')
 #
 #     def onPut(self, uri, value):
-#         print('Observer onPut Called')
+#         #print('Observer onPut Called')
 #
 #
 # class DDSController(Controller):
@@ -437,14 +439,14 @@ class DStore(Store):
 #         super(DDSController, self).__init__(cache)
 #
 #     def start(self):
-#         print('Controller start Called')
+#         #print('Controller start Called')
 #
 #     def stop(self):
-#         print('Controller stop Called')
+#         #print('Controller stop Called')
 #
 #     def resume(self):
-#         print('Controller resume Called')
+#         #print('Controller resume Called')
 #
 #     def pause(self):
-#         print('Controller pause Called')
+#         #print('Controller pause Called')
 #

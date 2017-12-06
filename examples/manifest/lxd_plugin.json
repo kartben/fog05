@@ -1,0 +1,11 @@
+{
+  "plugins": [
+    {
+      "name": "LXD",
+      "version": 1,
+      "uuid": "",
+      "type": "runtime",
+      "status": "add"
+    }
+  ]
+}
