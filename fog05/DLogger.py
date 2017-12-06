@@ -6,7 +6,7 @@ class DLogger:
         def __init__(self, file_name=None, debug=False):
 
             if file_name is None:
-                self.log_file = str('fosagent_log_%d.log' % int(time.time()))
+                self.log_file = 'fosagent_log.log' # str('fosagent_log_%d.log' % int(time.time()))
             else:
                 self.log_file = file_name
 

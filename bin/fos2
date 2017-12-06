@@ -1,6 +1,5 @@
 import sys
-
-from click import pass_obj, pass_context
+import re
 from jsonschema import validate, ValidationError
 from fog05.DStore import *
 from fog05 import Schemas
@@ -53,7 +52,7 @@ class FOSCli(object):
         print(all_plugins)
         nws = [x for x in all_plugins if x.get('type') == 'network']
         if len(nws) == 0:
-            print("No network plugin loaded on node, aborting")
+            print('No network plugin loaded on node, aborting')
             return
         brctl = nws[0]  # will use the first plugin
 
@@ -65,20 +64,20 @@ class FOSCli(object):
                   (node_uuid, brctl.get('uuid'), manifest.get('uuid')))
         r = self.store.desidered.put(uri, json_data)
         if r is None:
-            print("Resolved failed")
+            print('Resolved failed')
         elif r:
-            print("network added")
+            print('network added')
 
     def __send_remove_network(self, node_uuid, net_id):
 
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
         all_plugins = json.loads(self.store.actual.get(uri)).get('plugins')
         nws = [x for x in all_plugins if x.get('type') == 'network']
-        print("locating brctl plugin")
+        print('locating brctl plugin')
         search = [x for x in nws if 'brctl' in x.get('name')]
         print(search)
         if len(search) == 0:
-            print("Plugin was not loaded")
+            print('Plugin was not loaded')
             exit(0)
         else:
             brctl = search[0]
@@ -104,7 +103,7 @@ class FOSCli(object):
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
         all_plugins = self.store.actual.get(uri)
         if all_plugins is None:
-            print("Cannot get plugin")
+            print('Cannot get plugin')
             return None
         #all_plugins = all_plugins
         all_plugins = json.loads(all_plugins).get('plugins')
@@ -117,8 +116,18 @@ class FOSCli(object):
     def __get_entity_handler_by_uuid(self, node_uuid, entity_uuid):
         uri = str('afos://<sys-id>/%s/runtime/*/entity/%s' % (node_uuid, entity_uuid))
         all = self.store.actual.resolveAll(uri)
-        print(all)
-        return all
+        for i in all:
+            k = i[0]
+            if fnmatch.fnmatch(k, uri):
+                print('MATCH {0}'.format(k))
+                print('Extracting uuid...')
+                regex = uri.replace('/','\/')
+                regex = regex.replace('*', '(.*)')
+                reobj = re.compile(regex)
+                mobj = reobj.match(k)
+                uuid = mobj.group(1)
+                print('UUID {0}'.format(uuid))
+                return uuid
 
 
     def __send_define_entity(self, node_uuid, manifest):
@@ -127,41 +136,41 @@ class FOSCli(object):
         t = manifest.get('type')
 
         try:
-            if t == "vm":
+            if t == 'vm':
                 handler = self.__search_plugin_by_name('KVM', node_uuid)
-                validate(manifest.get("entity_data"), Schemas.vm_schema)
-            elif t == "container":
+                validate(manifest.get('entity_data'), Schemas.vm_schema)
+            elif t == 'container':
                 handler = self.__search_plugin_by_name('LXD', node_uuid)
-                validate(manifest.get("entity_data"), Schemas.container_schema)
-            elif t == "native":
+                validate(manifest.get('entity_data'), Schemas.container_schema)
+            elif t == 'native':
                 handler = self.__search_plugin_by_name('native', node_uuid)
-                validate(manifest.get("entity_data"), Schemas.native_schema)
-            elif t == "ros2":
+                validate(manifest.get('entity_data'), Schemas.native_schema)
+            elif t == 'ros2':
                 handler = self.__search_plugin_by_name('ros2', node_uuid)
-                validate(manifest.get("entity_data"), Schemas.ros2_schema)
-            elif t == "usvc":
-                print("microservice not yet")
+                validate(manifest.get('entity_data'), Schemas.ros2_schema)
+            elif t == 'usvc':
+                print('microservice not yet')
             else:
-                print("type not recognized")
+                print('type not recognized')
 
             if handler is None:
-                print("error on plugin for this type of entity")
+                print('error on plugin for this type of entity')
                 exit(-1)
         except ValidationError as ve:
-            print("Manifest is not correct")
-            print("%s" % ve.message)
+            print('Manifest is not correct')
+            print('%s' % ve.message)
             exit(-1)
 
-        entity_uuid = manifest.get("uuid")
+        entity_uuid = manifest.get('uuid')
         entity_definition = manifest
         json_data = json.dumps(entity_definition)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
         self.store.desidered.put(uri, json_data)
         while True:
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, handler.get('uuid'), entity_uuid))
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
             entity_info = json.loads(self.store.actual.get(uri))
-            if entity_info is not None and entity_info.get("status") == "defined":
+            if entity_info is not None and entity_info.get('status') == 'defined':
                 break
 
     def __send_undefine_entity(self, node_uuid, entity_uuid):
@@ -175,9 +184,11 @@ class FOSCli(object):
         self.store.desidered.dput(uri)
         while True:
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, handler, entity_uuid))
-            container_info = json.loads(self.store.actual.get(uri))
-            if container_info is not None and container_info.get("status") == "configured":
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            entity_info = self.store.actual.get(uri)
+            print('>>> entity_info: {0} type {1}'.format(entity_info, type(entity_info)))
+            entity_info = json.loads(entity_info)
+            if entity_info is not None and entity_info.get('status') == 'configured':
                 break
 
     def __send_clean_entity(self, node_uuid, entity_uuid):
@@ -186,9 +197,9 @@ class FOSCli(object):
         self.store.desidered.dput(uri)
         while True:
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, handler, entity_uuid))
-            container_info = json.loads(self.store.actual.get(uri))
-            if container_info is not None and container_info.get("status") == "cleaned":
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            entity_info = json.loads(self.store.actual.get(uri))
+            if entity_info is not None and entity_info.get('status') == 'cleaned':
                 break
 
     def __send_run_entity(self, node_uuid, entity_uuid):
@@ -197,9 +208,9 @@ class FOSCli(object):
         self.store.desidered.dput(uri)
         while True:
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, handler, entity_uuid))
-            container_info = json.loads(self.store.actual.get(uri))
-            if container_info is not None and container_info.get("status") == "run":
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            entity_info = json.loads(self.store.actual.get(uri))
+            if entity_info is not None and entity_info.get('status') == 'run':
                 break
 
     def __send_stop_entity(self, node_uuid, entity_uuid):
@@ -208,9 +219,9 @@ class FOSCli(object):
         self.store.desidered.dput(uri)
         while True:
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, handler, entity_uuid))
-            container_info = json.loads(self.astore.get(uri))
-            if container_info is not None and container_info.get("status") == "stop":
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            entity_info = json.loads(self.astore.get(uri))
+            if entity_info is not None and entity_info.get('status') == 'stop':
                 break
 
     def __send_pause_entity(self, node_uuid, entity_uuid):
@@ -247,7 +258,7 @@ class FOSCli(object):
         if uuid is not None and plugin_action is False:
             uri = str('afos://<sys-id>/%s/' % uuid)  ## this is because the resolver return a tuple with
             # value and version
-            print("Uri: %s" % uri)
+            print('Uri: %s' % uri)
             node = self.store.actual.get(uri)
             if node is not None and len(node) > 0:
                 node = json.loads(node)
@@ -256,22 +267,22 @@ class FOSCli(object):
                 print('| Name: %s \t\t|' % node.get('name'))
                 print('+-------------------------------------------------------+')
             else:
-                print("Node not found!!")
+                print('Node not found!!')
             return
         if uuid is not None and plugin_action is True:
             if action == 'add':
-                print("Adding plugin from %s to %s" % (manifest, uuid))
+                print('Adding plugin from %s to %s' % (manifest, uuid))
                 #manifest = json.loads(self.__read_file(manifest))
                 uri = str('dfos://<sys-id>/%s/plugins' % uuid)
                 self.store.desidered.dput(uri, self.__read_file(manifest))
             if action == 'remove':
-                print("Removing plugin %s from %s" % (plugin_uuid, uuid))
+                print('Removing plugin %s from %s' % (plugin_uuid, uuid))
 
 
     def network(self,nw_list, node_uuid, add, remove, manifest, net_uuid):
         #print(nw_list, node_uuid, add, remove, manifest, net_uuid)
         if nw_list:
-            print("This should list all networks")
+            print('This should list all networks')
             return
         if node_uuid is not None:
             if add and manifest is not None:
@@ -279,12 +290,12 @@ class FOSCli(object):
                 try:
                     validate(manifest, Schemas.network_schema)
                 except ValidationError as ve:
-                    print("Manifest is not correct")
-                    print("%s" % ve.message)
+                    print('Manifest is not correct')
+                    print('%s' % ve.message)
                     return
-                print("manifest Ok")
+                print('manifest Ok')
                 self.__send_add_network(node_uuid, manifest)
-                print("Network UUID is %s" % manifest.get('uuid'))
+                print('Network UUID is %s' % manifest.get('uuid'))
                 return
             if remove and net_uuid is not None:
                 self.__send_remove_network(node_uuid, net_uuid)
@@ -294,7 +305,7 @@ class FOSCli(object):
     def entity(self, en_list, action, node_uuid, manifest, entity_uuid, dest_node):
         #print(en_list,action,node_uuid,manifest,entity_uuid,dest_node)
         if en_list:
-            print("This should print all entities in the system")
+            print('This should print all entities in the system')
             return
         if node_uuid is None: return
         if action == 'define' and manifest is not None:
@@ -302,38 +313,38 @@ class FOSCli(object):
             try:
                 validate(manifest, Schemas.entity_schema)
             except ValidationError as ve:
-                print("Manifest is not correct")
-                print("%s" % ve.message)
+                print('Manifest is not correct')
+                print('%s' % ve.message)
                 return
-            print("manifest Ok")
+            print('manifest Ok')
             self.__send_define_entity(node_uuid, manifest)
-            print("Entity %s defined" % manifest.get('uuid'))
+            print('Entity %s defined' % manifest.get('uuid'))
             return
         if entity_uuid is None: return
         if action == 'undefine':
             self.__send_undefine_entity(node_uuid, entity_uuid)
-            print("Entity %s undefined" % entity_uuid)
+            print('Entity %s undefined' % entity_uuid)
             return
         if action == 'configure':
             self.__send_configure_entity(node_uuid, entity_uuid)
-            print("Entity %s configured" % entity_uuid)
+            print('Entity %s configured' % entity_uuid)
         if action == 'clean':
             self.__send_clean_entity(node_uuid, entity_uuid)
-            print("Entity %s cleaned" % entity_uuid)
+            print('Entity %s cleaned' % entity_uuid)
         if action == 'run':
-            print("Entity %s started" % entity_uuid)
+            print('Entity %s started' % entity_uuid)
             self.__send_run_entity(node_uuid, entity_uuid)
         if action == 'stop':
             self.__send_stop_entity(node_uuid, entity_uuid)
-            print("Entity %s stopped" % entity_uuid)
+            print('Entity %s stopped' % entity_uuid)
         if action == 'pause':
             self.__send_pause_entity(node_uuid, entity_uuid)
-            print("Pause sended")
+            print('Pause sended')
         if action == 'resume':
             self.__send_resume_entity(node_uuid, entity_uuid)
-            print("Resume sended")
+            print('Resume sended')
         if action == 'migrate' and dest_node is not None:
-            print("Not yet...")
+            print('Not yet...')
             pass
 
     def manifest(self, type, manifest):
@@ -341,38 +352,38 @@ class FOSCli(object):
         if type == 'entity':
             t = manifest.get('type')
             try:
-                if t == "vm":
-                    validate(manifest.get("entity_data"), Schemas.vm_schema)
-                elif t == "container":
-                    validate(manifest.get("entity_data"), Schemas.container_schema)
-                elif t == "native":
-                    validate(manifest.get("entity_data"), Schemas.native_schema)
-                elif t == "ros2":
-                    validate(manifest.get("entity_data"), Schemas.ros2_schema)
-                elif t == "usvc":
-                    print("microservice not yet")
+                if t == 'vm':
+                    validate(manifest.get('entity_data'), Schemas.vm_schema)
+                elif t == 'container':
+                    validate(manifest.get('entity_data'), Schemas.container_schema)
+                elif t == 'native':
+                    validate(manifest.get('entity_data'), Schemas.native_schema)
+                elif t == 'ros2':
+                    validate(manifest.get('entity_data'), Schemas.ros2_schema)
+                elif t == 'usvc':
+                    print('microservice not yet')
                 else:
-                    print("type not recognized")
+                    print('type not recognized')
             except ValidationError as ve:
-                print("Manifest is not correct")
-                print("%s" % ve.message)
+                print('Manifest is not correct')
+                print('%s' % ve.message)
                 exit(-1)
         if type == 'network':
             try:
                 validate(manifest, Schemas.network_schema)
             except ValidationError as ve:
-                print("Manifest is not correct")
-                print("%s" % ve.message)
+                print('Manifest is not correct')
+                print('%s' % ve.message)
                 exit(-1)
-        if type == "application":
+        if type == 'application':
             try:
                 validate(manifest, Schemas.app_schema)
             except ValidationError as ve:
-                print("Manifest is not correct")
-                print("%s" % ve.message)
+                print('Manifest is not correct')
+                print('%s' % ve.message)
                 exit(-1)
 
-        print("Manifest seems ok!")
+        print('Manifest seems ok!')
         return
 
 
@@ -498,7 +509,7 @@ class FOSCli(object):
                 self.entity(kwargs['list'], action, kwargs['uuid'], kwargs['manifest'], kwargs['euuid'],
                             kwargs['duuid'])
             else:
-                print("Error check your command line!!")
+                print('Error check your command line!!')
                 exit(-1)
 
 

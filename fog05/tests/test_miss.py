@@ -26,7 +26,11 @@ def test_miss(sid, root, home):
     dval = {'value': 'Cannolo!'}
     store.dput(test_uri, json.dumps(dval))
 
-    print('MERGE IT... OR NOT? {0}'.format(store.data_merge(tval, dval)))
+    test_uri = test_uri+'#value=Arancino!'
+    store.dput(test_uri)
+
+    test_uri = uri_prefix + '/test'
+
     print('Store written, press a key to continue')
     input()
     # local get

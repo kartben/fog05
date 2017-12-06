@@ -1,0 +1,77 @@
+import sys
+import re
+from jsonschema import validate, ValidationError
+from fog05.DStore import *
+from fog05 import Schemas
+import signal
+from fog05.fosagent import FosAgent
+import time
+import uuid
+import argparse
+import daemon as dmn
+
+##
+## TODO: sostitute all string with variables in store interaction
+##
+
+
+class FOSStore(object):
+    def __init__(self, aroot, droot, home):
+        self.aroot = aroot #'dfos://<sys-id>'
+        self.ahome = str('%s/%s' % (aroot, home)) #str('dfos://<sys-id>/%s' % self.uuid)
+
+        self.droot = droot  # 'dfos://<sys-id>'
+        self.dhome = str('%s/%s' % (droot, home))  # str('dfos://<sys-id>/%s' % self.uuid)
+
+        self.actual = DStore(home, self.aroot, self.ahome, 1024)
+        self.desidered = DStore(home, self.droot, self.dhome, 1024)
+
+
+class FOSCli(object):
+
+    def __init__(self):
+        self.agent = None
+        self.store = None
+        self.aroot = 'afos://<sys-id>'
+        self.droot = 'dfos://<sys-id>'
+        self.uuid = str(uuid.uuid4())
+
+    def __initialize(self):
+        self.store = FOSStore(self.aroot, self.droot, self.uuid)
+
+    def __read_file(self, file_path):
+        with open(file_path, 'r') as f:
+            data = f.read()
+        return data
+
+    def get(self, uri):
+        if uri.startswith('a'):
+            print(self.store.actual.get(uri))
+        elif uri.startswith('d'):
+            print(self.store.desider.get(uri))
+
+
+    def main(self):
+
+        self.__initialize()
+
+        parser = argparse.ArgumentParser(description='Fog05 | The Fog-Computing IaaS')
+        subparsers = parser.add_subparsers(dest='cmd')
+
+        ##START CMD
+
+        parser_start = subparsers.add_parser('get')
+        parser_start.add_argument('-u', '--uri', required=True, type=str, default=False, help='plugin path')
+
+        kwargs = vars(parser.parse_args())
+
+        if kwargs['cmd'] == 'get':
+            self.get(kwargs['uri'])
+        else:
+            print('Error check your command line!!')
+            exit(-1)
+
+
+if __name__ == '__main__':
+        c = FOSCli()
+        c.main()

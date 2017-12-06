@@ -186,24 +186,25 @@ class DStore(Store):
     def conflict_handler(self, action):
         pass
 
-
-
     def dput(self, uri, values = None):
-        data = self.get(uri)
-        ##print(">>> dput resolved {0} to {1}".format(uri, data))
-        version = 0
-        if data is None:
-            data = {}
-        else:
-            data = json.loads(data)
-            version = self.next_version(uri)
 
-        uri_values = ""
-        if values == None:
+        #print('>>> dput >>> URI: {0} VALUE: {1}'.format(uri, values))
+        uri_values = ''
+        if values is None:
             ##status=run&entity_data.memory=2GB
             uri = uri.split('#')
             uri_values = uri[-1]
             uri = uri[0]
+
+        data = self.get(uri)
+        #print('>>> dput resolved {0} to {1}'.format(uri, data))
+        #print('>>> dput resolved type is {0}'.format(type(data)))
+        version = 0
+        if data is None or data == '':
+            data = {}
+        else:
+            data = json.loads(data)
+            version = self.next_version(uri)
 
         # version = self.next_version(uri)
         # data = {}
@@ -224,27 +225,31 @@ class DStore(Store):
         #                 data = json.loads(self.__local_cache.get(key)[0])
         #         version = self.next_version(uri)
 
-        mdata = {}
-        if values == None:
+        #print('>>>VALUES {0} '.format(values))
+        #print('>>>VALUES TYPE {0} '.format(type(values)))
+        if values is None:
             uri_values = uri_values.split('&')
+            #print('>>>URI VALUES {0} '.format(uri_values))
             for tokens in uri_values:
+                #print('INSIDE for tokens {0}'.format(tokens))
                 v = tokens.split('=')[-1]
                 k = tokens.split('=')[0]
-                if len(k.split('.')) < 2:
-                    data.update({k: v})
-                else:
-                    d = self.dot2dict(k, v)
+                #if len(k.split('.')) < 2:
+                #    data.update({k: v})
+                #    print('>>>merged data  {0} '.format(data))
+                #else:
+                d = self.dot2dict(k, v)
 
-                    data = self.data_merge(data, d)
-                    #data.update(d) #not very safe #
+                data = self.data_merge(data, d)
+                #print('>>>merged data  {0} '.format(data))
         else:
             jvalues = json.loads(values)
             ##print('dput delta value = {0}, data = {1}'.format(jvalues, data))
-            mdata = self.data_merge(data, jvalues)
+            data = self.data_merge(data, jvalues)
 
-        ##print("dput merged data = {0}".format(mdata))
+        ##print('dput merged data = {0}'.format(mdata))
 
-        value = json.dumps(mdata)
+        value = json.dumps(data)
         self.__unchecked_store_value(uri, value , version)
         self.__controller.onDput(uri, value, version)
         self.notify_observers(uri, value, version)
@@ -262,7 +267,7 @@ class DStore(Store):
         try:
             self.__local_cache.pop(uri)
         except KeyError:
-            #print(">>>> KeyError on pop")
+            #print('>>>> KeyError on pop')
             pass
 
     def remote_remove(self, uri):
@@ -276,7 +281,7 @@ class DStore(Store):
         v = self.get_value(uri)
         if v == None:
             self.__controller.onMiss()
-            #print("Resolving: {0}".format(uri))
+            #print('Resolving: {0}'.format(uri))
             rv = self.__controller.resolve(uri)
             if rv != None:
                 #print('URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
@@ -297,22 +302,22 @@ class DStore(Store):
             if fnmatch.fnmatch(k, uri):
                 xs.append((k, v[0], v[1]))
 
-        #print(">>>>>> getAll({0}) = {1}".format(uri, xs))
+        #print('>>>>>> getAll({0}) = {1}'.format(uri, xs))
         return xs
 
     def resolveAll(self, uri):
         xs = self.__controller.resolveAll(uri)
-        #print(" Resolved list = {0}".format(xs))
+        #print(' Resolved list = {0}'.format(xs))
         ys  = self.getAll(uri)
         ks = []
         for x in xs:
             ks.append(x[0])
-            #print("resolved key = {0}".format(x[0]))
+            #print('resolved key = {0}'.format(x[0]))
 
         for y in ys:
             #print('merging key: {0}'.format(y[0]))
             if y[0] not in ks:
-                #print("Key is not present... Appending")
+                #print('Key is not present... Appending')
                 xs.append(y)
 
         return xs
@@ -324,9 +329,9 @@ class DStore(Store):
         pass
 
     def __str__(self):
-        ret = ""
+        ret = ''
         for key, value in self.__local_cache.items():
-            ret = str('%s%s' % (ret,str("Key: %s - Value: %s\n" % (key, value))))
+            ret = str('%s%s' % (ret,str('Key: %s - Value: %s\n' % (key, value))))
 
         return ret
 
@@ -345,8 +350,8 @@ class DStore(Store):
         return ld[-1]
 
     def data_merge(self, base, updates):
-        ##print("data_merge base = {0}, updates= {1}".format(base, updates))
-        ##print("type of base  = {0} update = {1}".format(type(base), type(updates)))
+        ##print('data_merge base = {0}, updates= {1}'.format(base, updates))
+        ##print('type of base  = {0} update = {1}'.format(type(base), type(updates)))
         if base is None or isinstance(base, int) or isinstance(base, str) or isinstance(base, float):
             base = updates
         elif isinstance(base, list):
