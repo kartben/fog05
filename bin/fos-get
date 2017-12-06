@@ -1,14 +1,10 @@
-import sys
-import re
-from jsonschema import validate, ValidationError
+#!/usr/local/bin/python3
+
 from fog05.DStore import *
-from fog05 import Schemas
-import signal
-from fog05.fosagent import FosAgent
-import time
+
 import uuid
 import argparse
-import daemon as dmn
+
 
 ##
 ## TODO: sostitute all string with variables in store interaction
@@ -27,7 +23,7 @@ class FOSStore(object):
         self.desidered = DStore(home, self.droot, self.dhome, 1024)
 
 
-class FOSCli(object):
+class FOSGetCli(object):
 
     def __init__(self):
         self.agent = None
@@ -55,23 +51,13 @@ class FOSCli(object):
 
         self.__initialize()
 
-        parser = argparse.ArgumentParser(description='Fog05 | The Fog-Computing IaaS')
-        subparsers = parser.add_subparsers(dest='cmd')
-
-        ##START CMD
-
-        parser_start = subparsers.add_parser('get')
-        parser_start.add_argument('-u', '--uri', required=True, type=str, default=False, help='plugin path')
+        parser = argparse.ArgumentParser(description='Fog05 get helper for Store')
+        parser.add_argument('-u', '--uri', required=True, type=str, default=False, help='URI')
 
         kwargs = vars(parser.parse_args())
-
-        if kwargs['cmd'] == 'get':
-            self.get(kwargs['uri'])
-        else:
-            print('Error check your command line!!')
-            exit(-1)
-
+        self.__initialize()
+        self.get(kwargs['uri'])
 
 if __name__ == '__main__':
-        c = FOSCli()
+        c = FOSGetCli()
         c.main()

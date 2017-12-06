@@ -9,7 +9,7 @@
     "cpu": 1,
     "memory": 512,
     "disk_size": 5,
-    "base_image":"https://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img",
+    "base_image":"http://192.168.1.142/virt-cirros-0.3.4-x86_64-disk.img",
     "networks": [{"mac": "d2:e3:ed:6f:e3:ef", "br_name": "virbr0"}],
     "user-data": "",
     "ssh-key": ""

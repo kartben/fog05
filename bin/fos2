@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+
 import sys
 import re
 from jsonschema import validate, ValidationError
@@ -185,9 +187,8 @@ class FOSCli(object):
         while True:
             time.sleep(1)
             uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
-            entity_info = self.store.actual.get(uri)
-            print('>>> entity_info: {0} type {1}'.format(entity_info, type(entity_info)))
-            entity_info = json.loads(entity_info)
+            #print(uri)
+            entity_info = json.loads(self.store.actual.get(uri))
             if entity_info is not None and entity_info.get('status') == 'configured':
                 break
 

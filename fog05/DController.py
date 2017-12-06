@@ -34,7 +34,7 @@ class DController (Controller, Observer):
         self.missmv_topic = FlexyTopic(self.dp, "FOSStoreMissMV")
         self.hitmv_topic = FlexyTopic(self.dp, "FOSStoreHitMV")
 
-        state_qos = [Reliable(), TransientLocal(), KeepLastHistory(1)]
+        state_qos = [Reliable(), TransientLocal(), KeepLastHistory(1), ManualInstanceDispose()]
         event_qos = [Reliable(), Volatile(), KeepAllHistory()]
 
         self.store_info_writer = FlexyWriter(self.pub,
@@ -129,6 +129,7 @@ class DController (Controller, Observer):
 
 
     def handle_remove(self, uri):
+        print('>>>> Removing {0}'.format(uri))
         self.__store.remote_remove(uri)
 
     def handle_remote_put(self, reader):
@@ -136,7 +137,7 @@ class DController (Controller, Observer):
         for (d, i) in samples:
             if i.is_disposed_instance():
                 self.handle_remove(d.key)
-            else:
+            elif i.valid_data:
                 rkey = d.key
                 rsid = d.sid
                 rvalue = d.value
@@ -150,7 +151,17 @@ class DController (Controller, Observer):
                     else:
                         print(">> Received old version of " + rkey)
                 else:
-                    print(">>>>>> Ignoring remote put as it is a self-put")
+                    if rsid != self.__store.store_id and self.__store.get_value(rkey) is not None:
+                        r = self.__store.update_value(rkey, rvalue, rversion)
+                        if r:
+                            print(">> Updated " + rkey)
+                            self.__store.notify_observers(rkey, rvalue, rversion)
+                        else:
+                            print(">> Received old version of " + rkey)
+                    else:
+                        print(">>>>>> Ignoring remote put as it is a self-put")
+            else:
+                print(">>>>>> Some store unregistered instance {0}".format(d.key))
 
 
 
@@ -245,9 +256,11 @@ class DController (Controller, Observer):
         values = []
         while (peers != [] and retries < maxRetries):
 
-            samples = self.hitmv_reader.stake(all_samples(), timeout)
-            timeout = timeout + delta
-
+            #samples = self.hitmv_reader.stake(all_samples(), timeout)
+            #timeout = timeout + delta
+            timeout = timeout + (4 * retries * delta)
+            samples = self.hitmv_reader.take(all_samples())
+            time.sleep(timeout / 1000)
             print(">>>> Resolve loop #{0} got {1} samples".format(retries, str(samples)))
             for s in samples:
                 d = s[0]
@@ -257,11 +270,13 @@ class DController (Controller, Observer):
                 if i.valid_data:
                     print("Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
                     print("I was looking to resolve uri: {0}".format(uri))
+                    print('>>>>>>>>> VALUE {0} KVAVE {1}'.format(values, d.kvave))
                     # Only remove if this was an answer for this key!
                     if d.source_sid in peers and uri == d.key:
                         peers.remove(d.source_sid)
-                    if d.key == uri and d.dest_sid == self.__store.store_id:
+                    if d.key == uri: # and d.dest_sid == self.__store.store_id:
                         values = values + d.kvave
+
 
             retries += 1
 
@@ -302,28 +317,43 @@ class DController (Controller, Observer):
 
         peers = copy.deepcopy(self.__store.discovered_stores)
         # print("Trying to resolve {0} with peers {1}".format(uri, peers))
-        maxRetries = len(peers) * 3
+        maxRetries = max(len(peers) * 3,4)
+        print(">>>>>>>>>>>>>>>>>>>>MAX RETRIES {0} PEERS {1}".format(maxRetries,peers))
         retries = 0
         v = ("", -1)
         while peers != [] and retries < maxRetries:
-            samples = self.hit_reader.stake(new_samples(), timeout)
-            timeout = timeout + delta
+            #samples = self.hit_reader.stake(new_samples(), timeout)
+            timeout = timeout + (4*retries*delta)
+            samples = self.hit_reader.take(all_samples())
+            time.sleep(timeout/1000)
             print(">>>> Resolve loop #{0} got {1}".format(retries, str(samples)))
 
             for (d, i) in samples:
-                if i.valid_data:
+                if i.valid_data and d.key == uri:
                     print("Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
                     print("I was looking to resolve uri: {0}".format(uri))
                     # Only remove if this was an answer for this key!
-                    if d.source_sid in peers and uri == d.key:
+                    if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
                         peers.remove(d.source_sid)
 
+                    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                    print(">>>>>>>>>>>>>>>>>>> VALUE {0} VERSION {1}".format(d.value,d.version))
+                    print(">>>>>>>>>>>>>>>>>>> TYPE VALUE {0} VERSION {1}".format(type(d.value), type(d.version)))
+                    print(">>>>>>>>>>>>>>>>>>> V  VALUE {0} V VERSION {1}".format(v[0], v[1]))
+                    print('>>>>>>>>>>>>>>>>>>>>>>>> COMPARE {0}'.format(d.version > v[1]))
+                    print('>>>>>>>>>>>>>>>>>>>>>>>> COMPARE STORE ID {0}'.format(d.key == uri and d.dest_sid == self.__store.store_id))
                     if d.key == uri and d.dest_sid == self.__store.store_id:
-                        if d.version > v[1]:
+
+                        if int(d.version) > int(v[1]):
+                            print('>>>>>>>>>>>>>>>>>>>>>>>>Inside if of version {0}'.format(d.version > v[1]))
                             v = (d.value, d.version)
-
+                    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             retries += 1
+            print('>>>>>>>> RETRIES {0}'.format(retries))
 
+        print('>>> Resolved value {0}'.format(v))
+        if v[0] == '':
+            return None
         return v
 
 
