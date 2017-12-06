@@ -189,30 +189,39 @@ class DStore(Store):
 
 
     def dput(self, uri, values = None):
+        data = self.get(uri)
+        print(">>> dput resolved {0} to {1}".format(uri, data))
+        version = 0
+        if data is None:
+            data = {}
+        else:
+            version = self.next_version(uri)
+
+        uri_values = ""
         if values == None:
             ##status=run&entity_data.memory=2GB
             uri = uri.split('#')
             uri_values = uri[-1]
             uri = uri[0]
 
-        version = self.next_version(uri)
-        data = {}
-        for key in self.__local_cache:
-            if fnmatch.fnmatch(key, uri):
-                data = json.loads(self.__local_cache.get(key)[0])
-
-
-        # @TODO: Need to resolve this miss
-        if len(data) == 0:
-            data = self.get(uri)
-            if data is None:
-                return
-            else:
-                self.__unchecked_store_value(uri, data[0], data[1])
-                for key in self.__local_cache:
-                    if fnmatch.fnmatch(key, uri):
-                        data = json.loads(self.__local_cache.get(key)[0])
-                version = self.next_version(uri)
+        # version = self.next_version(uri)
+        # data = {}
+        # for key in self.__local_cache:
+        #     if fnmatch.fnmatch(key, uri):
+        #         data = json.loads(self.__local_cache.get(key)[0])
+        #
+        #
+        # # @TODO: Need to resolve this miss
+        # if len(data) == 0:
+        #     data = self.get(uri)
+        #     if data is None:
+        #         return
+        #     else:
+        #         self.__unchecked_store_value(uri, data, self.next_version(uri))
+        #         for key in self.__local_cache:
+        #             if fnmatch.fnmatch(key, uri):
+        #                 data = json.loads(self.__local_cache.get(key)[0])
+        #         version = self.next_version(uri)
 
         if values == None:
             uri_values = uri_values.split('&')
@@ -227,17 +236,11 @@ class DStore(Store):
                     data = self.data_merge(data, d)
                     #data.update(d) #not very safe #
         else:
-            values = json.loads(values)
-            data = self.data_merge(data, values)
-            '''
-            for k in values.keys():
-                v = values.get(k)
-                if type(v) == list:
-                    old_v = data.get(k)
-                    v = old_v + v
+            jvalues = json.loads(values)
+            print("dput delta value = {0}".format(values))
+            data = self.data_merge(data, jvalues)
 
-                data.update({k: v})
-            '''
+        print("dput merged data = {0}".format(data))
 
         value = json.dumps(data)
         self.__unchecked_store_value(uri, value , version)
