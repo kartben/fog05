@@ -23,9 +23,10 @@ def test_miss(sid, root, home):
     tval = {"id": 102, "value": "A Test URI"}
     store.put(test_uri, json.dumps(tval))
 
-    dval = {"kind": "info"}
+    dval = {"value": "Cannolo!"}
     store.dput(test_uri, json.dumps(dval))
 
+    print("MERGE IT... OR NOT? {0}".format(store.data_merge(tval, dval)))
     print("Store written, press a key to continue")
     input()
     # local get

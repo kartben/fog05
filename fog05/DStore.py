@@ -223,6 +223,7 @@ class DStore(Store):
         #                 data = json.loads(self.__local_cache.get(key)[0])
         #         version = self.next_version(uri)
 
+        mdata = {}
         if values == None:
             uri_values = uri_values.split('&')
             for tokens in uri_values:
@@ -237,12 +238,12 @@ class DStore(Store):
                     #data.update(d) #not very safe #
         else:
             jvalues = json.loads(values)
-            print("dput delta value = {0}".format(values))
-            data = self.data_merge(data, jvalues)
+            print("dput delta value = {0}, data = {1}".format(jvalues, data))
+            mdata = self.data_merge(data, jvalues)
 
-        print("dput merged data = {0}".format(data))
+        print("dput merged data = {0}".format(mdata))
 
-        value = json.dumps(data)
+        value = json.dumps(mdata)
         self.__unchecked_store_value(uri, value , version)
         self.__controller.onDput(uri, value, version)
         self.notify_observers(uri, value, version)
@@ -349,6 +350,8 @@ class DStore(Store):
             if isinstance(updates, list):
                 names = [x.get('name') for x in updates]
                 item_same_name = [item for item in base if item.get('name') in [x.get('name') for x in updates]]
+                print(names)
+                print(item_same_name)
                 if all(isinstance(x, dict) for x in updates) and len(
                         [item for item in base if item.get('name') in [x.get('name') for x in updates]]) > 0:
                     for e in base:
@@ -367,6 +370,32 @@ class DStore(Store):
                     else:
                         base.update({k: updates.get(k)})
         return base
+
+    # def data_merge(self, base, updates):
+    #     if base is None or isinstance(base, int) or isinstance(base, str) or isinstance(base, float):
+    #         base = updates
+    #     elif isinstance(base, list):
+    #         if isinstance(updates, list):
+    #             names = [x.get('name') for x in updates]
+    #             item_same_name = [item for item in base if item.get('name') in [x.get('name') for x in updates]]
+    #             if all(isinstance(x, dict) for x in updates) and len(
+    #                     [item for item in base if item.get('name') in [x.get('name') for x in updates]]) > 0:
+    #                 for e in base:
+    #                     for u in updates:
+    #                         if e.get('name') == u.get('name'):
+    #                             self.data_merge(e, u)
+    #             else:
+    #                 base.extend(updates)
+    #         else:
+    #             base.append(updates)
+    #     elif isinstance(base, dict):
+    #         if isinstance(updates, dict):
+    #             for k in updates.keys():
+    #                 if k in base.keys():
+    #                     base.update({k: self.data_merge(base.get(k), updates.get(k))})
+    #                 else:
+    #                     base.update({k: updates.get(k)})
+    #     return base
 
     def on_store_discovered(self, sid):
         raise NotImplemented
