@@ -238,7 +238,7 @@ class DStore(Store):
                     #data.update(d) #not very safe #
         else:
             jvalues = json.loads(values)
-            print("dput delta value = {0}, data = {1}".format(jvalues, data))
+            print('dput delta value = {0}, data = {1}'.format(jvalues, data))
             mdata = self.data_merge(data, jvalues)
 
         print("dput merged data = {0}".format(mdata))
@@ -344,6 +344,7 @@ class DStore(Store):
         return ld[-1]
 
     def data_merge(self, base, updates):
+        print("data_merge base = {0}, updates= {1}".format(base, updates))
         if base is None or isinstance(base, int) or isinstance(base, str) or isinstance(base, float):
             base = updates
         elif isinstance(base, list):
