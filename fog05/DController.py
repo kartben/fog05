@@ -111,7 +111,7 @@ class DController (Controller, Observer):
                 v = self.__store.get_value(d.key)
                 if v is not None:
                     print('DController.handle_miss', 'Serving Miss for {0}'.format(d.key))
-                    h = CacheHit(self.__store.store_id, d.source_sid, d.key, v, self.__store.get_version(d.key))
+                    h = CacheHit(self.__store.store_id, d.source_sid, d.key, v[0], v[1])
                     self.hit_writer.write(h)
                 else:
                     print('DController.handle_miss', 'Store {0} did not resolve remote miss on key {1}'.format(self.__store.store_id, d.key))

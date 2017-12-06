@@ -16,10 +16,15 @@ def test_miss(sid, root, home):
     store = DStore(sid, sroot, home, 1024)
 
     uri_prefix = "fos://{0}/{1}-{2}".format(root, home, sid)
-    store.put(uri_prefix, 'I am a store fos://{0}/{1}-{2}!'.format(root, home, sid))
+    val = {"id": 101, "kind": "info", "value": "am a store fos://{0}/{1}-{2}!".format(root, home, sid)}
+    store.put(uri_prefix, json.dumps(val))
 
     test_uri = uri_prefix+'/test'
-    store.put(test_uri, 'A Test URI')
+    tval = {"id": 102, "value": "A Test URI"}
+    store.put(test_uri, json.dumps(tval))
+
+    dval = {"kind": "info"}
+    store.dput(test_uri, json.dumps(dval))
 
     print("Store written, press a key to continue")
     input()

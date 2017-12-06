@@ -143,6 +143,7 @@ class DStore(Store):
         succeeded = False
 
         current_version = self.get_version(uri)
+        print('Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
         if current_version != None:
             if current_version < version:
                 self.__unchecked_store_value(uri, value, version)
@@ -273,6 +274,7 @@ class DStore(Store):
             print("Resolving: {0}".format(uri))
             rv = self.__controller.resolve(uri)
             if rv != None:
+                print('URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
                 self.update_value(uri, rv[0], rv[1])
                 self.notify_observers(uri, rv[0], rv[1])
                 return rv[0]
