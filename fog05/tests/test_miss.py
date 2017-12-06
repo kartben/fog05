@@ -16,20 +16,22 @@ def test_miss(sid, root, home):
     store = DStore(sid, sroot, home, 1024)
 
     uri_prefix = 'fos://{0}/{1}-{2}'.format(root, home, sid)
-    val = {'id': 101, 'kind': 'info', 'value': 'am a store fos://{0}/{1}-{2}!'.format(root, home, sid)}
+    id = 100 + int(sid)
+    val = {'id': id, 'kind': 'info', 'value': 'am a store fos://{0}/{1}-{2}!'.format(root, home, sid)}
     store.put(uri_prefix, json.dumps(val))
 
-    test_uri = uri_prefix+'/test'
-    tval = {'id': 102, 'value': 'A Test URI'}
+    test_uri = uri_prefix+'/savia'
+    tid = 200 + int(sid)
+    tval = {'id': tid, 'value': 'A Test URI'}
     store.put(test_uri, json.dumps(tval))
 
-    dval = {'value': 'Cannolo!'}
+
+    dval = {'pasticceria': '{0}-Cannoli!'.format(sid)}
     store.dput(test_uri, json.dumps(dval))
 
-    test_uri = test_uri+'#value=Arancino!'
+    delta_tag = '#rosticceria={0}-Arancini!'.format(sid)
+    test_uri = test_uri+delta_tag
     store.dput(test_uri)
-
-    test_uri = uri_prefix + '/test'
 
     print('Store written, press a key to continue')
     input()
@@ -42,7 +44,7 @@ def test_miss(sid, root, home):
     input()
     # try get that need resolving
     for id in store.discovered_stores:
-       uri = 'fos://{0}/{1}-{2}/test'.format(root, home, id)
+       uri = 'fos://{0}/{1}-{2}/savia'.format(root, home, id)
        v = store.get(uri)
        print('=========> store[{0}] = {1}'.format(uri, v))
 
