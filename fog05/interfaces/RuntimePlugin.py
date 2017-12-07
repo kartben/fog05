@@ -5,10 +5,9 @@ from fog05.interfaces.Plugin import Plugin
 
 class RuntimePlugin(Plugin):
 
-    def __init__(self, version):
-        super(RuntimePlugin, self).__init__(version)
+    def __init__(self, version, plugin_uuid=None):
+        super(RuntimePlugin, self).__init__(version, plugin_uuid)
         self.pid=-1
-        self.uuid="0"
         self.name=""
         self.current_entities={}
 

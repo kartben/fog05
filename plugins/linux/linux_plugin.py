@@ -25,9 +25,8 @@ import sys
 
 
 class Linux(OSPlugin):
-    def __init__(self, name, version, agent):
-        super(Linux, self).__init__(version)
-        self.uuid = uuid.uuid4()
+    def __init__(self, name, version, agent, plugin_uuid):
+        super(Linux, self).__init__(version, plugin_uuid)
         self.name = name
         self.pm = None
         self.agent = agent

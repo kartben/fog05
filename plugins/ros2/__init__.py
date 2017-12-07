@@ -8,8 +8,7 @@ VERSION = 1
 
 def run(*args,**kwargs):
 
-    sys.path.append(os.path.join(sys.path[0], 'plugins', 'ros2'))
     from ros2_file import ROS2
-    n = ROS2('ros2', VERSION, kwargs.get('agent'))
+    n = ROS2('ros2', VERSION, kwargs.get('agent'), kwargs.get('uuid'))
     return n
 

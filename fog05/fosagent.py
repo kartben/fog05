@@ -127,13 +127,13 @@ class FosAgent(Agent):
         else:
             return self.__nwPlugins.get(cnetwork_uuid)
 
-    def __load_runtime_plugin(self, plugin_name):
+    def __load_runtime_plugin(self, plugin_name, plugin_uuid):
         self.logger.info('__load_runtime_plugin()', 'Loading a Runtime plugin: %s' % plugin_name)
         rt = self.pl.locatePlugin(plugin_name)
         if rt is not None:
             self.logger.info('__load_runtime_plugin()', '[ INIT ] Loading a Runtime plugin: %s' % plugin_name)
             rt = self.pl.loadPlugin(rt)
-            rt = rt.run(agent=self)
+            rt = rt.run(agent=self, uuid=plugin_uuid)
             self.__rtPlugins.update({rt.uuid: rt})
             val = {'version': rt.version, 'description': str('runtime %s' % rt.name), 'plugin': ''}
             uri = str('%s/plugins/%s/%s' % (self.ahome, rt.name, rt.uuid))
@@ -150,13 +150,13 @@ class FosAgent(Agent):
             self.logger.warning('__load_runtime_plugin()', '[ WARN ] Runtime: %s plugin not found!' % plugin_name)
             return None
 
-    def __load_network_plugin(self, plugin_name):
+    def __load_network_plugin(self, plugin_name, plugin_uuid):
         self.logger.info('__load_network_plugin()', 'Loading a Network plugin: %s' % plugin_name)
         net = self.pl.locatePlugin(plugin_name)
         if net is not None:
             self.logger.info('__load_network_plugin()', '[ INIT ] Loading a Network plugin: %s' % plugin_name)
             net = self.pl.loadPlugin(net)
-            net = net.run(agent=self)
+            net = net.run(agent=self, uuid=plugin_uuid)
             self.__nwPlugins.update({net.uuid: net})
 
             val = {'version': net.version, 'description': str('runtime %s' % net.name),
@@ -211,9 +211,10 @@ class FosAgent(Agent):
             s = [x for x in all_plugins.get('plugins') if v.get('name') in x.get('name')]
             if v.get('status') == 'add' and len(s) == 0:
                 name = v.get('name')
+                plugin_uuid = v.get('uuid')
                 load_method = self.__load_plugin_method_selection(v.get('type'))
                 if load_method is not None:
-                    load_method(name)
+                    load_method(name, plugin_uuid)
                 else:
                     if len(s) != 0:
                         self.logger.warning('__react_to_plugins()', '[ WARN ] Plugins of type %s are not yet '

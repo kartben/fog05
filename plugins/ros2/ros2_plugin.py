@@ -12,9 +12,8 @@ from jinja2 import Environment
 
 class ROS2(RuntimePlugin):
 
-    def __init__(self, name, version, agent):
-        super(ROS2, self).__init__(version)
-        self.uuid = uuid.uuid4()
+    def __init__(self, name, version, agent, plugin_uuid):
+        super(ROS2, self).__init__(version, plugin_uuid)
         self.name = name
         self.agent = agent
         self.agent.logger.info('__init__()', ' Hello from ROS2 Plugin')

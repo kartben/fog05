@@ -9,8 +9,8 @@ class NetworkPlugin(Plugin):
     for networking managment functions
     """
 
-    def __init__(self,version):
-        super(NetworkPlugin, self).__init__(version)
+    def __init__(self, version, plugin_uuid):
+        super(NetworkPlugin, self).__init__(version, plugin_uuid)
 
     def createVirtualInterface(self, name, uuid):
         """

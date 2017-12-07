@@ -8,8 +8,8 @@ class OSPlugin(Plugin):
 
     """
 
-    def __init__(self,version):
-        super(OSPlugin, self).__init__(version)
+    def __init__(self,version, plugin_uuid=None):
+        super(OSPlugin, self).__init__(version, plugin_uuid)
 
     def executeCommand(self, command, blocking):
 

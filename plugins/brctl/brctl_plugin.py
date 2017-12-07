@@ -10,8 +10,8 @@ import socket
 
 class brctl(NetworkPlugin):
 
-    def __init__(self, name, version, agent):
-        super(brctl, self).__init__(version)
+    def __init__(self, name, version, agent, plugin_uuid):
+        super(brctl, self).__init__(version, plugin_uuid)
         self.name = name
         self.agent = agent
         self.interfaces_map = {}

@@ -14,9 +14,8 @@ from pylxd import Client
 
 class LXD(RuntimePlugin):
 
-    def __init__(self, name, version, agent):
-        super(LXD, self).__init__(version)
-        self.uuid = uuid.uuid4()
+    def __init__(self, name, version, agent, plugin_uuid):
+        super(LXD, self).__init__(version, plugin_uuid)
         self.name = name
         self.agent = agent
         self.agent.logger.info('__init__()', ' Hello from LXD Plugin')

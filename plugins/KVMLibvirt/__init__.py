@@ -9,6 +9,6 @@ VERSION = 1
 def run(*args, **kwargs):
     sys.path.append(os.path.join(sys.path[0], 'plugins', 'KVMLibvirt'))
     from KVMLibvirt_plugin import KVMLibvirt
-    kvm = KVMLibvirt('KVMLibvirt', VERSION, kwargs.get('agent'))
+    kvm = KVMLibvirt('KVMLibvirt', VERSION, kwargs.get('agent'), kwargs.get('uuid'))
     return kvm
 

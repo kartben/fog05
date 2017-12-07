@@ -9,6 +9,6 @@ def run(*args,**kwargs):
 
     sys.path.append(os.path.join(sys.path[0], 'plugins', 'native'))
     from native_plugin import Native
-    n = Native('native', VERSION, kwargs.get('agent'))
+    n = Native('native', VERSION, kwargs.get('agent'), kwargs.get('uuid'))
     return n
 

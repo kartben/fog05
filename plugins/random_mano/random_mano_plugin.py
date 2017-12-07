@@ -10,9 +10,8 @@ from fog05.interfaces.MANOPlugin import *
 
 class RandomMANO(MANOPlugin):
 
-    def __init__(self, name, version, agent):
-        super(Native, self).__init__(version)
-        self.uuid = uuid.uuid4()
+    def __init__(self, name, version, agent, plugin_uuid):
+        super(RandomMANO, self).__init__(version, plugin_uuid)
         self.name = name
         self.agent = agent
         self.agent.logger.info('__init__()', ' Hello from RandomMano Plugin')
