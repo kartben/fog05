@@ -121,14 +121,14 @@ class FOSCli(object):
         for i in all:
             k = i[0]
             if fnmatch.fnmatch(k, uri):
-                print('MATCH {0}'.format(k))
-                print('Extracting uuid...')
+                #print('MATCH {0}'.format(k))
+                #print('Extracting uuid...')
                 regex = uri.replace('/','\/')
                 regex = regex.replace('*', '(.*)')
                 reobj = re.compile(regex)
                 mobj = reobj.match(k)
                 uuid = mobj.group(1)
-                print('UUID {0}'.format(uuid))
+                #print('UUID {0}'.format(uuid))
                 return uuid
 
 
@@ -177,8 +177,11 @@ class FOSCli(object):
 
     def __send_undefine_entity(self, node_uuid, entity_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' % (node_uuid, handler, entity_uuid))
-        self.store.desidered.dput(uri)
+        #uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' % (node_uuid, handler, entity_uuid))
+        #self.store.desidered.dput(uri)
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+        self.store.desidered.remove(uri)
+        time.sleep(5)
 
     def __send_configure_entity(self, node_uuid, entity_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
@@ -221,7 +224,7 @@ class FOSCli(object):
         while True:
             time.sleep(1)
             uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
-            entity_info = json.loads(self.astore.get(uri))
+            entity_info = json.loads(self.store.actual.get(uri))
             if entity_info is not None and entity_info.get('status') == 'stop':
                 break
 
@@ -333,8 +336,8 @@ class FOSCli(object):
             self.__send_clean_entity(node_uuid, entity_uuid)
             print('Entity %s cleaned' % entity_uuid)
         if action == 'run':
-            print('Entity %s started' % entity_uuid)
             self.__send_run_entity(node_uuid, entity_uuid)
+            print('Entity %s started' % entity_uuid)
         if action == 'stop':
             self.__send_stop_entity(node_uuid, entity_uuid)
             print('Entity %s stopped' % entity_uuid)

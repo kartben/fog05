@@ -166,13 +166,13 @@ class KVMLibvirt(RuntimePlugin):
                                                                  'create_config_drive.sh'), entity.name, entity_uuid))
 
             rm_temp_cmd = str("rm")
-            if entity.user_file is not None:
+            if entity.user_file is not None and entity.user_file != '':
                 data_filename = str("userdata_%s" % entity_uuid)
                 self.agent.getOSPlugin().storeFile(entity.user_file, self.BASE_DIR, data_filename)
                 data_filename = str("/%s/%s" % (self.BASE_DIR, data_filename))
                 conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
                 #rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
-            if entity.ssh_key is not None:
+            if entity.ssh_key is not None and entity.ssh_key != '':
                 key_filename = str("key_%s.pub" % entity_uuid)
                 self.agent.getOSPlugin().storeFile(entity.ssh_key, self.BASE_DIR, key_filename)
                 key_filename = str("%s/%s" % (self.BASE_DIR, key_filename))
@@ -192,9 +192,9 @@ class KVMLibvirt(RuntimePlugin):
             self.agent.getOSPlugin().executeCommand(conf_cmd, True)
             self.agent.getOSPlugin().executeCommand(dd_cmd, True)
 
-            if entity.ssh_key is not None:
+            if entity.ssh_key is not None and entity.ssh_key != '':
                 self.agent.getOSPlugin().removeFile(key_filename)
-            if entity.user_file is not None:
+            if entity.user_file is not None and entity.user_file != '':
                 self.agent.getOSPlugin().removeFile(data_filename)
 
                 #self.agent.getOSPlugin().executeCommand(rm_temp_cmd)
@@ -273,7 +273,7 @@ class KVMLibvirt(RuntimePlugin):
             Then after boot should update the `actual store` with the run status of the vm  
             '''
             log_filename = str("%s/%s/%s_log.log" % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
-            if entity.user_file is not None:
+            if entity.user_file is not None and entity.user_file != '':
                 self.__wait_boot(log_filename, True)
             else:
                 self.__wait_boot(log_filename)
@@ -567,6 +567,8 @@ class KVMLibvirt(RuntimePlugin):
         self.agent.logger.info('__react_to_cache()', ' KVM Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
         if value is None and v is None:
             self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+            entity_uuid = uri.split('/')[-1]
+            self.undefineEntity(entity_uuid)
         else:
             uuid = uri.split('/')[-1]
             value = json.loads(value)
@@ -646,12 +648,12 @@ class KVMLibvirt(RuntimePlugin):
         value = json.dumps(value)
         self.agent.astore.put(uri, value)
 
-    def __pop_actual_store(self, uri):
-        e = uri
-        uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, uri))
+    def __pop_actual_store(self, entity_uuid):
+        #e = uri
+        uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid))
         self.agent.astore.remove(uri)
-        uri = str("%s/%s/%s" % (self.agent.dhome, self.HOME, e))
-        self.agent.dstore.remove(uri)
+        #uri = str("%s/%s/%s" % (self.agent.dhome, self.HOME, e))
+        #self.agent.dstore.remove(uri)
 
     def __netmask_to_cidr(self, netmask):
         return sum([bin(int(x)).count('1') for x in netmask.split('.')])
