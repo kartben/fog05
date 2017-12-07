@@ -28,6 +28,10 @@ class FOSStore(object):
         self.actual = DStore(home, self.aroot, self.ahome, 1024)
         self.desidered = DStore(home, self.droot, self.dhome, 1024)
 
+    def close(self):
+        self.actual.close()
+        self.desidered.close()
+
 
 class FOSCli(object):
 
@@ -45,6 +49,11 @@ class FOSCli(object):
         with open(file_path, 'r') as f:
             data = f.read()
         return data
+
+    def exit(self, exit_code):
+        if self.store is not None:
+            self.store.close()
+        exit(exit_code)
 
     def __send_add_network(self, node_uuid, manifest):
 
@@ -92,7 +101,7 @@ class FOSCli(object):
             if self.agent is not None:
                 self.agent.stop()
                 time.sleep(1)
-            exit(0)
+            self.exit(0)
 
     def __start_node(self, plugin_path, debug):
         signal.signal(signal.SIGINT, self.__catch_signal)
@@ -157,11 +166,11 @@ class FOSCli(object):
 
             if handler is None:
                 print('error on plugin for this type of entity')
-                exit(-1)
+                self.exit(-1)
         except ValidationError as ve:
             print('Manifest is not correct')
             print('%s' % ve.message)
-            exit(-1)
+            self.exit(-1)
 
         entity_uuid = manifest.get('uuid')
         entity_definition = manifest
@@ -180,6 +189,7 @@ class FOSCli(object):
         #uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' % (node_uuid, handler, entity_uuid))
         #self.store.desidered.dput(uri)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+        print('REMOVING URI {0}'.format(uri))
         self.store.desidered.remove(uri)
         time.sleep(5)
 
@@ -371,21 +381,21 @@ class FOSCli(object):
             except ValidationError as ve:
                 print('Manifest is not correct')
                 print('%s' % ve.message)
-                exit(-1)
+                self.exit(-1)
         if type == 'network':
             try:
                 validate(manifest, Schemas.network_schema)
             except ValidationError as ve:
                 print('Manifest is not correct')
                 print('%s' % ve.message)
-                exit(-1)
+                self.exit(-1)
         if type == 'application':
             try:
                 validate(manifest, Schemas.app_schema)
             except ValidationError as ve:
                 print('Manifest is not correct')
                 print('%s' % ve.message)
-                exit(-1)
+                self.exit(-1)
 
         print('Manifest seems ok!')
         return
@@ -492,9 +502,11 @@ class FOSCli(object):
                 elif kwargs['remove'] is True: action = 'remove'
                 self.node(kwargs['list'], kwargs['uuid'], kwargs['plugin'], action, kwargs['manifest'],
                           kwargs['puuid'])
+                self.exit(0)
             elif kwargs['cmd'] == 'network':
                 self.network(kwargs['list'],kwargs['uuid'], kwargs['add'], kwargs['remove'], kwargs['manifest'],
                              kwargs['nuuid'])
+                self.exit(0)
             elif kwargs['cmd'] == 'entity':
 
                 action = ''
@@ -512,6 +524,8 @@ class FOSCli(object):
 
                 self.entity(kwargs['list'], action, kwargs['uuid'], kwargs['manifest'], kwargs['euuid'],
                             kwargs['duuid'])
+
+                self.exit(0)
             else:
                 print('Error check your command line!!')
                 exit(-1)

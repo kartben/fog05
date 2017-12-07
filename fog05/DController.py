@@ -144,6 +144,7 @@ class DController (Controller, Observer):
         samples = reader.take(DDS_NOT_READ_SAMPLE_STATE)
         for (d, i) in samples:
             if i.is_disposed_instance():
+                print('>>>>> D {0}'.format(d))
                 self.handle_remove(d.key)
             elif i.valid_data:
                 rkey = d.key
@@ -181,9 +182,16 @@ class DController (Controller, Observer):
             if i.valid_data:
                 rsid = d.sid
                 print(">>> Discovered new store with id: " + rsid)
-                if rsid != self.__store.store_id and not rsid in self.__store.discovered_stores:
+                if rsid != self.__store.store_id and rsid not in self.__store.discovered_stores:
                     self.__store.discovered_stores.append(rsid)
                     self.advertise_presence()
+            elif i.is_disposed_instance():
+                rsid = d.key
+                print(">>> Store {0} has been disposed".format(rsid))
+                if rsid in self.__store.discovered_stores:
+                    print(">>> Removing Store id: " + rsid)
+                    self.__store.discovered_stores.remove(rsid)
+
 
 
 
@@ -378,9 +386,8 @@ class DController (Controller, Observer):
 
 
     def stop(self):
-        """
-            Stops a controller and releases all resources used to receive/send data on the network.
-        """
-        pass
+        info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
+        self.store_info_writer.dispose_instance(info)
+        self.dds_runtime.close()
         # print("Stopping..")
 

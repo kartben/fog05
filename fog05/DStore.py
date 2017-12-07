@@ -3,6 +3,7 @@ from fog05.DController import *
 import fnmatch
 from threading import Thread
 import json
+import traceback
 
 class DStore(Store):
 
@@ -156,12 +157,19 @@ class DStore(Store):
         return succeeded
 
     def notify_observers(self, uri, value, v):
-        # AC: Should not use a separate thread of each observer... This is going to result in a
-        #     few DDS writes which are non-blocking and thus not so useful to start a separate thread
+        print(">>>>>>>> notify_observers")
+        print('URI {0}'.format(uri))
+        print('URI  TYPE {0}'.format(type(uri)))
+
+        print('URI STR CAST {0}'.format(str(uri)))
+        print('URI  TYPE {0}'.format(type(uri)))
+
+        print('OBSERVER SIZE {0}'.format(len(list(self.__observers.keys()))))
         for key in list(self.__observers.keys()):
-            if fnmatch.fnmatch(uri, key):
+            print('OBSERVER KEY {0}'.format(key))
+            if fnmatch.fnmatch(uri, key) or fnmatch.fnmatch(key, uri):
+                print(">>>>>>>> notify_observers inside if")
                 self.__observers.get(key)(uri, value, v)
-                #Thread(target=self.__observers.get(key), args=(uri, value, v)).start()
 
     def put(self, uri, value):
         v = self.get_version(uri)
@@ -271,11 +279,12 @@ class DStore(Store):
             pass
 
     def remote_remove(self, uri):
-        try:
-            self.__local_cache.pop(uri)
+            if uri in list(self.__local_cache.keys()):
+                self.__local_cache.pop(uri)
+            else:
+                print("KEY {0} NOT PRESENT".format(uri))
+
             self.notify_observers(uri, None, None)
-        except:
-            pass
 
     def get(self, uri):
         v = self.get_value(uri)
@@ -411,6 +420,8 @@ class DStore(Store):
     def on_store_disappeared(self, sid):
         raise NotImplemented
 #
+    def close(self):
+        self.__controller.stop()
 # class DDSObserver(Observer):
 #
 #     def onRemove(self, uri):

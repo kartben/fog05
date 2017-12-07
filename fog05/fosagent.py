@@ -509,6 +509,8 @@ class FosAgent(Agent):
             except Exception:
                 pass
 
+        self.dstore.close()
+        self.astore.close()
         self.logger.info('__exit_gracefully()', '[ DONE ] Bye')
         #sys.exit(0)
 
