@@ -265,12 +265,18 @@ class FOSCli(object):
         #print(node_list,uuid,plugin_action,action,manifest,plugin_uuid)
         if node_list:
             uri = str('afos://<sys-id>/*/')
-            print(uri)
-            nodes = self.store.actual.resolveAll(uri)  ## se below for information on this
-            print(nodes)
+            #print(uri)
+            nodes = self.store.actual.resolveAll(uri)
+            print('+-------------------------------------------------------+')
+
+            for node in nodes:
+                node_info = json.loads(node[1])
+                print('| UUID : %s \t\t|' % node_info.get('uuid'))
+                print('| Name: %s \t\t|' % node_info.get('name'))
+            print('+-------------------------------------------------------+')
             return
         if uuid is not None and plugin_action is False:
-            uri = str('afos://<sys-id>/%s/' % uuid)  ## this is because the resolver return a tuple with
+            uri = str('afos://<sys-id>/%s/' % uuid)
             # value and version
             print('Uri: %s' % uri)
             node = self.store.actual.get(uri)
@@ -290,13 +296,27 @@ class FOSCli(object):
                 uri = str('dfos://<sys-id>/%s/plugins' % uuid)
                 self.store.desidered.dput(uri, self.__read_file(manifest))
             if action == 'remove':
-                print('Removing plugin %s from %s' % (plugin_uuid, uuid))
+                print('Removing plugin %s from %s not yet...' % (plugin_uuid, uuid))
 
 
     def network(self,nw_list, node_uuid, add, remove, manifest, net_uuid):
         #print(nw_list, node_uuid, add, remove, manifest, net_uuid)
         if nw_list:
-            print('This should list all networks')
+            uri = str('afos://<sys-id>/*/network/*/networks/*')
+            networks = self.store.actual.resolveAll(uri)
+
+            for net in networks:
+                net_uri = net[0]
+                net_info = json.loads(net[1])
+                print('| UUID : %s \t\t|' % net_info.get('uuid'))
+                print('| Name: %s \t\t|' % net_info.get('name'))
+                print('| Virtual Device: %s \t\t|' % net_info.get('virtual_device'))
+                print('| DHCP: %s \t\t|' % net_info.get('has_dhcp'))
+                print('| IP Range: %s \t\t|' % net_info.get('ip_range'))
+                print('| Gateway: %s \t\t|' % net_info.get('gateway'))
+                print('| VxLAN ID: %s \t\t|' % net_info.get('vxlan_id'))
+                print('| Multicast VxLAN Address: %s \t\t|' % net_info.get('multicast_address'))
+                print('| Node: %s \t\t|' % net_uri[3])
             return
         if node_uuid is not None:
             if add and manifest is not None:
@@ -319,7 +339,19 @@ class FOSCli(object):
     def entity(self, en_list, action, node_uuid, manifest, entity_uuid, dest_node):
         #print(en_list,action,node_uuid,manifest,entity_uuid,dest_node)
         if en_list:
-            print('This should print all entities in the system')
+            uri = str('afos://<sys-id>/*/runtime/*/entity/*')
+            entities = self.store.actual.resolveAll(uri)
+
+            for entity in entities:
+                entity_uri = entity[0]
+                print(entity_uri)
+                entity_info = json.loads(entity[1])
+                print('| UUID : %s \t\t|' % entity_info.get('uuid'))
+                print('| Name: %s \t\t|' % entity_info.get('name'))
+                print('| Type: %s \t\t|' % entity_info.get('type'))
+                print('| Status: %s \t\t|' % entity_info.get('status'))
+                print('| Node: %s \t\t|' % entity_uri.split('/')[3])
+
             return
         if node_uuid is None: return
         if action == 'define' and manifest is not None:
@@ -448,7 +480,7 @@ class FOSCli(object):
 
         parser_network.add_argument('-m', '--manifest', type=str, default=None, help='network manifest')
         parser_network.add_argument('-nu', '--nuuid', type=str, default=None, help='network uuid')
-        parser_network.add_argument('-u', '--uuid', type=str, default=None, required=True, help='node uuid')
+        parser_network.add_argument('-u', '--uuid', type=str, default=None, help='node uuid')
 
         ## ENTITY CMD
         parser_entity = subparsers.add_parser('entity')
@@ -469,7 +501,7 @@ class FOSCli(object):
 
         parser_entity.add_argument('-m', '--manifest', type=str, default=None, help='entity manifest')
         parser_entity.add_argument('-eu', '--euuid', type=str, default=None, help='entity uuid')
-        parser_entity.add_argument('-u', '--uuid', type=str, default=None, required=True, help='node uuid')
+        parser_entity.add_argument('-u', '--uuid', type=str, default=None, help='node uuid')
         parser_entity.add_argument('-du', '--duuid', type=str, default=None, help='destination node uuid')
 
         ## MANIFEST CMD
@@ -482,7 +514,7 @@ class FOSCli(object):
 
 
         kwargs = vars(parser.parse_args())
-        print(kwargs)
+        #print(kwargs)
 
         if kwargs['cmd'] == 'start':
             self.start(kwargs['plugins'], kwargs['verbose'], kwargs['daemon'])
