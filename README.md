@@ -5,11 +5,11 @@ Unifies compute/networking fabric end-to-end
 
 Thanks to its plugin architecture can manage near everything
 
-See inside [docs](../docs) for some design documentation
+See inside [docs](./docs) for some design documentation
 
-Inside [src/plugins](../plugins) there are some plugins for entity
+Inside [plugins](./plugins) there are some plugins for entity
 
-Inside [src/examples](../examples) you can find some example/demo
+Inside [examples](./examples) you can find some example/demo
 
 
 
