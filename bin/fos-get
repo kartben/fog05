@@ -43,9 +43,25 @@ class FOSGetCli(object):
 
     def get(self, uri):
         if uri.startswith('a'):
-            print(self.store.actual.get(uri))
+            if '*' in uri:
+                if uri.endswith('/*'):
+                    uri=uri+'/'
+                elif uri.endswith('/**'):
+                    uri.rstrip('*')
+                print(uri)
+                print(self.store.actual.resolveAll(uri))
+            else:
+                print(self.store.actual.get(uri))
+
         elif uri.startswith('d'):
-            print(self.store.desider.get(uri))
+            if '*' in uri:
+                if uri.endswith('/*'):
+                    uri + '/'
+                elif uri.endswith('/**'):
+                    uri.rstrip('*')
+                print(self.store.actual.resolveAll(uri))
+            else:
+                print(self.store.actual.get(uri))
 
 
     def main(self):
