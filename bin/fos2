@@ -278,7 +278,7 @@ class FOSCli(object):
         if uuid is not None and plugin_action is False:
             uri = str('afos://<sys-id>/%s/' % uuid)
             # value and version
-            print('Uri: %s' % uri)
+            #print('Uri: %s' % uri)
             node = self.store.actual.get(uri)
             if node is not None and len(node) > 0:
                 node = json.loads(node)
@@ -292,9 +292,13 @@ class FOSCli(object):
         if uuid is not None and plugin_action is True:
             if action == 'add':
                 print('Adding plugin from %s to %s' % (manifest, uuid))
-                #manifest = json.loads(self.__read_file(manifest))
+                manifest = json.loads(self.__read_file(manifest))
+                manifest.update({'status':'add'})
+                uri = str('afos://<sys-id>/%s/plugins' % uuid)
+                plugins = json.loads(self.store.actual.get(uri))
+                plugins.get('plugins').append(manifest)
                 uri = str('dfos://<sys-id>/%s/plugins' % uuid)
-                self.store.desidered.dput(uri, self.__read_file(manifest))
+                self.store.desidered.dput(uri, json.dumps(plugins))
             if action == 'remove':
                 print('Removing plugin %s from %s not yet...' % (plugin_uuid, uuid))
 

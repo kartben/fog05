@@ -1,11 +1,6 @@
 {
-  "plugins": [
-    {
       "name": "brctl",
       "version": 1,
-      "uuid": "",
-      "type": "network",
-      "status": "add"
-    }
-  ]
+      "uuid": "d42b4163-af35-423a-acb4-a228290cf0be",
+      "type": "network"
 }

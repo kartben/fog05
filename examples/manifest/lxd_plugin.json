@@ -1,11 +1,6 @@
 {
-  "plugins": [
-    {
       "name": "LXD",
       "version": 1,
-      "uuid": "",
-      "type": "runtime",
-      "status": "add"
-    }
-  ]
+      "uuid": "892ae9fe-9d1b-4dc6-87a3-66f5695a9971",
+      "type": "runtime"
 }

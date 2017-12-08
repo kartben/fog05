@@ -1,11 +1,6 @@
 {
-  "plugins": [
-    {
       "name": "native",
       "version": 1,
-      "uuid": "",
-      "type": "runtime",
-      "status": "add"
-    }
-  ]
+      "uuid": "809839f2-b511-489d-a8cf-8c80d714893e",
+      "type": "runtime"
 }
