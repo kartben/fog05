@@ -308,7 +308,6 @@ class FOSCli(object):
         if nw_list:
             uri = str('afos://<sys-id>/*/network/*/networks/*')
             networks = self.store.actual.resolveAll(uri)
-
             for net in networks:
                 net_uri = net[0]
                 net_info = json.loads(net[1])
@@ -345,10 +344,8 @@ class FOSCli(object):
         if en_list:
             uri = str('afos://<sys-id>/*/runtime/*/entity/*')
             entities = self.store.actual.resolveAll(uri)
-
             for entity in entities:
                 entity_uri = entity[0]
-                print(entity_uri)
                 entity_info = json.loads(entity[1])
                 print('| UUID : %s \t\t|' % entity_info.get('uuid'))
                 print('| Name: %s \t\t|' % entity_info.get('name'))

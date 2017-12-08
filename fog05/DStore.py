@@ -272,17 +272,22 @@ class DStore(Store):
 
     def remove(self, uri):
         self.__controller.onRemove(uri)
-        try:
+        if uri in list(self.__local_cache.keys()):
             self.__local_cache.pop(uri)
-        except KeyError:
-            #print('>>>> KeyError on pop')
-            pass
+        elif uri in list(self.__store.keys()):
+            self.__store.pop(uri)
+        else:
+            print("REMOVE KEY {0} NOT PRESENT".format(uri))
+
+        self.notify_observers(uri, None, None)
 
     def remote_remove(self, uri):
             if uri in list(self.__local_cache.keys()):
                 self.__local_cache.pop(uri)
+            elif uri in list(self.__store.keys()):
+                self.__store.pop(uri)
             else:
-                print("KEY {0} NOT PRESENT".format(uri))
+                print("REMOVE KEY {0} NOT PRESENT".format(uri))
 
             self.notify_observers(uri, None, None)
 
