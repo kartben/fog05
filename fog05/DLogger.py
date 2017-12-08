@@ -35,19 +35,31 @@ class DLogger:
             self.logger.debug(str('< %s > %s') % (caller, message))
 
     instance = None
+    enabled = True
 
     def __init__(self, file_name=None, debug=False):
+
         if not DLogger.instance:
             DLogger.instance = DLogger.__SingletonLogger(file_name, debug)
 
+    def enable(self):
+        self.enabled = True
+
+    def disable(self):
+        self.enabled = False
+
     def info(self, caller, message):
-        self.instance.info(caller, message)
+        if self.enabled:
+            self.instance.info(caller, message)
 
     def warning(self, caller, message):
-        self.instance.warning(caller, message)
+        if self.enabled:
+            self.instance.warning(caller, message)
 
     def error(self, caller, message):
-        self.instance.error(caller, message)
+        if self.enabled:
+            self.instance.error(caller, message)
 
     def debug(self, caller, message):
-        self.instance.debug(caller, message)
+        if self.enabled:
+            self.instance.debug(caller, message)
