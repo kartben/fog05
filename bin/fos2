@@ -186,10 +186,7 @@ class FOSCli(object):
 
     def __send_undefine_entity(self, node_uuid, entity_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        #uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=undefine' % (node_uuid, handler, entity_uuid))
-        #self.store.desidered.dput(uri)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
-        print('REMOVING URI {0}'.format(uri))
         self.store.desidered.remove(uri)
         time.sleep(5)
 

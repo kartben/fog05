@@ -5,6 +5,7 @@ from fog05.DStore import *
 
 import uuid
 import argparse
+import pprint
 
 
 ##
@@ -23,6 +24,10 @@ class FOSStore(object):
         self.actual = DStore(home, self.aroot, self.ahome, 1024)
         self.desidered = DStore(home, self.droot, self.dhome, 1024)
 
+    def close(self):
+        self.actual.close()
+        self.desidered.close()
+
 
 class FOSGetCli(object):
 
@@ -32,6 +37,12 @@ class FOSGetCli(object):
         self.aroot = 'afos://<sys-id>'
         self.droot = 'dfos://<sys-id>'
         self.uuid = str(uuid.uuid4())
+
+
+    def exit(self, exit_code):
+        if self.store is not None:
+            self.store.close()
+        exit(exit_code)
 
     def __initialize(self):
         self.store = FOSStore(self.aroot, self.droot, self.uuid)
@@ -45,13 +56,12 @@ class FOSGetCli(object):
         if uri.startswith('a'):
             if '*' in uri:
                 if uri.endswith('/*'):
-                    uri=uri+'/'
+                    uri = uri+'/'
                 elif uri.endswith('/**'):
                     uri.rstrip('*')
-                print(uri)
-                print(self.store.actual.resolveAll(uri))
+                pprint.pprint(self.store.actual.resolveAll(uri))
             else:
-                print(self.store.actual.get(uri))
+                pprint.pprint(json.loads(self.store.actual.get(uri)))
 
         elif uri.startswith('d'):
             if '*' in uri:
@@ -59,9 +69,9 @@ class FOSGetCli(object):
                     uri + '/'
                 elif uri.endswith('/**'):
                     uri.rstrip('*')
-                print(self.store.actual.resolveAll(uri))
+                pprint.pprint(self.store.actual.resolveAll(uri))
             else:
-                print(self.store.actual.get(uri))
+                pprint.pprint(json.loads(self.store.actual.get(uri)))
 
 
     def main(self):
@@ -74,6 +84,8 @@ class FOSGetCli(object):
         kwargs = vars(parser.parse_args())
         self.__initialize()
         self.get(kwargs['uri'])
+
+        self.exit(0)
 
 if __name__ == '__main__':
         c = FOSGetCli()
