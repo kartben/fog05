@@ -54,3 +54,59 @@ or debug=False to have logging on file
 Using the fos command
     
     $ fos start <path_to_plugins>
+    
+Or the fos2 command
+
+    $ fos2 start -p <path_to_plugins> [-v to get verbose output, -d to run as a daemon]
+    
+
+### Interact with the nodes
+
+
+To interact with the nodes deployed you can use the fos2 cli interface
+
+    $ fos2 -h [ to get the help]
+    usage: fos2 [-h] {start,node,network,entity,manifest} ...
+
+     Fog05 | The Fog-Computing IaaS
+
+    positional arguments:
+    {start,node,network,entity,manifest}
+
+    optional arguments:
+    -h, --help            show this help message and exit
+    
+List all nodes:
+
+    $ fos2 node list
+    
+List all entities:
+
+    $ fos2 entitity list
+    
+List all networks:
+
+    $ fos2 network list
+    
+Adding a plugin to a node:
+
+
+    $ fos2 node -u <node uuid> -a -p -m <path to plugin manifest>
+
+Add a network to a node
+
+    $ fos2 network -u <node uuid> -a -m <network manifest>
+
+
+Simple lifecycle of an entity:
+
+    $ fos2 entity -u <node_uuid> --define -m <entity manifest>
+    $ fos2 entity -u <node uuid> -eu <entity uuid> --configure
+    $ fos2 entity -u <node uuid> -eu <entity uuid> --run
+    $ fos2 entity -u <node uuid> -eu <entity uuid> --stop
+    $ fos2 entity -u <node uuid> -eu <entity uuid> --clean
+    $ fos2 entity -u <node uuid> -eu <entity uuid> --undefine
+    
+Migration of an entity
+
+    fos2 entity -u <current node uuid> -eu <entity uuid> -du <destination node uuid> --migrate

@@ -140,6 +140,21 @@ class FOSCli(object):
                 #print('UUID {0}'.format(uuid))
                 return uuid
 
+    def __get_entity_handler_by_type(self,node_uuid, t):
+        handler = None
+        if t == 'vm':
+            handler = self.__search_plugin_by_name('KVM', node_uuid)
+        elif t == 'container':
+            handler = self.__search_plugin_by_name('LXD', node_uuid)
+        elif t == 'native':
+            handler = self.__search_plugin_by_name('native', node_uuid)
+        elif t == 'ros2':
+            handler = self.__search_plugin_by_name('ros2', node_uuid)
+        elif t == 'usvc':
+            print('microservice not yet')
+        else:
+            print('type not recognized')
+        return handler
 
     def __send_define_entity(self, node_uuid, manifest):
         manifest.update({'status': 'define'})
@@ -235,13 +250,42 @@ class FOSCli(object):
             if entity_info is not None and entity_info.get('status') == 'stop':
                 break
 
+    def __sent_migrate_entity(self, node_uuid, entity_uuid, destination_uuid):
+        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+        entity_info = json.loads(self.store.actual.get(uri))
+
+        entity_info_src = entity_info.copy()
+        entity_info_dst = entity_info.copy()
+
+        entity_info_src.update({"status": "taking_off"})
+        entity_info_src.update({"dst": destination_uuid})
+
+        entity_info_dst.update({"status": "landing"})
+        entity_info_dst.update({"dst": destination_uuid})
+
+        destination_handler = self.__get_entity_handler_by_type(destination_uuid, entity_info_dst.get('type'))
+        if destination_handler is None:
+            print("Error Destination node can't handle this type of entity {0}".format(entity_info_dst.get('type')))
+            self.exit(-1)
+
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (destination_uuid, destination_handler.get('uuid'), entity_uuid))
+        self.store.desidered.put(uri, json.dumps(entity_info_dst))
+
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+        self.store.desidered.dput(uri, json.dumps(entity_info_src))
+
+        while True:
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (destination_uuid, destination_handler.get('uuid'), entity_uuid))
+            en_info = json.loads(self.store.actual.get(uri))
+            if en_info is not None and en_info.get("status") == "run":
+                break
+
     def __send_pause_entity(self, node_uuid, entity_uuid):
         pass
 
     def __send_resume_entity(self, node_uuid, entity_uuid):
-        pass
-
-    def __send_migrate_entity(self, node_uuid, entity_uuid, destination_uuid):
         pass
 
     def start(self, plugins, verbose, daemon):
@@ -388,8 +432,9 @@ class FOSCli(object):
             self.__send_resume_entity(node_uuid, entity_uuid)
             print('Resume sended')
         if action == 'migrate' and dest_node is not None:
-            print('Not yet...')
-            pass
+            self.__sent_migrate_entity(node_uuid, entity_uuid, dest_node)
+            print('Migration sended')
+
 
     def manifest(self, type, manifest):
         manifest = json.loads(self.__read_file(manifest))
