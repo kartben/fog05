@@ -3,16 +3,16 @@ import time
 
 class DLogger:
     class __SingletonLogger:
-        def __init__(self, file_name=None, debug=False):
+        def __init__(self, file_name=None, debug_flag=False):
 
             if file_name is None:
                 self.log_file = 'fosagent_log.log' # str('fosagent_log_%d.log' % int(time.time()))
             else:
                 self.log_file = file_name
 
-            self.debug = debug
+            self.debug_flag = debug_flag
 
-            if debug:
+            if debug_flag:
                 logging.basicConfig(format='[%(asctime)s] - [%(levelname)s] > %(message)s',
                                     level=logging.INFO)
             else:
@@ -37,10 +37,10 @@ class DLogger:
     instance = None
     enabled = True
 
-    def __init__(self, file_name=None, debug=False):
+    def __init__(self, file_name=None, debug_flag=False):
 
         if not DLogger.instance:
-            DLogger.instance = DLogger.__SingletonLogger(file_name, debug)
+            DLogger.instance = DLogger.__SingletonLogger(file_name, debug_flag)
 
     def enable(self):
         self.enabled = True

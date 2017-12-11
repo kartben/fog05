@@ -31,7 +31,7 @@ class FosAgent(Agent):
         #                        level=logging.INFO)
         # Enable logging
 
-        self.logger = DLogger(debug=debug) #logging.getLogger(__name__)
+        self.logger = DLogger(debug_flag=debug) #logging.getLogger(__name__)
         print("\n\n##### OUTPUT TO LOGFILE #####\n\n")
         #print("\n\n##### LOGFILE %s ####\n\n" % self.LOGFILE)
         self.logger.info('__init__()', 'FosAgent Starting...')

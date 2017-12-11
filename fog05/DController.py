@@ -109,42 +109,43 @@ class DController (Controller, Observer):
     def log_samples(self, dr):
         for (s, i) in dr.read(all_samples()):
             if i.valid_data:
-                print(str(s))
+                self.logger.debug('DController',str(s))
 
     def handle_miss(self, r):
-        print('DController.handle_miss','Handling Miss for store {0}'.format(self.__store.store_id))
+        self.logger.debug('DController.handle_miss','Handling Miss for store {0}'.format(self.__store.store_id))
         samples = r.take(all_samples())
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
                 v = self.__store.get_value(d.key)
                 if v is not None:
-                    print('DController.handle_miss', 'Serving Miss for {0}'.format(d.key))
+                    self.logger.debug('DController.handle_miss', 'Serving Miss for {0}'.format(d.key))
                     h = CacheHit(self.__store.store_id, d.source_sid, d.key, v[0], v[1])
                     self.hit_writer.write(h)
                 else:
-                    print('DController.handle_miss', 'Store {0} did not resolve remote miss on key {1}'.format(self.__store.store_id, d.key))
+                    self.logger.debug('DController.handle_miss', 'Store {0} did not resolve remote miss on key {1}'.format(
+                        self.__store.store_id, d.key))
 
 
     def handle_miss_mv(self, r):
-        print('>>>> Handling Miss MV for store {0}'.format(self.__store.store_id))
+        self.logger.debug('DController','>>>> Handling Miss MV for store {0}'.format(self.__store.store_id))
         samples = r.take(all_samples())
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
                 xs = self.__store.getAll(d.key)
-                print('>>>> Serving Miss MV for key {0}'.format(d.key))
+                self.logger.debug('DController','>>>> Serving Miss MV for key {0}'.format(d.key))
                 h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
                 self.hitmv_writer.write(h)
 
 
     def handle_remove(self, uri):
-        print('>>>> Removing {0}'.format(uri))
+        self.logger.debug('DController','>>>> Removing {0}'.format(uri))
         self.__store.remote_remove(uri)
 
     def handle_remote_put(self, reader):
         samples = reader.take(DDS_NOT_READ_SAMPLE_STATE)
         for (d, i) in samples:
             if i.is_disposed_instance():
-                print('>>>>> D {0}'.format(d))
+                self.logger.debug('DController','>>>>> D {0}'.format(d))
                 self.handle_remove(d.key)
             elif i.valid_data:
                 rkey = d.key
@@ -152,52 +153,52 @@ class DController (Controller, Observer):
                 rvalue = d.value
                 rversion = d.version
                 if rsid != self.__store.store_id and rkey.startswith(self.__store.home):
-                    print(">>>>>>>> Handling remote put for key = " + rkey)
+                    self.logger.debug('DController',">>>>>>>> Handling remote put for key = " + rkey)
                     r = self.__store.update_value(rkey, rvalue, rversion)
                     if r:
-                        print(">> Updated " + rkey)
+                        self.logger.debug('DController',">> Updated " + rkey)
                         self.__store.notify_observers(rkey, rvalue, rversion)
                     else:
-                        print(">> Received old version of " + rkey)
+                        self.logger.debug('DController',">> Received old version of " + rkey)
                 else:
                     if rsid != self.__store.store_id and self.__store.get_value(rkey) is not None:
                         r = self.__store.update_value(rkey, rvalue, rversion)
                         if r:
-                            print(">> Updated " + rkey)
+                            self.logger.debug('DController',">> Updated " + rkey)
                             self.__store.notify_observers(rkey, rvalue, rversion)
                         else:
-                            print(">> Received old version of " + rkey)
+                            self.logger.debug('DController',">> Received old version of " + rkey)
                     else:
-                        print(">>>>>> Ignoring remote put as it is a self-put")
+                        self.logger.debug('DController',">>>>>> Ignoring remote put as it is a self-put")
             else:
-                print(">>>>>> Some store unregistered instance {0}".format(d.key))
+                self.logger.debug('DController',">>>>>> Some store unregistered instance {0}".format(d.key))
 
 
 
     def cache_discovered(self,reader):
-        print('New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
+        self.logger.debug('DController','New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
         samples = reader.take(DDS_NOT_READ_SAMPLE_STATE)
 
         for (d, i) in samples:
             if i.valid_data:
                 rsid = d.sid
-                print(">>> Discovered new store with id: " + rsid)
+                self.logger.debug('DController',">>> Discovered new store with id: " + rsid)
                 if rsid != self.__store.store_id and rsid not in self.__store.discovered_stores:
                     self.__store.discovered_stores.append(rsid)
                     self.advertise_presence()
             elif i.is_disposed_instance():
                 rsid = d.key
-                print(">>> Store {0} has been disposed".format(rsid))
+                self.logger.debug('DController',">>> Store {0} has been disposed".format(rsid))
                 if rsid in self.__store.discovered_stores:
-                    print(">>> Removing Store id: " + rsid)
+                    self.logger.debug('DController',">>> Removing Store id: " + rsid)
                     self.__store.discovered_stores.remove(rsid)
 
 
 
 
     def cache_disappeared(self, reader, status):
-        print(">>> Cache Lifecycle-Change")
-        print('Current Stores view = {0}'.format(self.__store.discovered_stores))
+        self.logger.debug('DController',">>> Cache Lifecycle-Change")
+        self.logger.debug('DController','Current Stores view = {0}'.format(self.__store.discovered_stores))
         samples = reader.take(DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE | DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE)
         for (d, i) in samples:
             if i.valid_data:
@@ -205,14 +206,14 @@ class DController (Controller, Observer):
                 if rsid != self.__store.store_id:
                     if rsid in self.__store.discovered_stores:
                         self.__store.discovered_stores.remove(rsid)
-                        print(">>> Store with id {0} has disappeared".format(rsid))
+                        self.logger.debug('DController',">>> Store with id {0} has disappeared".format(rsid))
                     else:
-                        print(">>> Store with id {0} has disappeared, but for some reason we did not know it...")
+                        self.logger.debug('DController',">>> Store with id {0} has disappeared, but for some reason we did not know it...")
 
 
     def onPut(self, uri, val, ver):
-        # print(">> uri: " + uri)
-        # print(">> val: " + val)
+        # self.logger.debug('DController',">> uri: " + uri)
+        # self.logger.debug('DController',">> val: " + val)
         v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
         self.key_value_writer.write(v)
 
@@ -229,7 +230,7 @@ class DController (Controller, Observer):
 
     def onGet(self, uri):
         pass
-        # print("onGet Not yet...")
+        # self.logger.debug('DController',"onGet Not yet...")
 
     def onRemove(self, uri):
         v = KeyValue(key=uri, value=uri, sid=self.__store.store_id, version=0)
@@ -238,20 +239,20 @@ class DController (Controller, Observer):
 
     def onObserve(self, uri, action):
         pass
-        # print("onObserve Not yet...")
+        # self.logger.debug('DController',"onObserve Not yet...")
 
     def onMiss(self):
         pass
-        # print(">> onMiss")
+        # self.logger.debug('DController',">> onMiss")
 
     def onConflict(self):
         pass
-        # print("onConflict Not yet...")
+        # self.logger.debug('DController',"onConflict Not yet...")
 
     def resolveAll(self, uri, timeout = None):
-        print('>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
+        self.logger.debug('DController','>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
 
-        print(">> Trying to resolve %s" % uri)
+        self.logger.debug('DController',">> Trying to resolve %s" % uri)
         """
             Tries to resolve this URI (with wildcards) across the distributed caches
             :param uri: the URI to be resolved
@@ -273,16 +274,16 @@ class DController (Controller, Observer):
         while (peers != [] and retries < maxRetries):
             samples = self.hitmv_reader.take(DDS_ANY_STATE)
             time.sleep(timeout + max(retries - 1, 0) * delta)
-            print(">>>> Resolve loop #{0} got {1} samples".format(retries, str(samples)))
+            self.logger.debug('DController',">>>> Resolve loop #{0} got {1} samples".format(retries, str(samples)))
             for s in samples:
                 d = s[0]
                 i = s[1]
-                # print("Is valid data: {0}".format(i.valid_data))
-                # print("Key: {0}".format(d.key))
+                # self.logger.debug('DController',"Is valid data: {0}".format(i.valid_data))
+                # self.logger.debug('DController',"Key: {0}".format(d.key))
                 if i.valid_data:
-                    # print("Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    # print("I was looking to resolve uri: {0}".format(uri))
-                    # print('>>>>>>>>> VALUE {0} KVAVE {1}'.format(values, d.kvave))
+                    # self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    # self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
+                    # self.logger.debug('DController','>>>>>>>>> VALUE {0} KVAVE {1}'.format(values, d.kvave))
                     # Only remove if this was an answer for this key!
                     if d.source_sid in peers and uri == d.key:
                         peers.remove(d.source_sid)
@@ -293,7 +294,7 @@ class DController (Controller, Observer):
             retries += 1
 
         # now we need to consolidate values
-        # print("Resolved Values = {0}".format(values))
+        # self.logger.debug('DController',"Resolved Values = {0}".format(values))
         filtered_values = []
         for (k,va,ve) in values:
             key = k
@@ -306,13 +307,13 @@ class DController (Controller, Observer):
                     version = c
             filtered_values.append((key, value, version))
 
-        # print("Filtered Values = {0}".format(filtered_values))
+        # self.logger.debug('DController',"Filtered Values = {0}".format(filtered_values))
         return filtered_values
 
     def resolve(self, uri, timeout = None):
-        print('>>>> Handling {0} Miss for store {1}'.format(uri, self.__store.store_id))
+        self.logger.debug('DController','>>>> Handling {0} Miss for store {1}'.format(uri, self.__store.store_id))
 
-        print(">> Trying to resolve %s" % uri)
+        self.logger.debug('DController',">> Trying to resolve %s" % uri)
         """
             Tries to resolve this URI on across the distributed caches
             :param uri: the URI to be resolved
@@ -328,7 +329,7 @@ class DController (Controller, Observer):
         self.miss_writer.write(m)
 
         peers = copy.deepcopy(self.__store.discovered_stores)
-        # print("Trying to resolve {0} with peers {1}".format(uri, peers))
+        # self.logger.debug('DController',"Trying to resolve {0} with peers {1}".format(uri, peers))
         maxRetries = max(len(peers),  3)
 
         retries = 0
@@ -336,14 +337,14 @@ class DController (Controller, Observer):
         while peers != [] and retries < maxRetries:
             samples = self.hit_reader.take(DDS_ANY_STATE)
             time.sleep(timeout + max(retries-1, 0) * delta)
-            # print(">>>> Resolve loop #{0} got {1}".format(retries, str(samples)))
+            # self.logger.debug('DController',">>>> Resolve loop #{0} got {1}".format(retries, str(samples)))
 
             sn = 0
             for (d, i) in samples:
                 sn += 1
                 if i.valid_data and d.key == uri:
-                    # print("Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    # print("I was looking to resolve uri: {0}".format(uri))
+                    # self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    # self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
                     # # Only remove if this was an answer for this key!
                     if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
                         peers.remove(d.source_sid)
@@ -362,7 +363,7 @@ class DController (Controller, Observer):
 
 
     def start(self):
-        print("Advertising Store with Id {0}".format(self.__store.store_id))
+        self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
         self.advertise_presence()
 
     def advertise_presence(self):
@@ -374,7 +375,7 @@ class DController (Controller, Observer):
             Pauses the execution of the controller. The incoming updates are not lost.
         """
         pass
-        # print("Pausing..")
+        # self.logger.debug('DController',"Pausing..")
 
 
     def resume(self):
@@ -382,12 +383,12 @@ class DController (Controller, Observer):
             Resumes the execution of the controller and applies all pending changes received from the network.
         """
         pass
-        # print("Resuming..")
+        # self.logger.debug('DController',"Resuming..")
 
 
     def stop(self):
         info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
         self.store_info_writer.dispose_instance(info)
         self.dds_runtime.close()
-        # print("Stopping..")
+        # self.logger.debug('DController',"Stopping..")
 
