@@ -56,7 +56,7 @@ class Linux(OSPlugin):
             p.wait()
 
         for line in p.stdout:
-            self.agent.logger.info(' %s', line)
+            self.agent.logger.debug('executeCommand()', str(line))
 
     def addKnowHost(self, hostname, ip):
         self.agent.logger.info('addKnowHost()', ' OS Plugin add to hosts file')

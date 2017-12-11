@@ -319,19 +319,20 @@ class ROS2(RuntimePlugin):
             self.agent.logger.info('__react_to_cache()', ' ROS2 Plugin - This is a remove for URI: %s' % uri)
             entity_uuid = uri.split('/')[-1]
             self.undefineEntity(entity_uuid)
-        uuid = uri.split('/')[-1]
-        value = json.loads(value)
-        action = value.get('status')
-        entity_data = value.get('entity_data')
-        react_func = self.__react(action)
-        if react_func is not None and entity_data is None:
-            react_func(uuid)
-        elif react_func is not None:
-            entity_data.update({'entity_uuid': uuid})
-            if action == 'define':
-                react_func(**entity_data)
-            else:
-                react_func(entity_data)
+        else:
+            uuid = uri.split('/')[-1]
+            value = json.loads(value)
+            action = value.get('status')
+            entity_data = value.get('entity_data')
+            react_func = self.__react(action)
+            if react_func is not None and entity_data is None:
+                react_func(uuid)
+            elif react_func is not None:
+                entity_data.update({'entity_uuid': uuid})
+                if action == 'define':
+                    react_func(**entity_data)
+                else:
+                    react_func(entity_data)
 
     def __generate_build_script(self, path, space):
         template_sh = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'build_ros.sh'))
