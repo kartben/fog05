@@ -98,6 +98,7 @@ class Native(RuntimePlugin):
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             self.current_entities.pop(entity_uuid, None)
+            self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefineEntity()', '[ DONE ] Native Plugin - Undefine BE uuid %s' % entity_uuid)
             return True
 
@@ -154,7 +155,8 @@ class Native(RuntimePlugin):
         else:
 
             self.agent.getOSPlugin().removeFile(entity.outfile)
-            self.agent.getOSPlugin().removeDir("%s/%s/%s" % (self.BASE_DIR, self.STORE_DIR, entity.name))
+            if entity.source is not None:
+                self.agent.getOSPlugin().removeDir("%s/%s/%s" % (self.BASE_DIR, self.STORE_DIR, entity.name))
             entity.onClean()
             self.current_entities.update({entity_uuid: entity})
 
@@ -268,8 +270,12 @@ class Native(RuntimePlugin):
         return na_script
 
     def __react_to_cache(self, uri, value, v):
-        self.agent.logger.info('__react_to_cachexs()', ' Native Plugin - React to to URI: %s Value: %s Version: %s' %
+        self.agent.logger.info('__react_to_cache()', ' Native Plugin - React to to URI: %s Value: %s Version: %s' %
                                (uri, value, v))
+        if value is None and v is None:
+            self.agent.logger.info('__react_to_cache()', ' Native Plugin - This is a remove for URI: %s' % uri)
+            entity_uuid = uri.split('/')[-1]
+            self.undefineEntity(entity_uuid)
         uuid = uri.split('/')[-1]
         value = json.loads(value)
         action = value.get('status')

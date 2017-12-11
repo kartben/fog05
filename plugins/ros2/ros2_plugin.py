@@ -110,7 +110,7 @@ class ROS2(RuntimePlugin):
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             self.current_entities.pop(entity_uuid, None)
-            #self.__pop_actual_store(entity_uuid)
+            self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefineEntity()', 'ROS2 Plugin - Undefine ROS2 Nodelets uuid %s' % entity_uuid)
             return True
 
@@ -315,6 +315,10 @@ class ROS2(RuntimePlugin):
 
     def __react_to_cache(self, uri, value, v):
         self.agent.logger.info('__react_to_cache()', ' ROS2 Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
+        if value is None and v is None:
+            self.agent.logger.info('__react_to_cache()', ' ROS2 Plugin - This is a remove for URI: %s' % uri)
+            entity_uuid = uri.split('/')[-1]
+            self.undefineEntity(entity_uuid)
         uuid = uri.split('/')[-1]
         value = json.loads(value)
         action = value.get('status')

@@ -449,6 +449,8 @@ class LXD(RuntimePlugin):
         self.agent.logger.info('__react_to_cache()', ' LXD Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
         if value is None and v is None:
             self.agent.logger.info('__react_to_cache()', ' LXD Plugin - This is a remove for URI: %s' % uri)
+            entity_uuid = uri.split('/')[-1]
+            self.undefineEntity(entity_uuid)
         else:
             uuid = uri.split('/')[-1]
             value = json.loads(value)
