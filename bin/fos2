@@ -335,9 +335,11 @@ class FOSCli(object):
                 print('Adding plugin from %s to %s' % (manifest, uuid))
                 manifest = json.loads(self.__read_file(manifest))
                 manifest.update({'status':'add'})
-                uri = str('afos://<sys-id>/%s/plugins' % uuid)
-                plugins = json.loads(self.store.actual.get(uri))
-                plugins.get('plugins').append(manifest)
+                plugins = {"plugins":[manifest]}
+                # uri = str('afos://<sys-id>/%s/plugins' % uuid)
+                # plugins = json.loads(self.store.actual.get(uri))
+                # plugins.get('plugins').append(manifest)
+                # print(plugins)
                 uri = str('dfos://<sys-id>/%s/plugins' % uuid)
                 self.store.desidered.dput(uri, json.dumps(plugins))
             if action == 'remove':

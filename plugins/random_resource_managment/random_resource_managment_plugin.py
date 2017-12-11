@@ -4,14 +4,14 @@ import time
 import uuid
 import json
 from random import randint
-from fog05.interfaces.MANOPlugin import *
+from fog05.interfaces.ResourceManagmentPlugin import *
 
 
 
-class RandomMANO(MANOPlugin):
+class RandomResourceManagment(ResourceManagmentPlugin):
 
     def __init__(self, name, version, agent, plugin_uuid):
-        super(RandomMANO, self).__init__(version, plugin_uuid)
+        super(RandomResourceManagment, self).__init__(version, plugin_uuid)
         self.name = name
         self.agent = agent
         self.agent.logger.info('__init__()', ' Hello from RandomMano Plugin')

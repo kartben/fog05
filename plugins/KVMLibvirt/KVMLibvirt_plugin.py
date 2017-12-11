@@ -62,10 +62,16 @@ class KVMLibvirt(RuntimePlugin):
             entity = self.current_entities.get(k)
             if entity.getState() == State.PAUSED:
                 self.resumeEntity(k)
+                self.stopEntity(k)
+                self.cleanEntity(k)
+                self.undefineEntity(k)
             if entity.getState() == State.RUNNING:
                 self.stopEntity(k)
+                self.cleanEntity(k)
+                self.undefineEntity(k)
             if entity.getState() == State.CONFIGURED:
                 self.cleanEntity(k)
+                self.undefineEntity(k)
             if entity.getState() == State.DEFINED:
                 self.undefineEntity(k)
 

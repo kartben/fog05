@@ -59,12 +59,18 @@ class ROS2(RuntimePlugin):
         self.agent.logger.info('stopRuntime()', ' ROS2 Plugin - Destroy running entities')
         for k in list(self.current_entities.keys()):
             entity = self.current_entities.get(k)
-            if entity.getState == State.PAUSED:
+            if entity.getState() == State.PAUSED:
                 self.resumeEntity(k)
+                self.stopEntity(k)
+                self.cleanEntity(k)
+                self.undefineEntity(k)
             if entity.getState() == State.RUNNING:
                 self.stopEntity(k)
+                self.cleanEntity(k)
+                self.undefineEntity(k)
             if entity.getState() == State.CONFIGURED:
                 self.cleanEntity(k)
+                self.undefineEntity(k)
             if entity.getState() == State.DEFINED:
                 self.undefineEntity(k)
         self.agent.logger.info('stopRuntime()', '[ DONE ] ROS2 Plugin - Bye')
