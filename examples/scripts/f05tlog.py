@@ -25,7 +25,7 @@ def start_tlog(root):
     store_info_topic = FlexyTopic(dp, "FOSStoreInfo")
     key_value_topic = FlexyTopic(dp, "FOSKeyValue")
 
-    state_qos = [Reliable(), TransientLocal(), KeepLastHistory(1)]
+    state_qos = [Reliable(), Volatile(), KeepLastHistory(1)]
     event_qos = [Reliable(), Volatile(), KeepAllHistory()]
 
     store_info_writer = FlexyWriter(pub,

@@ -93,9 +93,7 @@ class DStore(Store):
         if uri.startswith(self.home):
             return True
         else:
-            l = len(self.home)
-            p = uri[:l]
-            return fnmatch.fnmatch(self.home, p)
+            return False
 
 
     def is_cached_value(self, uri):
@@ -119,12 +117,12 @@ class DStore(Store):
 
     def get_value(self, uri):
         v = None
-        if self.is_stored_value(uri):
-            if uri in self.__store:
-                v = self.__store[uri]
-        else:
-            if uri in self.__local_cache:
-                v = self.__local_cache[uri]
+
+        if uri in self.__store.keys():
+            v = self.__store[uri]
+        elif uri in self.__local_cache.keys():
+            v = self.__local_cache[uri]
+
         return v
 
     def next_version(self, uri):
@@ -146,12 +144,14 @@ class DStore(Store):
         succeeded = False
 
         current_version = self.get_version(uri)
-        #self.logger.debug('DStore','Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
+        self.logger.debug('DStore','Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
         if current_version != None:
-            if current_version < version:
+            self.logger.debug('DStore','Updating URI: Version None')
+            if current_version <= version:
                 self.__unchecked_store_value(uri, value, version)
                 succeeded = True
         else:
+            self.logger.debug('DStore', 'Updating URI: Version is {0}'.format(version))
             self.__unchecked_store_value(uri, value, version)
             succeeded = True
 

@@ -34,7 +34,7 @@ class DController (Controller, Observer):
         self.missmv_topic = FlexyTopic(self.dp, "FOSStoreMissMV")
         self.hitmv_topic = FlexyTopic(self.dp, "FOSStoreHitMV")
 
-        state_qos = [Reliable(), TransientLocal(), KeepLastHistory(1), ManualInstanceDispose()]
+        state_qos = [Reliable(), Volatile(), KeepLastHistory(1), ManualInstanceDispose()]
         event_qos = [Reliable(), Volatile(), KeepAllHistory()]
 
         self.store_info_writer = FlexyWriter(self.pub,
@@ -57,6 +57,11 @@ class DController (Controller, Observer):
                                             self.key_value_topic,
                                             state_qos,
                                             self.handle_remote_put)
+
+        self.key_value_reader = FlexyReader(self.sub,
+                                            self.key_value_topic,
+                                            state_qos,
+                                            self.log_samples)
 
 
         self.miss_writer = FlexyWriter(self.pub,
@@ -109,7 +114,7 @@ class DController (Controller, Observer):
     def log_samples(self, dr):
         for (s, i) in dr.read(all_samples()):
             if i.valid_data:
-                self.logger.debug('DController',str(s))
+                self.logger.debug('DController', str(s))
 
     def handle_miss(self, r):
         self.logger.debug('DController.handle_miss','Handling Miss for store {0}'.format(self.__store.store_id))
@@ -142,8 +147,9 @@ class DController (Controller, Observer):
         self.__store.remote_remove(uri)
 
     def handle_remote_put(self, reader):
-        samples = reader.take(DDS_NOT_READ_SAMPLE_STATE)
+        samples = reader.take(DDS_ANY_SAMPLE_STATE)
         for (d, i) in samples:
+            self.logger.debug('DController', ">>>>>>>> Handling remote put d.key {0}".format(d.key))
             if i.is_disposed_instance():
                 self.logger.debug('DController','>>>>> D {0}'.format(d))
                 self.handle_remove(d.key)
@@ -152,8 +158,16 @@ class DController (Controller, Observer):
                 rsid = d.sid
                 rvalue = d.value
                 rversion = d.version
-                if rsid != self.__store.store_id and rkey.startswith(self.__store.home):
-                    self.logger.debug('DController',">>>>>>>> Handling remote put for key = " + rkey)
+                self.logger.debug('DController', '>>>>> SID {0} Key {1} Version {2} Value {3}'.format(rsid, rkey,
+                                  rversion, rvalue))
+                self.logger.debug('DController', ' MY STORE ID {0} MY HOME {1}'.format(self.__store.store_id,
+                                                                                       self.__store.home))
+
+                self.logger.debug('DController', 'Current store value {0}'.format(self.__store.get_value(rkey)))
+                self.logger.debug('DController', 'self put? {0}'.format(rsid != self.__store.store_id))
+                # We eagerly add all values to the cache to avoid problems created by inversion of miss and store
+                if rsid != self.__store.store_id:
+                    self.logger.debug('DController',">>>>>>>> Handling remote put in for key = " + rkey)
                     r = self.__store.update_value(rkey, rvalue, rversion)
                     if r:
                         self.logger.debug('DController',">> Updated " + rkey)
@@ -161,15 +175,7 @@ class DController (Controller, Observer):
                     else:
                         self.logger.debug('DController',">> Received old version of " + rkey)
                 else:
-                    if rsid != self.__store.store_id and self.__store.get_value(rkey) is not None:
-                        r = self.__store.update_value(rkey, rvalue, rversion)
-                        if r:
-                            self.logger.debug('DController',">> Updated " + rkey)
-                            self.__store.notify_observers(rkey, rvalue, rversion)
-                        else:
-                            self.logger.debug('DController',">> Received old version of " + rkey)
-                    else:
-                        self.logger.debug('DController',">>>>>> Ignoring remote put as it is a self-put")
+                    self.logger.debug('DController',">>>>>> Ignoring remote put as it is a self-put")
             else:
                 self.logger.debug('DController',">>>>>> Some store unregistered instance {0}".format(d.key))
 
@@ -177,7 +183,7 @@ class DController (Controller, Observer):
 
     def cache_discovered(self,reader):
         self.logger.debug('DController','New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
-        samples = reader.take(DDS_NOT_READ_SAMPLE_STATE)
+        samples = reader.take(DDS_ANY_SAMPLE_STATE)
 
         for (d, i) in samples:
             if i.valid_data:

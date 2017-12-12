@@ -208,7 +208,7 @@ class Native(RuntimePlugin):
             na_info = json.loads(self.agent.dstore.get(uri))
             na_info.update({"status": "run"})
             self.__update_actual_store(entity_uuid, na_info)
-            self.agent.logger.info('runEntity()', '[ DONE ] Native Plugin - Runnign BE uuid %s' % entity_uuid)
+            self.agent.logger.info('runEntity()', '[ DONE ] Native Plugin - Running BE uuid %s' % entity_uuid)
             return True
 
     def stopEntity(self, entity_uuid):
