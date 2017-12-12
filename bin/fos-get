@@ -47,13 +47,27 @@ class FOSGetCli(object):
     def __initialize(self):
         self.store = FOSStore(self.aroot, self.droot, self.uuid)
 
+        if len(self.store.actual.discovered_stores) == 0:
+            print("Waiting...")
+            time.sleep(0.5)
+        if len(self.store.desidered.discovered_stores) == 0:
+            print("Waiting...")
+            time.sleep(0.5)
+
+        pprint.pprint(self.store.desidered.discovered_stores)
+        pprint.pprint(self.store.actual.discovered_stores)
+
     def __read_file(self, file_path):
         with open(file_path, 'r') as f:
             data = f.read()
         return data
 
     def get(self, uri):
+
         if uri.startswith('a'):
+
+
+
             if '*' in uri:
                 if uri.endswith('/*'):
                     uri = uri+'/'
@@ -75,8 +89,6 @@ class FOSGetCli(object):
 
 
     def main(self):
-
-        self.__initialize()
 
         parser = argparse.ArgumentParser(description='Fog05 get helper for Store')
         parser.add_argument('-u', '--uri', required=True, type=str, default=False, help='URI')

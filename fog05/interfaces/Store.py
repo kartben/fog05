@@ -66,7 +66,7 @@ class Controller(object):
 class Store(object):
 
     def __init__(self):
-        print('init')
+        pass
 
 
     def put(self,uri,value):

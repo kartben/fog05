@@ -323,18 +323,27 @@ class DStore(Store):
 
     def resolveAll(self, uri):
         xs = self.__controller.resolveAll(uri)
-        #self.logger.debug('DStore',' Resolved list = {0}'.format(xs))
-        ys  = self.getAll(uri)
-        ks = []
-        for x in xs:
-            ks.append(x[0])
-            #self.logger.debug('DStore','resolved key = {0}'.format(x[0]))
+        self.logger.debug('DStore',' Resolved resolveAll = {0}'.format(xs))
+        ys = self.getAll(uri)
 
-        for y in ys:
-            #self.logger.debug('DStore','merging key: {0}'.format(y[0]))
-            if y[0] not in ks:
-                #self.logger.debug('DStore','Key is not present... Appending')
+        self.logger.debug('DStore','resolved getAll = {0}'.format(ys))
+        xs_keys = [v[0] for v in xs]
+        i = 0
+        while i < len(ys):
+            y = ys[i]
+            self.logger.debug('DStore','merging key: {0}'.format(y))
+            if y[0] not in xs_keys:
                 xs.append(y)
+                self.logger.debug('DStore', 'Key is not present... Appending')
+            else:
+                self.logger.debug('DStore', 'Key is present look if need update')
+                x = [v for v in xs if xs[0] == y[0]][0]
+                self.logger.debug('DStore', 'X is {0}'.format(x))
+                index = xs.index(x)
+                self.logger.debug('DStore', 'X index is'.format(index))
+                if y[2] > x[2]:
+                    self.logger.debug('DStore', 'Key need update')
+                    xs[index] = y
 
         return xs
 
