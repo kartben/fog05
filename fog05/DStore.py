@@ -404,81 +404,11 @@ class DStore(Store):
                         base.update({k: updates.get(k)})
         return base
 
-    # def data_merge(self, base, updates):
-    #     if base is None or isinstance(base, int) or isinstance(base, str) or isinstance(base, float):
-    #         base = updates
-    #     elif isinstance(base, list):
-    #         if isinstance(updates, list):
-    #             names = [x.get('name') for x in updates]
-    #             item_same_name = [item for item in base if item.get('name') in [x.get('name') for x in updates]]
-    #             if all(isinstance(x, dict) for x in updates) and len(
-    #                     [item for item in base if item.get('name') in [x.get('name') for x in updates]]) > 0:
-    #                 for e in base:
-    #                     for u in updates:
-    #                         if e.get('name') == u.get('name'):
-    #                             self.data_merge(e, u)
-    #             else:
-    #                 base.extend(updates)
-    #         else:
-    #             base.append(updates)
-    #     elif isinstance(base, dict):
-    #         if isinstance(updates, dict):
-    #             for k in updates.keys():
-    #                 if k in base.keys():
-    #                     base.update({k: self.data_merge(base.get(k), updates.get(k))})
-    #                 else:
-    #                     base.update({k: updates.get(k)})
-    #     return base
-
     def on_store_discovered(self, sid):
         raise NotImplemented
 
     def on_store_disappeared(self, sid):
         raise NotImplemented
-#
+
     def close(self):
         self.__controller.stop()
-# class DDSObserver(Observer):
-#
-#     def onRemove(self, uri):
-#         #self.logger.debug('DStore','Observer onRemove Called')
-#
-#     def onConflict(self):
-#         #self.logger.debug('DStore','Observer onConflict Called')
-#
-#     def onDput(self, uri):
-#         #self.logger.debug('DStore','Observer onDput Called')
-#
-#     def onPput(self, uri, value):
-#         #self.logger.debug('DStore','Observer onPput Called')
-#
-#     def onMiss(self):
-#         #self.logger.debug('DStore','Observer onMiss Called')
-#
-#     def onGet(self, uri):
-#         #self.logger.debug('DStore','Observer onGet Called')
-#
-#     def onObserve(self, uri, action):
-#         #self.logger.debug('DStore','Observer onObserve Called')
-#
-#     def onPut(self, uri, value):
-#         #self.logger.debug('DStore','Observer onPut Called')
-#
-#
-# class DDSController(Controller):
-#
-#     def __init__(self, cache):
-#         super(DDSController, self).__init__(cache)
-#
-#     def start(self):
-#         #self.logger.debug('DStore','Controller start Called')
-#
-#     def stop(self):
-#         #self.logger.debug('DStore','Controller stop Called')
-#
-#     def resume(self):
-#         #self.logger.debug('DStore','Controller resume Called')
-#
-#     def pause(self):
-#         #self.logger.debug('DStore','Controller pause Called')
-#

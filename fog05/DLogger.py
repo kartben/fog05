@@ -14,11 +14,11 @@ class DLogger:
 
             if debug_flag:
                 logging.basicConfig(format='[%(asctime)s] - [%(levelname)s] > %(message)s',
-                                    level=logging.DEBUG)
+                                    level=logging.INFO)
             else:
                 logging.basicConfig(filename=self.log_file,
                                     format='[%(asctime)s] - [%(levelname)s] > %(message)s',
-                                    level=logging.DEBUG)
+                                    level=logging.INFO)
 
             self.logger = logging.getLogger(__name__)
 

@@ -45,6 +45,11 @@ class FOSCli(object):
     def __initialize(self):
         self.store = FOSStore(self.aroot, self.droot, self.uuid)
 
+        if len(self.store.actual.discovered_stores) == 0:
+            time.sleep(0.5)
+        if len(self.store.desidered.discovered_stores) == 0:
+            time.sleep(0.5)
+
     def __read_file(self, file_path):
         with open(file_path, 'r') as f:
             data = f.read()
