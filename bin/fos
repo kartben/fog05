@@ -1,8 +1,7 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python3
 
 import sys
-
-from click import pass_obj, pass_context
+import re
 from jsonschema import validate, ValidationError
 from fog05.DStore import *
 from fog05 import Schemas
@@ -10,254 +9,66 @@ import signal
 from fog05.fosagent import FosAgent
 import time
 import uuid
+import argparse
+import daemon as dmn
+
+##
+## TODO: sostitute all string with variables in store interaction
+##
 
 
+class FOSStore(object):
+    def __init__(self, aroot, droot, home):
+        self.aroot = aroot #'dfos://<sys-id>'
+        self.ahome = str('%s/%s' % (aroot, home)) #str('dfos://<sys-id>/%s' % self.uuid)
 
-class Fos(object):
+        self.droot = droot  # 'dfos://<sys-id>'
+        self.dhome = str('%s/%s' % (droot, home))  # str('dfos://<sys-id>/%s' % self.uuid)
+
+        self.actual = DStore(home, self.aroot, self.ahome, 1024)
+        self.desidered = DStore(home, self.droot, self.dhome, 1024)
+
+    def close(self):
+        self.actual.close()
+        self.desidered.close()
+
+
+class FOSCli(object):
+
     def __init__(self):
-        self.uuid = str(uuid.uuid4())
         self.agent = None
+        self.store = None
+        self.aroot = 'afos://<sys-id>'
+        self.droot = 'dfos://<sys-id>'
+        self.uuid = str(uuid.uuid4())
 
     def __initialize(self):
-        self.droot = "dfos://<sys-id>"
-        self.dhome = str("dfos://<sys-id>/%s" % self.uuid)
-        self.dstore = DStore(self.uuid, self.droot, self.dhome, 1024)
+        self.store = FOSStore(self.aroot, self.droot, self.uuid)
 
-        self.aroot = "afos://<sys-id>"
-        self.ahome = str("afos://<sys-id>/%s" % self.uuid)
-        self.astore = DStore(self.uuid, self.aroot, self.ahome, 1024)
-
-        self.nodes = {}
-
-        #uri = str('afos://<sys-id>/*/')
-        #self.astore.observe(uri, self.nodeDiscovered)
-
-    def print_nodes(self):
-        uri = str('afos://<sys-id>/*/')
-        nodes = json.loads(self.astore.resolveAll(uri))
-        print(nodes)
-
-    def __catch_signal(self,signal, frame):
-        if signal == 2:
-            if self.agent is not None:
-                self.agent.stop()
-            exit(0)
-
-    def __start_node(self, plugin_path):
-        signal.signal(signal.SIGINT, self.__catch_signal)
-        self.agent = FosAgent(plugins_path=plugin_path)
-        self.agent.run()
-        while True:
-            time.sleep(100)
+        if len(self.store.actual.discovered_stores) == 0:
+            time.sleep(0.5)
+        if len(self.store.desidered.discovered_stores) == 0:
+            time.sleep(0.5)
 
     def __read_file(self, file_path):
         with open(file_path, 'r') as f:
             data = f.read()
         return data
 
-    def __entry_point(self, action):
-        r = {
-            'node': self.__node_command,
-            'network': self.__network_command,
-            'entity': self.__entity_command,
-            'application': self.__application_command
-        }
+    def exit(self, exit_code):
+        if self.store is not None:
+            self.store.close()
+        exit(exit_code)
 
-        return r.get(action, None)
+    def __send_add_network(self, node_uuid, manifest):
 
-    def __node_plugins_list(self,node_uuid):
+        manifest.update({'status':'add'})
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
-        plugins = self.astore.get(uri)
-        if plugins is not None:
-            plugins = json.loads(plugins[0]).get('plugins')
-            print('+-----------------------PLUGINS-------------------------+')
-            for p in plugins:
-                print('+-------------------------------------------------------+')
-                print("| Name %s" % p.get('name'))
-                print("| UUID %s" % p.get('uuid'))
-                print("| Type %s" % p.get('type'))
-            print('+-------------------------------------------------------+')
-        else:
-            print("No node or plugins found")
-
-    def __send_add_plugin(self,node_uuid, name, type):
-        val = {'plugins': [{'name': name, 'version': 1, 'uuid': '',
-                            'type': type, 'status': 'add'}]}
-        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
-        print(uri)
-        # print(self.dstore.get(uri))
-
-        r = self.dstore.dput(uri, json.dumps(val)) ### destination says:
-        # >> Received old version of dfos://<sys-id>/e2b94d56-f4e1-99fa-886e-c1e3124496f9/plugins
-        if r is None:
-            print("Resolved failed")
-        elif r:
-            print("Plugin added")
-
-    def __node_command(self, parameters):
-        # TODO return None even if there are nodes in the system
-        if len(parameters) < 2:
-            print("Should specify node UUID or list")
-            return
-        if len(parameters) == 2:
-            if parameters[1] == 'list':
-                uri = str('afos://<sys-id>/*')
-                print(uri)
-                nodes = self.astore.resolveAll(uri)
-                print(self.astore.discovered_stores)
-                ## se below for information on this
-                ## this not work
-                print(nodes)
-                input()
-            else:
-                uri = str('afos://<sys-id>/%s/' % parameters[1])  ## this is because the resolver return a tuple with
-                # value and version
-                print("Uri: %s" % uri)
-                node = self.astore.get(uri)
-                if node is not None and len(node) > 0:
-                    node = json.loads(node[0])
-                    print('+-------------------------------------------------------+')
-                    print('| UUID : %s \t\t|' % node.get('uuid'))
-                    print('| Name: %s \t\t|' % node.get('name'))
-                    print('+-------------------------------------------------------+')
-                else:
-                    print("Node not found!!")
-                return
-        if len(parameters) == 3:
-            if parameters[2] == 'status':
-                print('Should get the nodes status (cpu/ram ecc....')
-                return
-            if parameters[2] == 'info':
-                uri = str('afos://<sys-id>/%s/' % parameters[1])
-                node = self.astore.get(uri)
-                if node is not None and len(node) > 0:
-                    node = json.loads(node[0])
-                    print('+-------------------------------------------------------+')
-                    print('| UUID : %s \t\t|' % node.get('uuid'))
-                    print('| Name: %s \t\t|' % node.get('name'))
-                    print('+------------------------CPU----------------------------+')
-                    cpus = node.get('cpu')
-                    print('| Total CPU %d' % len(cpus))
-                    for cpu in cpus:
-                        print('+-------------------------------------------------------+')
-                        print('| ARCH: %s' % cpu.get('arch'))
-                        print('| Model: %s' % cpu.get('model'))
-                        print('| Frequency: %s' % cpu.get('frequency'))
-                    print('+-------------------------------------------------------+')
-                    print('| RAM: %d' % node.get('ram').get('size'))
-
-                    print('+----------------------NETWORKS-------------------------+')
-                    nws = node.get("network")
-                    for nw in nws:
-                        print('| ################################################### |')
-                        intf_conf = nw.get('inft_configuration')
-                        print("| ## Interface: %s ##" % nw.get('intf_name'))
-                        print("| ### MAC: %s " % nw.get('intf_mac_address'))
-                        print("| ### type: %s " % nw.get('type'))
-                        print("| ### Default gateway: %s " % nw.get('default_gw'))
-                        print("| ##### Interface Configuration #####")
-                        print("| ###### Speed: %s " % intf_conf.get('intf_speed'))
-                        print("| ###### IPV4: %s Netmask: %s Gateway: %s" % (intf_conf.get('ipv4_address'),
-                              intf_conf.get('ipv4_netmask'), intf_conf.get('ipv4_gateway')))
-                        print("| ###### IPV6: %s Netmask: %s" %
-                              (intf_conf.get('ipv6_address'), intf_conf.get('ipv6_netmask')))
-                    print('| ################################################### |')
-
-                    accs = node.get('accelerator')
-                    if accs is not None:
-                        print('+----------------------ACCELERATORS-------------------------+')
-                        for acc in accs:
-                            print('| ################################################### |')
-                            print("| ## Name: %s ##" % acc.get('name'))
-                            print("| ## HW Address: %s ##" % acc.get('hw_address'))
-                            print("| ## Supported libraries: %s ##"
-                                  % ' '.join(acc.get('supported_library')))
-                        print('| ################################################### |')
-                    ios = node.get('io')
-                    if ios is not None:
-                        print('+----------------------I\O-----------------------------+')
-                        for io in ios:
-                            print('| ################################################### |')
-                            print("| ## Name: %s ##" % io.get('io_type'))
-                            print("| ## Type: %s ##" % io.get('hw_address'))
-                            print("| ## File: %s ##" % io.get('io_file'))
-                        print('| ################################################### |')
-                    print('+-------------------------------------------------------+')
-                else:
-                    print("Node not found")
-                return
-        if len(parameters) > 3:
-            if parameters[2] == 'plugins':
-                if parameters[3] == 'list':
-                    self.__node_plugins_list(parameters[1])
-                    return
-                elif parameters[3] == 'add':
-                    # should specify name and type (or maybe uuid and then the command will resolve
-                    if len(parameters) == 6:
-                        plugin_name = parameters[4]
-                        plugin_type = parameters[5]
-                        if plugin_type in ['network', 'runtime']:
-                            self.__send_add_plugin(parameters[1],plugin_name,plugin_type)
-                            return
-                        else:
-                            print("Type %s not supported" % plugin_type)
-                            return
-                    else:
-                        print("Should specify plugin name and type [network|runtime]")
-                        return
-
-    def __network_command(self, parameters):
-        #network_schema = json.loads(self.__read_file('/home/ubuntu/FogOS/json_objects/network_define.schema'))
-        network_schema = Schemas.network_schema
-
-        if len(parameters) == 3:
-            if parameters[1] == 'add':
-                manifest = json.loads(self.__read_file(parameters[2]))
-                try:
-                    validate(manifest, network_schema)
-                except ValidationError as ve:
-                    print("Manifest is not correct")
-                    print("%s" % ve.message)
-                    return
-                print("manifest Ok")
-        ##################### with specified node uuid ########################
-        if len(parameters) == 4:
-            if parameters[1] == 'add':
-                manifest = json.loads(self.__read_file(parameters[2]))
-                try:
-                    validate(manifest, network_schema)
-                except ValidationError as ve:
-                    print("Manifest is not correct")
-                    print("%s" % ve.message)
-                    return
-                print("manifest Ok")
-                node_uuid = parameters[3]
-                self.__send_add_network(node_uuid, manifest)
-        ########################################################################
-
-    def __search_plugin_by_name(self, name, node_uuid):
-        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
-        all_plugins = self.astore.get(uri)
-        if all_plugins is None:
-            print("Cannot get plugin")
-            return None
-        all_plugins = all_plugins[0]
-        all_plugins = json.loads(all_plugins).get('plugins')
-        search = [x for x in all_plugins if name in x.get('name')]
-        if len(search) == 0:
-            return None
-        else:
-            return search[0]
-
-
-    def __send_add_network(self,node_uuid, manifest):
-
-        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
-        all_plugins = json.loads(self.astore.get(uri)).get('plugins')
+        all_plugins = json.loads(self.store.actual.get(uri)).get('plugins')
         print(all_plugins)
         nws = [x for x in all_plugins if x.get('type') == 'network']
         if len(nws) == 0:
-            print("No network plugin loaded on node, aborting")
+            print('No network plugin loaded on node, aborting')
             return
         brctl = nws[0]  # will use the first plugin
 
@@ -267,230 +78,554 @@ class Fos(object):
         json_data = json.dumps(manifest)
         uri = str('dfos://<sys-id>/%s/network/%s/networks/%s' %
                   (node_uuid, brctl.get('uuid'), manifest.get('uuid')))
-        r = self.dstore.put(uri, json_data)
+        r = self.store.desidered.put(uri, json_data)
         if r is None:
-            print("Resolved failed")
+            print('Resolved failed')
         elif r:
-            print("network added")
+            print('network added')
 
-    def __send_add_entity(self, node_uuid, manifest):
+    def __send_remove_network(self, node_uuid, net_id):
 
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = json.loads(self.store.actual.get(uri)).get('plugins')
+        nws = [x for x in all_plugins if x.get('type') == 'network']
+        print('locating brctl plugin')
+        search = [x for x in nws if 'brctl' in x.get('name')]
+        print(search)
+        if len(search) == 0:
+            print('Plugin was not loaded')
+            exit(0)
+        else:
+            brctl = search[0]
+
+        uri = str('dfos://<sys-id>/%s/network/%s/networks/%s#status=remove' % (node_uuid, brctl.get('uuid'), net_id))
+        self.store.desidered.dput(uri)
+
+    def __catch_signal(self, signal, frame):
+        if signal == 2:
+            if self.agent is not None:
+                self.agent.stop()
+                time.sleep(1)
+            self.exit(0)
+
+    def __start_node(self, plugin_path, debug):
+        signal.signal(signal.SIGINT, self.__catch_signal)
+        self.agent = FosAgent(debug=debug, plugins_path=plugin_path)
+        self.agent.run()
+        while True:
+            time.sleep(100)
+
+    def __search_plugin_by_name(self, name, node_uuid):
+        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        all_plugins = self.store.actual.get(uri)
+        if all_plugins is None:
+            print('Cannot get plugin')
+            return None
+        #all_plugins = all_plugins
+        all_plugins = json.loads(all_plugins).get('plugins')
+        search = [x for x in all_plugins if name in x.get('name')]
+        if len(search) == 0:
+            return None
+        else:
+            return search[0]
+
+    def __get_entity_handler_by_uuid(self, node_uuid, entity_uuid):
+        uri = str('afos://<sys-id>/%s/runtime/*/entity/%s' % (node_uuid, entity_uuid))
+        all = self.store.actual.resolveAll(uri)
+        for i in all:
+            k = i[0]
+            if fnmatch.fnmatch(k, uri):
+                #print('MATCH {0}'.format(k))
+                #print('Extracting uuid...')
+                regex = uri.replace('/','\/')
+                regex = regex.replace('*', '(.*)')
+                reobj = re.compile(regex)
+                mobj = reobj.match(k)
+                uuid = mobj.group(1)
+                #print('UUID {0}'.format(uuid))
+                return uuid
+
+    def __get_entity_handler_by_type(self,node_uuid, t):
+        handler = None
+        if t == 'vm':
+            handler = self.__search_plugin_by_name('KVM', node_uuid)
+        elif t == 'container':
+            handler = self.__search_plugin_by_name('LXD', node_uuid)
+        elif t == 'native':
+            handler = self.__search_plugin_by_name('native', node_uuid)
+        elif t == 'ros2':
+            handler = self.__search_plugin_by_name('ros2', node_uuid)
+        elif t == 'usvc':
+            print('microservice not yet')
+        else:
+            print('type not recognized')
+        return handler
+
+    def __send_define_entity(self, node_uuid, manifest):
+        manifest.update({'status': 'define'})
         handler = None
         t = manifest.get('type')
 
         try:
-            if t == "vm":
+            if t == 'vm':
                 handler = self.__search_plugin_by_name('KVM', node_uuid)
-                validate(manifest.get("entity_data"), Schemas.vm_schema)
-            elif t == "container":
+                validate(manifest.get('entity_data'), Schemas.vm_schema)
+            elif t == 'container':
                 handler = self.__search_plugin_by_name('LXD', node_uuid)
-                validate(manifest.get("entity_data"), Schemas.container_schema)
-            elif t == "native":
+                validate(manifest.get('entity_data'), Schemas.container_schema)
+            elif t == 'native':
                 handler = self.__search_plugin_by_name('native', node_uuid)
-                validate(manifest.get("entity_data"), Schemas.native_schema)
-            elif t == "ros2":
+                validate(manifest.get('entity_data'), Schemas.native_schema)
+            elif t == 'ros2':
                 handler = self.__search_plugin_by_name('ros2', node_uuid)
-                validate(manifest.get("entity_data"), Schemas.ros2_schema)
-            elif t == "usvc":
-                print("microservice not yet")
+                validate(manifest.get('entity_data'), Schemas.ros2_schema)
+            elif t == 'usvc':
+                print('microservice not yet')
             else:
-                print("type not recognized")
+                print('type not recognized')
 
             if handler is None:
-                print("error on plugin for this type of entity")
-                return False
+                print('error on plugin for this type of entity')
+                self.exit(-1)
         except ValidationError as ve:
-            print("Manifest is not correct")
-            print("%s" % ve.message)
-            return False
+            print('Manifest is not correct')
+            print('%s' % ve.message)
+            self.exit(-1)
 
-        entity_uuid = manifest.get("uuid")
+        entity_uuid = manifest.get('uuid')
         entity_definition = manifest
         json_data = json.dumps(entity_definition)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
-        self.dstore.put(uri, json_data)
+        self.store.desidered.put(uri, json_data)
         while True:
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, handler.get('uuid'), entity_uuid))
-            entity_info = json.loads(self.astore.get(uri))
-            if entity_info is not None and entity_info.get("status") == "defined":
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
+            entity_info = json.loads(self.store.actual.get(uri))
+            if entity_info is not None and entity_info.get('status') == 'defined':
                 break
-        uri = str(
-            'dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (node_uuid, handler.get('uuid'), entity_uuid))
-        self.dstore.dput(uri)
+
+    def __send_undefine_entity(self, node_uuid, entity_uuid):
+        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+        self.store.desidered.remove(uri)
+        time.sleep(5)
+
+    def __send_configure_entity(self, node_uuid, entity_uuid):
+        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (node_uuid, handler, entity_uuid))
+        self.store.desidered.dput(uri)
+
+        tries = 0
+
         while True:
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, handler.get('uuid'), entity_uuid))
-            entity_info = json.loads(self.astore.get(uri))
-            if entity_info is not None and entity_info.get("status") == "configured":
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            entity_info = json.loads(self.store.actual.get(uri))
+            # print(uri)
+            # print(entity_info)
+            # print(self.store.actual.get_version(uri))
+            tries = tries + 1
+            if tries > 5 or entity_info is not None and entity_info.get('status') == 'configured':
                 break
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, handler.get('uuid'), entity_uuid))
-        self.dstore.dput(uri)
+
+    def __send_clean_entity(self, node_uuid, entity_uuid):
+        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' % (node_uuid, handler, entity_uuid))
+        self.store.desidered.dput(uri)
         while True:
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (node_uuid, handler.get('uuid'), entity_uuid))
-            entity_info = json.loads(self.astore.get(uri))
-            if entity_info is not None and entity_info.get("status") == "run":
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            entity_info = json.loads(self.store.actual.get(uri))
+            if entity_info is not None and entity_info.get('status') == 'cleaned':
                 break
 
-        return True
+    def __send_run_entity(self, node_uuid, entity_uuid):
+        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, handler, entity_uuid))
+        self.store.desidered.dput(uri)
 
-    def __entity_command(self, parameters):
-        entity_schema = Schemas.entity_schema
-        if len(parameters) == 3:
-            if parameters[1] == 'add':
-                manifest = json.loads(self.__read_file(parameters[2]))
-                try:
-                    validate(manifest, entity_schema)
-                except ValidationError as ve:
-                    print("Manifest is not correct")
-                    print("%s" % ve.message)
-                    return
-                print("manifest Ok")
+        tries = 0
 
-        ##################### with specified node uuid ########################
-        if len(parameters) == 4:
-            if parameters[1] == 'add':
-                manifest = json.loads(self.__read_file(parameters[2]))
-                try:
-                    validate(manifest, entity_schema)
-                except ValidationError as ve:
-                    print("Manifest is not correct")
-                    print("%s" % ve.message)
-                    return
-                print("manifest Ok")
-                node_uuid = parameters[3]
-                self.__send_add_entity(node_uuid, manifest)
-            if parameters[1] == 'migrate':
-                dst_node = parameters[3]
-                entity_uuid = parameters[2]
-                # TODO: should get the current node of the entity
-        ########################################################################
+        while True:
+            time.sleep(1)
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            entity_info = json.loads(self.store.actual.get(uri))
+            # print(uri)
+            # print(entity_info)
+            # print(self.store.actual.get_version(uri))
+            tries = tries + 1
+            if tries > 5 or entity_info is not None and entity_info.get('status') == 'run':
+                break
 
+    def __send_stop_entity(self, node_uuid, entity_uuid):
+        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, handler, entity_uuid))
+        self.store.desidered.dput(uri)
+        while True:
+            time.sleep(1)
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            entity_info = json.loads(self.store.actual.get(uri))
+            if entity_info is not None and entity_info.get('status') == 'stop':
+                break
 
-    def __application_command(self, parameters):
-        app_schema = Schemas.app_schema
-        if len(parameters) == 3:
-            if parameters[1] == 'add':
-                manifest = json.loads(self.__read_file(parameters[2]))
-                try:
-                    validate(manifest, app_schema)
-                except ValidationError as ve:
-                    print("Manifest is not correct")
-                    print("%s" % ve.message)
-                    return
-                print("manifest Ok")
+    def __sent_migrate_entity(self, node_uuid, entity_uuid, destination_uuid):
+        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+        entity_info = json.loads(self.store.actual.get(uri))
 
-    def main(self, argv):
+        entity_info_src = entity_info.copy()
+        entity_info_dst = entity_info.copy()
 
+        entity_info_src.update({"status": "taking_off"})
+        entity_info_src.update({"dst": destination_uuid})
 
-        '''
-        
-        This is the entry point of the fog05 cli interface
-        with this you can onboard application/entities, get information about current nodes in the system
-        create virtual networks, and interact with entities
-        
-        @GB I think at least system id should be always specified or can be read from a simple conf.ini file
-        
-        usage:
+        entity_info_dst.update({"status": "landing"})
+        entity_info_dst.update({"dst": destination_uuid})
 
-        ---------
-        fos node list
-            list of nodes in current system
+        destination_handler = self.__get_entity_handler_by_type(destination_uuid, entity_info_dst.get('type'))
+        if destination_handler is None:
+            print("Error Destination node can't handle this type of entity {0}".format(entity_info_dst.get('type')))
+            self.exit(-1)
 
-        fos node <node_uuid>
-            get information about a specific node
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (destination_uuid, destination_handler.get('uuid'), entity_uuid))
+        self.store.desidered.put(uri, json.dumps(entity_info_dst))
 
-        fos node <node_uuid> info
-            get detailed information about a specific node
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+        self.store.desidered.dput(uri, json.dumps(entity_info_src))
 
-        fos node <node_uuid> status
-            get status information about a specific node
+        while True:
+            time.sleep(1)
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (destination_uuid, destination_handler.get('uuid'), entity_uuid))
+            en_info = json.loads(self.store.actual.get(uri))
+            if en_info is not None and en_info.get("status") == "run":
+                break
 
-        fos node <node_uuid> plugins list
-             list of plugins in the specified node
+    def __send_pause_entity(self, node_uuid, entity_uuid):
+        pass
 
-        fos node <node_uuid> plugins add <name> [network,runtime]
-            add a plugin to the node
+    def __send_resume_entity(self, node_uuid, entity_uuid):
+        pass
 
-
-        ---------
-        fos network list 
-            list of networks in current system
-        
-        fos network add <path to network json manifest>
-            create a new network in the system
-
-            @GB just for test the command accept a node_uuid to create a network on the node
-
-        fos network remove <uuid>
-            remove the specified network
-        ---------
-
-        @GB networks should be system-wide, this means that is a new node join should create all existing networks
-        and when a new networks is added should be added to all nodes
-
-
-        ---------
-        fos entity list
-            list of entity in current system
-        
-        fos entity add <path to entity json manifest>
-            create a new entity in the system
-
-             @GB just for test the command accept a node_uuid to deploy the entity on the node
- 
-        fos entity remove <uuid>
-            remove the specified entity from the system
-        
-        fos entity migrate <uuid> <destination_uuid>
-            migrate the entity to the destination uuid specified node
-        --------
-        
-        --------
-        fos application list
-            list of applications in current system
-
-        fos application <uuid> tree
-            all info about components of the application, tree way
-        
-        fos application add <path to application json manifest>
-            add an application in the current system
-        
-        fos application remove <uuid>
-            remove the specified application from the system
-        
-        -------
-
-        fos start <plugin path>
-            will start a node, UUID is loaded by the os plugin
-
-        -------
-
-
-        '''
-
-        if argv[1] == 'start':
-            if len(argv) < 3:
-                print("You should specify plugin path!!")
-                exit(-1)
+    def start(self, plugins, verbose, daemon):
+        if plugins:
+            sys.path.append(os.path.abspath(plugins))
+            if daemon:
+                print('Forking in backgroud')
+                pid = '/tmp/fos.pid'
+                print('PID file %s' % pid)
+                with dmn.DaemonContext(pidfile=pid, umask=0):
+                    self.__start_node(plugins, verbose)
             else:
-                sys.path.append(os.path.abspath(argv[2]))
-                self.__start_node(argv[2])
+                self.__start_node(plugins, verbose)
+        else:
+            print('You should specify plugin path!!')
 
-        action = self.__entry_point(argv[1])
-        if action is None:
-            print("Error parameter %s not recognized" % argv[1])
+    def node(self,node_list, uuid, plugin_action, action, manifest, plugin_uuid):
+        #print(node_list,uuid,plugin_action,action,manifest,plugin_uuid)
+        if node_list:
+            uri = str('afos://<sys-id>/*/')
+            #print(uri)
+            nodes = self.store.actual.resolveAll(uri)
+            print('+-------------------------------------------------------+')
+
+            for node in nodes:
+                node_info = json.loads(node[1])
+                print('| UUID : %s \t\t|' % node_info.get('uuid'))
+                print('| Name: %s \t\t|' % node_info.get('name'))
+            print('+-------------------------------------------------------+')
+            return
+        if uuid is not None and plugin_action is False:
+            uri = str('afos://<sys-id>/%s/' % uuid)
+            # value and version
+            #print('Uri: %s' % uri)
+            node = self.store.actual.get(uri)
+            if node is not None and len(node) > 0:
+                node = json.loads(node)
+                print('+-------------------------------------------------------+')
+                print('| UUID : %s \t\t|' % node.get('uuid'))
+                print('| Name: %s \t\t|' % node.get('name'))
+                print('+-------------------------------------------------------+')
+            else:
+                print('Node not found!!')
+            return
+        if uuid is not None and plugin_action is True:
+            if action == 'add':
+                print('Adding plugin from %s to %s' % (manifest, uuid))
+                manifest = json.loads(self.__read_file(manifest))
+                manifest.update({'status':'add'})
+                plugins = {"plugins":[manifest]}
+                # uri = str('afos://<sys-id>/%s/plugins' % uuid)
+                # plugins = json.loads(self.store.actual.get(uri))
+                # plugins.get('plugins').append(manifest)
+                # print(plugins)
+                uri = str('dfos://<sys-id>/%s/plugins' % uuid)
+                self.store.desidered.dput(uri, json.dumps(plugins))
+            if action == 'remove':
+                print('Removing plugin %s from %s not yet...' % (plugin_uuid, uuid))
+
+
+    def network(self,nw_list, node_uuid, add, remove, manifest, net_uuid):
+        #print(nw_list, node_uuid, add, remove, manifest, net_uuid)
+        if nw_list:
+            uri = str('afos://<sys-id>/*/network/*/networks/*')
+            networks = self.store.actual.resolveAll(uri)
+            for net in networks:
+                net_uri = net[0]
+                net_info = json.loads(net[1])
+                print('| UUID : %s \t\t|' % net_info.get('uuid'))
+                print('| Name: %s \t\t|' % net_info.get('name'))
+                print('| Virtual Device: %s \t\t|' % net_info.get('virtual_device'))
+                print('| DHCP: %s \t\t|' % net_info.get('has_dhcp'))
+                print('| IP Range: %s \t\t|' % net_info.get('ip_range'))
+                print('| Gateway: %s \t\t|' % net_info.get('gateway'))
+                print('| VxLAN ID: %s \t\t|' % net_info.get('vxlan_id'))
+                print('| Multicast VxLAN Address: %s \t\t|' % net_info.get('multicast_address'))
+                print('| Node: %s \t\t|' % net_uri[3])
+            return
+        if node_uuid is not None:
+            if add and manifest is not None:
+                manifest = json.loads(self.__read_file(manifest))
+                try:
+                    validate(manifest, Schemas.network_schema)
+                except ValidationError as ve:
+                    print('Manifest is not correct')
+                    print('%s' % ve.message)
+                    return
+                print('manifest Ok')
+                self.__send_add_network(node_uuid, manifest)
+                print('Network UUID is %s' % manifest.get('uuid'))
+                return
+            if remove and net_uuid is not None:
+                self.__send_remove_network(node_uuid, net_uuid)
+                return
+
+
+    def entity(self, en_list, action, node_uuid, manifest, entity_uuid, dest_node):
+        #print(en_list,action,node_uuid,manifest,entity_uuid,dest_node)
+        if en_list:
+            uri = str('afos://<sys-id>/*/runtime/*/entity/*')
+            entities = self.store.actual.resolveAll(uri)
+            for entity in entities:
+                entity_uri = entity[0]
+                entity_info = json.loads(entity[1])
+                print('| UUID : %s \t\t|' % entity_info.get('uuid'))
+                print('| Name: %s \t\t|' % entity_info.get('name'))
+                print('| Type: %s \t\t|' % entity_info.get('type'))
+                print('| Status: %s \t\t|' % entity_info.get('status'))
+                print('| Node: %s \t\t|' % entity_uri.split('/')[3])
+
+            return
+        if node_uuid is None: return
+        if action == 'define' and manifest is not None:
+            manifest = json.loads(self.__read_file(manifest))
+            try:
+                validate(manifest, Schemas.entity_schema)
+            except ValidationError as ve:
+                print('Manifest is not correct')
+                print('%s' % ve.message)
+                return
+            print('manifest Ok')
+            self.__send_define_entity(node_uuid, manifest)
+            print('Entity %s defined' % manifest.get('uuid'))
+            return
+        if entity_uuid is None: return
+        if action == 'undefine':
+            self.__send_undefine_entity(node_uuid, entity_uuid)
+            print('Entity %s undefined' % entity_uuid)
+            return
+        if action == 'configure':
+            self.__send_configure_entity(node_uuid, entity_uuid)
+            print('Entity %s configured' % entity_uuid)
+        if action == 'clean':
+            self.__send_clean_entity(node_uuid, entity_uuid)
+            print('Entity %s cleaned' % entity_uuid)
+        if action == 'run':
+            self.__send_run_entity(node_uuid, entity_uuid)
+            print('Entity %s started' % entity_uuid)
+        if action == 'stop':
+            self.__send_stop_entity(node_uuid, entity_uuid)
+            print('Entity %s stopped' % entity_uuid)
+        if action == 'pause':
+            self.__send_pause_entity(node_uuid, entity_uuid)
+            print('Pause sended')
+        if action == 'resume':
+            self.__send_resume_entity(node_uuid, entity_uuid)
+            print('Resume sended')
+        if action == 'migrate' and dest_node is not None:
+            self.__sent_migrate_entity(node_uuid, entity_uuid, dest_node)
+            print('Migration sended')
+
+
+    def manifest(self, type, manifest):
+        manifest = json.loads(self.__read_file(manifest))
+        if type == 'entity':
+            t = manifest.get('type')
+            try:
+                if t == 'vm':
+                    validate(manifest.get('entity_data'), Schemas.vm_schema)
+                elif t == 'container':
+                    validate(manifest.get('entity_data'), Schemas.container_schema)
+                elif t == 'native':
+                    validate(manifest.get('entity_data'), Schemas.native_schema)
+                elif t == 'ros2':
+                    validate(manifest.get('entity_data'), Schemas.ros2_schema)
+                elif t == 'usvc':
+                    print('microservice not yet')
+                else:
+                    print('type not recognized')
+            except ValidationError as ve:
+                print('Manifest is not correct')
+                print('%s' % ve.message)
+                self.exit(-1)
+        if type == 'network':
+            try:
+                validate(manifest, Schemas.network_schema)
+            except ValidationError as ve:
+                print('Manifest is not correct')
+                print('%s' % ve.message)
+                self.exit(-1)
+        if type == 'application':
+            try:
+                validate(manifest, Schemas.app_schema)
+            except ValidationError as ve:
+                print('Manifest is not correct')
+                print('%s' % ve.message)
+                self.exit(-1)
+
+        print('Manifest seems ok!')
+        return
+
+
+
+    def main(self):
+        parser = argparse.ArgumentParser(description='Fog05 | The Fog-Computing IaaS')
+        subparsers = parser.add_subparsers(dest='cmd')
+
+        ##START CMD
+
+        parser_start = subparsers.add_parser('start')
+        parser_start.add_argument('-p', '--plugins', required=True, type=str, default=False, help='plugin path')
+        parser_start.add_argument('-v', '--verbose', action='store_true', default=False, help='Verbose output')
+        parser_start.add_argument('-d', '--daemon', action='store_true', default=False, help='Run as a daemon')
+
+
+        ## NODE CMD
+        parser_node = subparsers.add_parser('node')
+
+        node_grp = parser_node.add_mutually_exclusive_group(required=True)
+
+        node_grp.add_argument('list', nargs='?', type=bool, default=False, help='list all nodes')
+        node_grp.add_argument('-u', '--uuid',  type=str, default=None, help='Node uuid')
+
+        parser_node.add_argument('-p','-plugin', action='store_true', default=False, help='enable action on plugin',
+                                 dest='plugin')
+
+        node_plugin_grp = parser_node.add_mutually_exclusive_group(required=False)
+        node_plugin_grp.add_argument('-a', '--add', action='store_true', default=False, help='add plugin')
+        node_plugin_grp.add_argument('-r', '--remove', nargs='?', type=bool, default=False, help='remove plugin')
+
+        #parser_node.add_argument('-a', '--add', nargs='?', type=bool, default=False, help='add plugin', dest='action')
+        #parser_node.add_argument('-r', '--remove', nargs='?', type=bool, default=False, help='remove plugin',
+        #                         dest='action')
+
+        parser_node.add_argument('-m', '--manifest', type=str, default=None, help='plugin manifest')
+        parser_node.add_argument('-pu', '--puuid', type=str, default=None, help='plugin uuid')
+
+
+
+        ## NETWORK CMD
+        parser_network = subparsers.add_parser('network')
+        network_grp = parser_network.add_mutually_exclusive_group(required=True)
+
+        network_grp.add_argument('list', nargs='?', type=bool, default=False, help='list all network')
+        network_grp.add_argument('-a','--add', action='store_true', help='add network')
+        network_grp.add_argument('-r','--remove', action='store_true', help='remove network')
+
+        parser_network.add_argument('-m', '--manifest', type=str, default=None, help='network manifest')
+        parser_network.add_argument('-nu', '--nuuid', type=str, default=None, help='network uuid')
+        parser_network.add_argument('-u', '--uuid', type=str, default=None, help='node uuid')
+
+        ## ENTITY CMD
+        parser_entity = subparsers.add_parser('entity')
+        entity_grp = parser_entity.add_mutually_exclusive_group(required=True)
+
+        entity_grp.add_argument('list', nargs='?', type=bool, default=False, help='list all network')
+        entity_grp.add_argument('-a', '--add', action='store_true', help='add entity')
+        entity_grp.add_argument('-r', '--remove', action='store_true', help='remove entity')
+        entity_grp.add_argument('--define', action='store_true', help='define entity')
+        entity_grp.add_argument('--undefine', action='store_true', help='remove entity')
+        entity_grp.add_argument('--configure', action='store_true', help='configure entity')
+        entity_grp.add_argument('--clean', action='store_true', help='clean entity')
+        entity_grp.add_argument('--run', action='store_true', help='run entity')
+        entity_grp.add_argument('--stop', action='store_true', help='stop entity')
+        entity_grp.add_argument('--pause', action='store_true', help='pause entity')
+        entity_grp.add_argument('--resume', action='store_true', help='resume entity')
+        entity_grp.add_argument('--migrate', action='store_true', help='migrate entity')
+
+        parser_entity.add_argument('-m', '--manifest', type=str, default=None, help='entity manifest')
+        parser_entity.add_argument('-eu', '--euuid', type=str, default=None, help='entity uuid')
+        parser_entity.add_argument('-u', '--uuid', type=str, default=None, help='node uuid')
+        parser_entity.add_argument('-du', '--duuid', type=str, default=None, help='destination node uuid')
+
+        ## MANIFEST CMD
+        parser_manifest = subparsers.add_parser('manifest')
+        manifest_grp = parser_manifest.add_mutually_exclusive_group(required=True)
+        manifest_grp.add_argument('-n', '--network', action='store_true', help='network manifest')
+        manifest_grp.add_argument('-e', '--entity', action='store_true', help='entity manifest')
+        manifest_grp.add_argument('-a', '--application', action='store_true', help='application manifest')
+        parser_manifest.add_argument('manifest', type=str, default=None, help='manifest path')
+
+
+        kwargs = vars(parser.parse_args())
+        #print(kwargs)
+
+        if kwargs['cmd'] == 'start':
+            self.start(kwargs['plugins'], kwargs['verbose'], kwargs['daemon'])
+
+        elif kwargs['cmd'] == 'manifest':
+            type = ''
+            if kwargs['network'] is True: type = 'network'
+            if kwargs['entity'] is True: type = 'entity'
+            if kwargs['application'] is True: type = 'application'
+            self.manifest(type, kwargs['manifest'])
+
         else:
             self.__initialize()
-            time.sleep(5)
-            action(argv[1:])
+            if kwargs['cmd'] == 'node':
+                action = ''
+                if kwargs['add'] is True: action = 'add'
+                elif kwargs['remove'] is True: action = 'remove'
+                self.node(kwargs['list'], kwargs['uuid'], kwargs['plugin'], action, kwargs['manifest'],
+                          kwargs['puuid'])
+                self.exit(0)
+            elif kwargs['cmd'] == 'network':
+                self.network(kwargs['list'],kwargs['uuid'], kwargs['add'], kwargs['remove'], kwargs['manifest'],
+                             kwargs['nuuid'])
+                self.exit(0)
+            elif kwargs['cmd'] == 'entity':
+
+                action = ''
+                if kwargs['add'] is True: action = 'add'
+                if kwargs['remove'] is True: action = 'remove'
+                if kwargs['define'] is True: action = 'define'
+                if kwargs['undefine'] is True: action = 'undefine'
+                if kwargs['configure'] is True: action = 'configure'
+                if kwargs['clean'] is True: action = 'clean'
+                if kwargs['run'] is True: action = 'run'
+                if kwargs['stop'] is True: action = 'stop'
+                if kwargs['pause'] is True: action = 'pause'
+                if kwargs['resume'] is True: action = 'resume'
+                if kwargs['migrate'] is True: action = 'migrate'
+
+                self.entity(kwargs['list'], action, kwargs['uuid'], kwargs['manifest'], kwargs['euuid'],
+                            kwargs['duuid'])
+
+                self.exit(0)
+            else:
+                print('Error check your command line!!')
+                exit(-1)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("provide parameters")
-    else:
-        c = Fos()
-        c.main(sys.argv)
-
+        c = FOSCli()
+        c.main()

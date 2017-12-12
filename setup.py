@@ -9,6 +9,6 @@ setup(
     packages=['fog05', 'fog05/interfaces'],
     install_requires=['networkx', 'jsonschema', 'python-daemon'],
     #install_requires=['networkx', 'jsonschema', 'python-daemon', 'pydds'],
-    scripts=['bin/fos', 'bin/fos2', 'bin/fos-get'],
+    scripts=['bin/fos', 'bin/fos-get'],
     include_package_data=True
 )

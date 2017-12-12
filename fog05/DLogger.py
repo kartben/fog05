@@ -1,5 +1,6 @@
 import logging
 import time
+import sys
 
 class DLogger:
     class __SingletonLogger:
@@ -12,15 +13,22 @@ class DLogger:
 
             self.debug_flag = debug_flag
 
-            if debug_flag:
-                logging.basicConfig(format='[%(asctime)s] - [%(levelname)s] > %(message)s',
-                                    level=logging.INFO)
-            else:
-                logging.basicConfig(filename=self.log_file,
-                                    format='[%(asctime)s] - [%(levelname)s] > %(message)s',
-                                    level=logging.INFO)
+            log_format = '[%(asctime)s] - [%(levelname)s] > %(message)s'
+            log_level = logging.DEBUG
 
-            self.logger = logging.getLogger(__name__)
+            self.logger = logging.getLogger(__name__ + '.fog05.agent')
+
+            self.logger.setLevel(log_level)
+            formatter = logging.Formatter(log_format)
+            if not debug_flag:
+                log_filename = self.log_file
+                handler = logging.FileHandler(log_filename)
+            else:
+                handler = logging.StreamHandler(sys.stdout)
+
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+
 
         def info(self, caller, message):
             self.logger.info(str('< %s > %s') % (caller, message))
