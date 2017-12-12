@@ -15,7 +15,7 @@ class LXDEntity(Entity):
         self.image = image
         self.user_file = user_file
         self.ssh_key = ssh_key
-        self.storage =  storage
+        self.storage = storage
         self.profiles = profiles
         self.conf = None
 
@@ -37,3 +37,6 @@ class LXDEntity(Entity):
 
     def onResume(self):
         self.state = State.RUNNING
+
+    def __str__(self):
+        return "Name : {0} UUID: {1}".format(self.name, self.uuid)

@@ -11,7 +11,7 @@ import random
 import time
 import re
 from pylxd import Client
-
+from pylxd.exceptions import LXDAPIException
 class LXD(RuntimePlugin):
 
     def __init__(self, name, version, agent, plugin_uuid):
@@ -55,22 +55,24 @@ class LXD(RuntimePlugin):
         return self.uuid
 
     def stopRuntime(self):
-        self.agent.logger.info('stopRuntime()', ' LXD Plugin - Destroying running domains')
-        for k in list(self.current_entities.keys()):
+        self.agent.logger.info('stopRuntime()', 'LXD Plugin - Destroying %d running domains' % len(self.current_entities))
+        keys = list(self.current_entities.keys())
+        for k in keys:
+            self.agent.logger.info('stopRuntime()', 'Stopping %s' % k)
             entity = self.current_entities.get(k)
             if entity.getState() == State.PAUSED:
                 self.resumeEntity(k)
                 self.stopEntity(k)
                 self.cleanEntity(k)
                 self.undefineEntity(k)
-            if entity.getState() == State.RUNNING:
+            elif entity.getState() == State.RUNNING:
                 self.stopEntity(k)
                 self.cleanEntity(k)
                 self.undefineEntity(k)
-            if entity.getState() == State.CONFIGURED:
+            elif entity.getState() == State.CONFIGURED:
                 self.cleanEntity(k)
                 self.undefineEntity(k)
-            if entity.getState() == State.DEFINED:
+            elif entity.getState() == State.DEFINED:
                 self.undefineEntity(k)
 
         self.conn = None
@@ -154,24 +156,28 @@ class LXD(RuntimePlugin):
             self.agent.getOSPlugin().executeCommand(wget_cmd, True)
 
             image_data = self.agent.getOSPlugin().readBinaryFile("%s/%s/%s" % (self.BASE_DIR, self.IMAGE_DIR, image_name))
+            try:
+                img = self.conn.images.create(image_data, public=True, wait=True)
+                img.add_alias(entity_uuid, description=entity.name)
 
-            img = self.conn.images.create(image_data, public=True, wait=True)
-            img.add_alias(entity_uuid, description=entity.name)
-
-
-            '''
+                '''
                 Should explore how to setup correctly the networking, seems that you can't decide the interface you 
                 want to attach to the container
                 Below there is a try using a profile customized for network
-            '''
-            custom_profile_for_network = self.conn.profiles.create(entity_uuid)
+                '''
+                custom_profile_for_network = self.conn.profiles.create(entity_uuid)
 
-            #WAN=$(awk '$2 == 00000000 { print $1 }' /proc/net/route)
-            ## eno1
+                #WAN=$(awk '$2 == 00000000 { print $1 }' /proc/net/route)
+                ## eno1
 
-            dev = self.__generate_custom_profile_devices_configuration(entity)
-            custom_profile_for_network.devices = dev
-            custom_profile_for_network.save()
+                dev = self.__generate_custom_profile_devices_configuration(entity)
+                custom_profile_for_network.devices = dev
+                custom_profile_for_network.save()
+
+            except LXDAPIException as e:
+                self.agent.logger.error('configureEntity()', 'Error {0}'.format(e))
+                pass
+
             if entity.profiles is None:
                 entity.profiles = list()
 
@@ -208,13 +214,15 @@ class LXD(RuntimePlugin):
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
 
+            self.agent.logger.info('cleanEntity()', '{0}'.format(entity))
             c = self.conn.containers.get(entity.name)
             c.delete()
 
             img = self.conn.images.get_by_alias(entity_uuid)
             img.delete()
 
-            time.sleep(2)
+
+            time.sleep(5)
             profile = self.conn.profiles.get(entity_uuid)
             profile.delete()
 

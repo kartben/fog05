@@ -8,6 +8,7 @@ import json
 import time
 import logging
 import signal
+import traceback
 
 
 class FosAgent(Agent):
@@ -501,13 +502,17 @@ class FosAgent(Agent):
         for k in keys:
             try:
                 self.__rtPlugins.get(k).stopRuntime()
-            except Exception:
+            except Exception as e:
+                self.logger.error('__exit_gracefully()', '{0}'.format(e))
+                traceback.print_exc()
                 pass
         keys = list(self.__nwPlugins.keys())
         for k in keys:
             try:
                 self.__nwPlugins.get(k).stopNetwork()
             except Exception:
+                self.logger.error('__exit_gracefully()', '{0}'.format(e))
+                traceback.print_exc()
                 pass
 
         self.dstore.close()
