@@ -320,37 +320,85 @@ class FOSCli(object):
         else:
             print('You should specify plugin path!!')
 
-    def node(self,node_list, uuid, plugin_action, action, manifest, plugin_uuid):
+    def node(self, node_list, node_uuid, plugin_action, action, manifest, plugin_uuid, info):
         #print(node_list,uuid,plugin_action,action,manifest,plugin_uuid)
         if node_list:
             uri = str('afos://<sys-id>/*/')
             #print(uri)
             nodes = self.store.actual.resolveAll(uri)
-            print('+-------------------------------------------------------+')
+            if len(nodes)>0:
+                print('+-------------------------------------------------------+')
 
-            for node in nodes:
-                node_info = json.loads(node[1])
-                print('| UUID : %s \t\t|' % node_info.get('uuid'))
-                print('| Name: %s \t\t|' % node_info.get('name'))
-            print('+-------------------------------------------------------+')
-            return
-        if uuid is not None and plugin_action is False:
-            uri = str('afos://<sys-id>/%s/' % uuid)
+                for node in nodes:
+                    node_info = json.loads(node[1])
+                    print('| Name: {0} \t| UUID: {1}\t '.format(node_info.get('name'), node_info.get('uuid')))
+                    print('|-------------------------------------------------------')
+                print('+-------------------------------------------------------+')
+            else:
+                print('No node found!!')
+        if node_uuid is not None and plugin_action is False:
+            uri = str('afos://<sys-id>/%s/' % node_uuid)
             # value and version
             #print('Uri: %s' % uri)
             node = self.store.actual.get(uri)
             if node is not None and len(node) > 0:
                 node = json.loads(node)
                 print('+-------------------------------------------------------+')
-                print('| UUID : %s \t\t|' % node.get('uuid'))
-                print('| Name: %s \t\t|' % node.get('name'))
+                print('| Name: {0} \t| UUID: {1}\t '.format(node.get('name'), node.get('uuid')))
                 print('+-------------------------------------------------------+')
+                if info is True:
+                    print('+------------------------CPU----------------------------+')
+                    cpus = node.get('cpu')
+                    print('| Total CPU %d' % len(cpus))
+                    for cpu in cpus:
+                        print('+-------------------------------------------------------+')
+                        print('| ARCH: %s' % cpu.get('arch'))
+                        print('| Model: %s' % cpu.get('model'))
+                        print('| Frequency: %s' % cpu.get('frequency'))
+                    print('+-------------------------------------------------------+')
+                    print('| RAM: %d' % node.get('ram').get('size'))
+                    print('+----------------------NETWORKS-------------------------+')
+                    nws = node.get("network")
+                    for nw in nws:
+                        print('| ################################################### ')
+                        intf_conf = nw.get('inft_configuration')
+                        print("| ## Interface: %s ##" % nw.get('intf_name'))
+                        print("| ### MAC: %s " % nw.get('intf_mac_address'))
+                        print("| ### type: %s " % nw.get('type'))
+                        print("| ### Default gateway: %s " % nw.get('default_gw'))
+                        print("| ##### Interface Configuration #####")
+                        print("| ###### Speed: %s " % intf_conf.get('intf_speed'))
+                        print("| ###### IPV4: %s Netmask: %s Gateway: %s" % (intf_conf.get('ipv4_address'),
+                                                                             intf_conf.get('ipv4_netmask'),
+                                                                             intf_conf.get('ipv4_gateway')))
+                        print("| ###### IPV6: %s Netmask: %s" %
+                              (intf_conf.get('ipv6_address'), intf_conf.get('ipv6_netmask')))
+                    print('| ################################################### ')
+                    accs = node.get('accelerator')
+                    if accs is not None:
+                        print('+----------------------ACCELERATORS-------------------------+')
+                        for acc in accs:
+                            print('| ################################################### ')
+                            print("| ## Name: %s ##" % acc.get('name'))
+                            print("| ## HW Address: %s ##" % acc.get('hw_address'))
+                            print("| ## Supported libraries: %s ##"
+                                  % ' '.join(acc.get('supported_library')))
+                        print('| ################################################### ')
+                    ios = node.get('io')
+                    if ios is not None:
+                        print('+----------------------I\O-----------------------------+')
+                        for io in ios:
+                            print('| ################################################### ')
+                            print("| ## Name: %s ##" % io.get('io_type'))
+                            print("| ## Type: %s ##" % io.get('hw_address'))
+                            print("| ## File: %s ##" % io.get('io_file'))
+                        print('| ################################################### ')
+                    print('+-------------------------------------------------------+')
             else:
                 print('Node not found!!')
-            return
-        if uuid is not None and plugin_action is True:
+        if node_uuid is not None and plugin_action is True:
             if action == 'add':
-                print('Adding plugin from %s to %s' % (manifest, uuid))
+                print('Adding plugin from %s to %s' % (manifest, node_uuid))
                 manifest = json.loads(self.__read_file(manifest))
                 manifest.update({'status':'add'})
                 plugins = {"plugins":[manifest]}
@@ -358,10 +406,25 @@ class FOSCli(object):
                 # plugins = json.loads(self.store.actual.get(uri))
                 # plugins.get('plugins').append(manifest)
                 # print(plugins)
-                uri = str('dfos://<sys-id>/%s/plugins' % uuid)
+                uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
                 self.store.desidered.dput(uri, json.dumps(plugins))
             if action == 'remove':
-                print('Removing plugin %s from %s not yet...' % (plugin_uuid, uuid))
+                print('Removing plugin %s from %s not yet...' % (plugin_uuid, node_uuid))
+            if action == '':
+                uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+                plugins = self.store.actual.get(uri)
+                if plugins is not None:
+                    plugins = json.loads(plugins).get('plugins')
+                    print('+-----------------------PLUGINS-------------------------+')
+                    for p in plugins:
+                        print('+-------------------------------------------------------+')
+                        print('| Name: {0} \t| UUID: {1}\t | Type: {2}'
+                              .format(p.get('name'), p.get('uuid'), p.get('type')))
+                    print('+-------------------------------------------------------+')
+                else:
+                    print("No node or plugins found")
+
+        return
 
 
     def network(self,nw_list, node_uuid, add, remove, manifest, net_uuid):
@@ -372,15 +435,15 @@ class FOSCli(object):
             for net in networks:
                 net_uri = net[0]
                 net_info = json.loads(net[1])
-                print('| UUID : %s \t\t|' % net_info.get('uuid'))
-                print('| Name: %s \t\t|' % net_info.get('name'))
-                print('| Virtual Device: %s \t\t|' % net_info.get('virtual_device'))
-                print('| DHCP: %s \t\t|' % net_info.get('has_dhcp'))
-                print('| IP Range: %s \t\t|' % net_info.get('ip_range'))
-                print('| Gateway: %s \t\t|' % net_info.get('gateway'))
-                print('| VxLAN ID: %s \t\t|' % net_info.get('vxlan_id'))
-                print('| Multicast VxLAN Address: %s \t\t|' % net_info.get('multicast_address'))
-                print('| Node: %s \t\t|' % net_uri[3])
+                print('| UUID : %s \t\t' % net_info.get('uuid'))
+                print('| Name: %s \t\t' % net_info.get('name'))
+                print('| Virtual Device: %s \t\t' % net_info.get('virtual_device'))
+                print('| DHCP: %s \t\t' % net_info.get('has_dhcp'))
+                print('| IP Range: %s \t\t' % net_info.get('ip_range'))
+                print('| Gateway: %s \t\t' % net_info.get('gateway'))
+                print('| VxLAN ID: %s \t\t' % net_info.get('vxlan_id'))
+                print('| Multicast VxLAN Address: %s \t\t' % net_info.get('multicast_address'))
+                print('| Node: %s \t\t' % net_uri[3])
             return
         if node_uuid is not None:
             if add and manifest is not None:
@@ -519,6 +582,7 @@ class FOSCli(object):
 
         parser_node.add_argument('-p','-plugin', action='store_true', default=False, help='enable action on plugin',
                                  dest='plugin')
+        parser_node.add_argument('-i', '--info', action='store_true', default=False, help='detailed info', dest='info')
 
         node_plugin_grp = parser_node.add_mutually_exclusive_group(required=False)
         node_plugin_grp.add_argument('-a', '--add', action='store_true', default=False, help='add plugin')
@@ -596,7 +660,7 @@ class FOSCli(object):
                 if kwargs['add'] is True: action = 'add'
                 elif kwargs['remove'] is True: action = 'remove'
                 self.node(kwargs['list'], kwargs['uuid'], kwargs['plugin'], action, kwargs['manifest'],
-                          kwargs['puuid'])
+                          kwargs['puuid'],kwargs['info'])
                 self.exit(0)
             elif kwargs['cmd'] == 'network':
                 self.network(kwargs['list'],kwargs['uuid'], kwargs['add'], kwargs['remove'], kwargs['manifest'],
