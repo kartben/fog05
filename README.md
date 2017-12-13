@@ -89,6 +89,10 @@ Adding a plugin to a node:
 
     $ fos node -u <node uuid> -a -p -m <path to plugin manifest>
 
+Information about a node:
+
+    $ fos node -u <node uuid> [-i detailed information | -p information about plugins]
+
 Add a network to a node
 
     $ fos network -u <node uuid> -a -m <network manifest>
