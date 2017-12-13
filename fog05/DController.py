@@ -300,18 +300,21 @@ class DController (Controller, Observer):
             retries += 1
 
         # now we need to consolidate values
-        # self.logger.debug('DController',"Resolved Values = {0}".format(values))
+        #self.logger.debug('DController', 'Resolved Values = {0}'.format(values))
+
+        values = list(set(values))
+
         filtered_values = []
-        for (k,va,ve) in values:
-            key = k
-            value = va
-            version = ve
-            for (a,b,c) in values:
-                if a == key and version < c:
-                    key = a
-                    value = b
-                    version = c
-            filtered_values.append((key, value, version))
+
+        for (k, va, ve) in values:
+            x = [x for x in values if x[0] == k]
+            if len(x) > 1:
+                for y in x:
+                    print(y[0], y[2])
+                    if ve > y[2]:
+                        filtered_values.append((k, va, ve))
+            else:
+                filtered_values.append((k, va, ve))
 
         # self.logger.debug('DController',"Filtered Values = {0}".format(filtered_values))
         return filtered_values
