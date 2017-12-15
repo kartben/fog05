@@ -274,7 +274,7 @@ class DController (Controller, Observer):
         self.missmv_writer.write(m)
 
         peers = copy.deepcopy(self.__store.discovered_stores)
-        maxRetries = max(len(peers),  3)
+        maxRetries = max(len(peers),  10)
         retries = 0
         values = []
         while (peers != [] and retries < maxRetries):
@@ -284,12 +284,12 @@ class DController (Controller, Observer):
             for s in samples:
                 d = s[0]
                 i = s[1]
-                # self.logger.debug('DController',"Is valid data: {0}".format(i.valid_data))
-                # self.logger.debug('DController',"Key: {0}".format(d.key))
+                self.logger.debug('DController',"Is valid data: {0}".format(i.valid_data))
+                self.logger.debug('DController',"Key: {0}".format(d.key))
                 if i.valid_data:
-                    # self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    # self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
-                    # self.logger.debug('DController','>>>>>>>>> VALUE {0} KVAVE {1}'.format(values, d.kvave))
+                    self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
+                    self.logger.debug('DController','>>>>>>>>> VALUE {0} KVAVE {1}'.format(values, d.kvave))
                     # Only remove if this was an answer for this key!
                     if d.source_sid in peers and uri == d.key:
                         peers.remove(d.source_sid)
@@ -300,24 +300,25 @@ class DController (Controller, Observer):
             retries += 1
 
         # now we need to consolidate values
-        #self.logger.debug('DController', 'Resolved Values = {0}'.format(values))
+        self.logger.debug('DController', 'Resolved Values = {0}'.format(values))
 
-        values = list(set(values))
+        #values = list(set(values))
 
-        filtered_values = []
+        filtered_values = {}
+
+
 
         for (k, va, ve) in values:
-            x = [x for x in values if x[0] == k]
-            if len(x) > 1:
-                for y in x:
-                    print(y[0], y[2])
-                    if ve > y[2]:
-                        filtered_values.append((k, va, ve))
+            if k not in filtered_values:
+                filtered_values.update({k: (k ,va ,ve)})
             else:
-                filtered_values.append((k, va, ve))
+                if ve > filtered_values.get(k)[2]:
+                    filtered_values.update({k: (k, va, ve)})
 
-        # self.logger.debug('DController',"Filtered Values = {0}".format(filtered_values))
-        return filtered_values
+
+
+        self.logger.debug('DController',"Filtered Values = {0}".format(filtered_values))
+        return list(filtered_values.values())
 
     def resolve(self, uri, timeout = None):
         self.logger.debug('DController','>>>> Handling {0} Miss for store {1}'.format(uri, self.__store.store_id))

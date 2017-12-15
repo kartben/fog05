@@ -14,7 +14,7 @@ class DLogger:
             self.debug_flag = debug_flag
 
             log_format = '[%(asctime)s] - [%(levelname)s] > %(message)s'
-            log_level = logging.INFO
+            log_level = logging.DEBUG
 
             self.logger = logging.getLogger(__name__ + '.fog05.agent')
 
