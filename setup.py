@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='fog05',
-    version='0.1.0',
+    version='0.1.1',
     author='ATO',
     packages=['fog05', 'fog05/interfaces'],
     install_requires=['networkx', 'jsonschema', 'python-daemon'],
