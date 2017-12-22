@@ -214,18 +214,11 @@ class FOSCli(object):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (node_uuid, handler, entity_uuid))
         self.store.desidered.dput(uri)
-
-        tries = 0
-
         while True:
             time.sleep(1)
             uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
             entity_info = json.loads(self.store.actual.get(uri))
-            # print(uri)
-            # print(entity_info)
-            # print(self.store.actual.get_version(uri))
-            tries = tries + 1
-            if tries > 5 or entity_info is not None and entity_info.get('status') == 'configured':
+            if entity_info is not None and entity_info.get('status') == 'configured':
                 break
 
     def __send_clean_entity(self, node_uuid, entity_uuid):
@@ -250,11 +243,7 @@ class FOSCli(object):
             time.sleep(1)
             uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
             entity_info = json.loads(self.store.actual.get(uri))
-            # print(uri)
-            # print(entity_info)
-            # print(self.store.actual.get_version(uri))
-            tries = tries + 1
-            if tries > 5 or entity_info is not None and entity_info.get('status') == 'run':
+            if entity_info is not None and entity_info.get('status') == 'run':
                 break
 
     def __send_stop_entity(self, node_uuid, entity_uuid):
