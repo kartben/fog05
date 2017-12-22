@@ -166,7 +166,7 @@ class KVMLibvirt(RuntimePlugin):
                     #print(br_name)
                     n.update({'br_name': br_name})
                 if n.get('intf_name') is None:
-                    n.update({'intf_name': entity.name+str(i)})
+                    n.update({'intf_name': 'veth{0}'.format(i)})
 
             vm_xml = self.__generate_dom_xml(entity)
             image_name = entity.image.split('/')[-1]
@@ -438,14 +438,41 @@ class KVMLibvirt(RuntimePlugin):
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
             vm_xml = self.__generate_dom_xml(entity)
 
-            try:
-                self.conn.defineXML(vm_xml)
-            except libvirt.libvirtError as err:
-                self.conn = libvirt.open("qemu:///system")
-                self.conn.defineXML(vm_xml)
-
-            self.agent.getOSPlugin().executeCommand(qemu_cmd)
+            self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
             self.agent.getOSPlugin().createFile(entity.cdrom)
+            self.agent.getOSPlugin().createFile(str("/opt/fos/kvm/logs/%s_log.log" % entity_uuid))
+
+            conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
+                                                                        'create_config_drive.sh'), entity.name,
+                                                           entity_uuid))
+            rm_temp_cmd = str("rm")
+            if entity.user_file is not None and entity.user_file != '':
+                data_filename = str("userdata_%s" % entity_uuid)
+                self.agent.getOSPlugin().storeFile(entity.user_file, self.BASE_DIR, data_filename)
+                data_filename = str("/%s/%s" % (self.BASE_DIR, data_filename))
+                conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
+                # rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
+            if entity.ssh_key is not None and entity.ssh_key != '':
+                key_filename = str("key_%s.pub" % entity_uuid)
+                self.agent.getOSPlugin().storeFile(entity.ssh_key, self.BASE_DIR, key_filename)
+                key_filename = str("%s/%s" % (self.BASE_DIR, key_filename))
+                conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
+                # rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
+
+            conf_cmd = str(conf_cmd + " %s" % entity.cdrom)
+
+            self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
+            #self.agent.getOSPlugin().createFile(entity.cdrom)
+            self.agent.getOSPlugin().createFile(str("/opt/fos/kvm/logs/%s_log.log" % entity_uuid))
+            self.agent.getOSPlugin().executeCommand(conf_cmd, True)
+
+
+            # try:
+            #     self.conn.defineXML(vm_xml)
+            # except libvirt.libvirtError as err:
+            #     self.conn = libvirt.open("qemu:///system")
+            #     self.conn.defineXML(vm_xml)
+
             self.current_entities.update({entity_uuid: entity})
 
             entity_info.update({"status": "landing"})
@@ -478,8 +505,7 @@ class KVMLibvirt(RuntimePlugin):
                 time.sleep(1)
                 uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (dst, kvm.get('uuid'), entity_uuid))
                 vm_info = json.loads(self.agent.astore.get(uri)) # TODO: solve this ASAP
-                if vm_info is not None:
-                    if vm_info.get("status") == "landing":
+                if vm_info is not None and vm_info.get("status") == "landing":
                         flag = True
 
             entity.state = State.TAKING_OFF
@@ -519,7 +545,9 @@ class KVMLibvirt(RuntimePlugin):
             if dest_conn is None:
                 self.agent.logger.error('beforeMigrateEntityActions()', 'KVM Plugin - Before Migration Source: Error on libvirt connection')
                 exit(1)
-            new_dom = dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, entity.name, None, 0)
+            new_dom = dom.migrate(dest_conn,
+                                  libvirt.VIR_MIGRATE_LIVE and libvirt.VIR_MIGRATE_PERSIST_DEST and libvirt.VIR_MIGRATE_NON_SHARED_DISK,
+                                                                        entity.name, None, 0)
             if new_dom is None:
                 self.agent.logger.error('beforeMigrateEntityActions()', 'KVM Plugin - Before Migration Source: Migration failed')
                 exit(1)
