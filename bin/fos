@@ -65,7 +65,7 @@ class FOSCli(object):
         manifest.update({'status':'add'})
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
         all_plugins = json.loads(self.store.actual.get(uri)).get('plugins')
-        print(all_plugins)
+        #print(all_plugins)
         nws = [x for x in all_plugins if x.get('type') == 'network']
         if len(nws) == 0:
             print('No network plugin loaded on node, aborting')
@@ -73,7 +73,7 @@ class FOSCli(object):
         brctl = nws[0]  # will use the first plugin
 
         uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
-        print(uri)
+        #print(uri)
 
         json_data = json.dumps(manifest)
         uri = str('dfos://<sys-id>/%s/network/%s/networks/%s' %

@@ -14,7 +14,7 @@ class DLogger:
             self.debug_flag = debug_flag
 
             log_format = '[%(asctime)s] - [%(levelname)s] > %(message)s'
-            log_level = logging.DEBUG
+            log_level = logging.INFO
 
             self.logger = logging.getLogger(__name__ + '.fog05.agent')
 
@@ -25,7 +25,6 @@ class DLogger:
                 handler = logging.FileHandler(log_filename)
             else:
                 handler = logging.StreamHandler(sys.stdout)
-
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 

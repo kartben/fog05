@@ -118,6 +118,9 @@ class brctl(NetworkPlugin):
             self.agent.getOSPlugin().executeCommand(dhcp_cmd)
 
         self.netmap.update({net_uuid: info})
+        self.__update_actual_store(net_uuid, info)
+
+        self.agent.logger.info('createVirtualNetwork()', 'Created {0} Network'.format(net_uuid))
 
         return network_name, net_uuid
 
@@ -196,6 +199,7 @@ class brctl(NetworkPlugin):
         self.agent.getOSPlugin().removeFile(dnsmasq_file)
 
         self.netmap.pop(network_uuid)
+        self.__pop_actual_store(network_uuid)
 
         return True
 
@@ -209,6 +213,18 @@ class brctl(NetworkPlugin):
         if network_uuid is None:
             return self.netmap
         return self.netmap.get(network_uuid)
+
+    def __pop_actual_store(self, entity_uuid):
+        #e = uri
+        uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid))
+        self.agent.astore.remove(uri)
+        #uri = str("%s/%s/%s" % (self.agent.dhome, self.HOME, e))
+        #self.agent.dstore.remove(uri)
+
+    def __update_actual_store(self, uri, value):
+        uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, uri))
+        value = json.dumps(value)
+        self.agent.astore.put(uri, value)
 
     def __cird2block(self, cird):
         '''
@@ -231,18 +247,23 @@ class brctl(NetworkPlugin):
     def __react_to_cache_networks(self, key, value, v):
         self.agent.logger.info('__react_to_cache_networks()',
                                ' BRCTL Plugin - React to to URI: %s Value: %s Version: %s' % (key, value, v))
-        uuid = key.split('/')[-1]
-        value = json.loads(value)
-        action = value.get('status')
-        react_func = self.__react(action)
-        if react_func is not None: # and value is None:
-            react_func(**value)
-        #elif react_func is not None:
-        #    value.update({'uuid': uuid})
-        #    if action == 'define':
-        #        react_func(**value)
-        #    else:
-        #        react_func(value)
+        if value is None and v is None:
+            self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+            entity_uuid = key.split('/')[-1]
+            self.deleteVirtualNetwork(entity_uuid)
+        else:
+            uuid = key.split('/')[-1]
+            value = json.loads(value)
+            action = value.get('status')
+            react_func = self.__react(action)
+            if react_func is not None: # and value is None:
+                react_func(**value)
+            #elif react_func is not None:
+            #    value.update({'uuid': uuid})
+            #    if action == 'define':
+            #        react_func(**value)
+            #    else:
+            #        react_func(value)
 
     def __parse_manifest_for_add(self, **kwargs):
         net_uuid = kwargs.get('uuid')
