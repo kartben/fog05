@@ -171,7 +171,7 @@ class KVMLibvirt(RuntimePlugin):
             vm_xml = self.__generate_dom_xml(entity)
             image_name = entity.image.split('/')[-1]
 
-            wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
+            #wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
 
             conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
                                                                  'create_config_drive.sh'), entity.name, entity_uuid))
@@ -198,7 +198,8 @@ class KVMLibvirt(RuntimePlugin):
 
             entity.image = image_name
 
-            self.agent.getOSPlugin().executeCommand(wget_cmd, True)
+            #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
+            self.agent.getOSPlugin().downloadFile(entity.image, [self.BASE_DIR, self.IMAGE_DIR, image_name])
             self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
             self.agent.getOSPlugin().executeCommand(conf_cmd, True)
             self.agent.getOSPlugin().executeCommand(dd_cmd, True)

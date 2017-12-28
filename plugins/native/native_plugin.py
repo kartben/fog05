@@ -122,12 +122,13 @@ class Native(RuntimePlugin):
             if entity.source is not None:
                 zip_name = entity.source.split('/')[-1]
                 self.agent.getOSPlugin().createDir(str("%s/%s/%s") % (self.BASE_DIR, self.STORE_DIR, entity.name))
-                wget_cmd = str('wget %s -O %s/%s/%s/%s' %
-                               (entity.source, self.BASE_DIR, self.STORE_DIR, entity.name, zip_name))
+                #wget_cmd = str('wget %s -O %s/%s/%s/%s' %
+                #               (entity.source, self.BASE_DIR, self.STORE_DIR, entity.name, zip_name))
                 unzip_cmd = str("unzip %s/%s/%s/%s -d %s/%s/%s/" %
                                 (self.BASE_DIR, self.STORE_DIR, entity.name, zip_name,
                                  self.BASE_DIR, self.STORE_DIR, entity.name))
-                self.agent.getOSPlugin().executeCommand(wget_cmd, True)
+                self.agent.getOSPlugin().downloadFile(entity.image, [self.BASE_DIR, self.IMAGE_DIR, zip_name])
+                #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
                 self.agent.getOSPlugin().executeCommand(unzip_cmd, True)
 
             entity.onConfigured()

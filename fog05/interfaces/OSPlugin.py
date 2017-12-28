@@ -83,6 +83,9 @@ class OSPlugin(Plugin):
     def readBinaryFile(self, file_path):
         raise NotImplemented
 
+    def downloadFile(self, url,file_path):
+        raise NotImplemented
+
     def getCPUID(self):
         """
         Return the underlying hw cpuid

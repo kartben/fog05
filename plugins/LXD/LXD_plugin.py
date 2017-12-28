@@ -151,9 +151,11 @@ class LXD(RuntimePlugin):
                 - Put rootfs and images inside a custom path
             '''
             image_name = entity.image.split('/')[-1]
-            wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
+            #wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
 
-            self.agent.getOSPlugin().executeCommand(wget_cmd, True)
+            self.agent.getOSPlugin().downloadFile(entity.image, [self.BASE_DIR, self.IMAGE_DIR, image_name])
+
+            #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
 
             image_data = self.agent.getOSPlugin().readBinaryFile("%s/%s/%s" % (self.BASE_DIR, self.IMAGE_DIR, image_name))
             try:
