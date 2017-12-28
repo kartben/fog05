@@ -1,6 +1,6 @@
-Linux os plugin
+Windows os plugin
 
-This plugin allow fog05 to run on top on linux
+This plugin allow fog05 to run on top of windows
 
 supported operation:
 - execute command
@@ -12,8 +12,7 @@ supported operation:
 - get hostname
 - send signal
 - check if a pid exists
-- install packages
-- remove packages
+
 
 todo:
 
@@ -22,6 +21,8 @@ todo:
 - get pid from process name
 - get monitoring information about network
 - get gps information about node
+- install packages
+- remove packages
 
 ---
 

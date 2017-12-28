@@ -1,7 +1,7 @@
-#!/bin/bash
+
 
 # PATH TO YOUR HOSTS FILE
-hostsFile=/etc/hosts
+hostsFile=C:\Windows\System32\drivers\etc\hosts
 
 # IP FOR HOSTNAME
 #IP=$2
