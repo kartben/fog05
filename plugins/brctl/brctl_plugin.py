@@ -18,18 +18,19 @@ class brctl(NetworkPlugin):
         self.brmap = {}
         self.netmap = {}
         self.agent.logger.info('__init__()', ' Hello from bridge-utils Plugin')
-        self.BASE_DIR = "/opt/fos/brctl"
+        self.BASE_DIR = os.path.join(self.agent.base_path, 'brctl')
+        #self.BASE_DIR = "/opt/fos/brctl"
         self.DHCP_DIR = "dhcp"
         self.HOME = str("network/%s" % self.uuid)
         file_dir = os.path.dirname(__file__)
         self.DIR = os.path.abspath(file_dir)
 
         if self.agent.getOSPlugin().dirExists(self.BASE_DIR):
-            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR)):
-                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR))
+            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.DHCP_DIR)):
+                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.DHCP_DIR))
         else:
             self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
-            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DHCP_DIR))
+            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.DHCP_DIR))
 
 
         '''
@@ -60,7 +61,7 @@ class brctl(NetworkPlugin):
         return name, intf_uuid
 
     def creareVirtualBridge(self, name, uuid):
-        cmd = str('sudo brctl addbr %s', name)
+        cmd = str('sudo brctl addbr %s' % name)
         self.agent.getOSPlugin().executeCommand(cmd)
         br_uuid = uuid
         self.brmap.update({br_uuid, name})
@@ -87,7 +88,7 @@ class brctl(NetworkPlugin):
         br_name = str("br-%s" % net_uuid.split('-')[0])
 
         vxlan_file, vxlan_dev, vxlan_id, vxlan_mcast = self.__generate_vxlan_script(net_uuid, manifest)
-        self.agent.getOSPlugin().executeCommand(str("%s/%s" % (self.BASE_DIR, vxlan_file)), True)
+        self.agent.getOSPlugin().executeCommand(os.path.join(self.BASE_DIR, vxlan_file), True)
 
         info.update({'virtual_device': br_name})
         info.update({'vxlan_dev': vxlan_dev})
@@ -103,16 +104,17 @@ class brctl(NetworkPlugin):
             address = self.__cird2block(ip_range)
 
             ifcmd = str('sudo ifconfig %s %s netmask %s' % (br_name, address[0], address[3]))
-            #dhcpq_cmd = str('sudo dnsmasq -d  --interface=%s --bind-interfaces  --dhcp-range=%s,'
+            # TODO this should done by the OSPlugin
+            # dhcpq_cmd = str('sudo dnsmasq -d  --interface=%s --bind-interfaces  --dhcp-range=%s,'
             #                '%s --listen-address %s > %s/%s/%s.out 2>&1 & echo $! > %s/%s/%s.pid' %
             #                (br_name, address[1], address[2], address[0], self.BASE_DIR, self.DHCP_DIR, br_name,
             #                 self.BASE_DIR,
             #                 self.DHCP_DIR, br_name))
             file_name = str("%s_dnsmasq.pid" % br_name)
-            pid_file_path = str("%s/%s/%s" % (self.BASE_DIR, self.DHCP_DIR, file_name))
+            pid_file_path = os.path.join(self.BASE_DIR, self.DHCP_DIR, file_name)
 
-            dhcp_cmd = self.__generate_dnsmaq_script(br_name, address[1], address[2], address[0],pid_file_path)
-            dhcp_cmd = str("%s/%s/%s" % (self.BASE_DIR, self.DHCP_DIR, dhcp_cmd))
+            dhcp_cmd = self.__generate_dnsmaq_script(br_name, address[1], address[2], address[0], pid_file_path)
+            dhcp_cmd = os.path.join(self.BASE_DIR, self.DHCP_DIR, dhcp_cmd)
 
             self.agent.getOSPlugin().executeCommand(ifcmd, True)
             self.agent.getOSPlugin().executeCommand(dhcp_cmd)
@@ -188,16 +190,15 @@ class brctl(NetworkPlugin):
             raise NetworkHasPendingInterfacesException("%s has pending interfaces" % network_uuid)
 
         shutdown_file = self.__generate_vxlan_shutdown_script(network_uuid)
-        shutdown_file = str("%s/%s" % (self.BASE_DIR, shutdown_file))
-        start_file = str("%s/%s" % (self.BASE_DIR, str("%s.sh" % network_uuid.split('-')[0])))
-        dnsmasq_file = str("%s/%s/%s" % (self.BASE_DIR, self.DHCP_DIR,
-                                         str("br-%s_dnsmasq.sh" % network_uuid.split('-')[0])))
-        self.agent.getOSPlugin().executeCommand(shutdown_file)
+        shutdown_file = os.path.join(self.BASE_DIR, shutdown_file)
+        start_file = os.path.join(self.BASE_DIR, str("%s.sh" % network_uuid.split('-')[0]))
+        dnsmasq_file = os.path.join(self.BASE_DIR, self.DHCP_DIR,
+                                         str("br-%s_dnsmasq.sh" % network_uuid.split('-')[0]))
 
+        self.agent.getOSPlugin().executeCommand(shutdown_file)
         self.agent.getOSPlugin().removeFile(shutdown_file)
         self.agent.getOSPlugin().removeFile(start_file)
         self.agent.getOSPlugin().removeFile(dnsmasq_file)
-
         self.netmap.pop(network_uuid)
         self.__pop_actual_store(network_uuid)
 
@@ -291,13 +292,13 @@ class brctl(NetworkPlugin):
         br_name = str("br-%s" % net_uuid.split('-')[0])
         vxlan_name = str("vxl-%s" % net_uuid.split('-')[0])
         file_name = str("%s_dnsmasq.pid" % br_name)
-        pid_file_path = str("%s/%s/%s" % (self.BASE_DIR, self.DHCP_DIR, file_name))
+        pid_file_path = os.path.join(self.BASE_DIR, self.DHCP_DIR, file_name)
 
         net_sh = Environment().from_string(template_sh)
         net_sh = net_sh.render(bridge=br_name, vxlan_intf_name=vxlan_name, dnsmasq_pid_file=pid_file_path)
         file_name = str("%s_stop.sh" % br_name)
         self.agent.getOSPlugin().storeFile(net_sh, self.BASE_DIR, file_name)
-        chmod_cmd = str("chmod +x %s/%s" % (self.BASE_DIR, file_name))
+        chmod_cmd = str("chmod +x %s" % os.path.join(self.BASE_DIR, file_name))
         self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
 
         return file_name
@@ -308,9 +309,9 @@ class brctl(NetworkPlugin):
         dnsmasq_sh = dnsmasq_sh.render(bridge_name=br_name, dhcp_start=start_addr,
                                 dhcp_end=end_addr, listen_addr=listen_addr, pid_path=pid_file)
         file_name = str("%s_dnsmasq.sh" % br_name)
-        path = str("%s/%s" % (self.BASE_DIR, self.DHCP_DIR))
+        path = os.path.join(self.BASE_DIR, self.DHCP_DIR)
         self.agent.getOSPlugin().storeFile(dnsmasq_sh, path, file_name)
-        chmod_cmd = str("chmod +x %s/%s" % (path, file_name))
+        chmod_cmd = str("chmod +x %s" % os.path.join(path, file_name))
         self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
 
         return file_name
@@ -339,7 +340,7 @@ class brctl(NetworkPlugin):
         net_sh = net_sh.render(bridge_name=br_name, vxlan_intf_name=vxlan_name,
                                group_id=vxlan_id, mcast_group_address=mcast_addr)
         self.agent.getOSPlugin().storeFile(net_sh, self.BASE_DIR, str("%s.sh" % net_uuid.split('-')[0]))
-        chmod_cmd = str("chmod +x %s/%s" % (self.BASE_DIR, str("%s.sh" % net_uuid.split('-')[0])))
+        chmod_cmd = str("chmod +x %s" % os.path.join(self.BASE_DIR, str("%s.sh" % net_uuid.split('-')[0])))
+        # TODO chmod should be also executed by OSPlugin
         self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
-
         return str("%s.sh" % net_uuid.split('-')[0]), vxlan_name, vxlan_id, mcast_addr

@@ -17,7 +17,7 @@ class ROS2(RuntimePlugin):
         self.name = name
         self.agent = agent
         self.agent.logger.info('__init__()', ' Hello from ROS2 Plugin')
-        self.BASE_DIR = "/opt/fos/ros2"
+        self.BASE_DIR = os.path.join(self.agent.base_path, 'ros2')
         self.NODLETS_DIR = "nodlets"
         self.LOG_DIR = "logs"
 
@@ -46,14 +46,14 @@ class ROS2(RuntimePlugin):
 
         '''check if dirs exists if not exists create'''
         if self.agent.getOSPlugin().dirExists(self.BASE_DIR):
-            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.NODLETS_DIR)):
-                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.NODLETS_DIR))
-            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR)):
-                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
+            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.NODLETS_DIR)):
+                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.NODLETS_DIR))
+            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.LOG_DIR)):
+                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
         else:
             self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
-            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.NODLETS_DIR))
-            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
+            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.NODLETS_DIR))
+            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
 
     def stopRuntime(self):
         self.agent.logger.info('stopRuntime()', ' ROS2 Plugin - Destroy running entities')
@@ -80,7 +80,8 @@ class ROS2(RuntimePlugin):
         self.agent.logger.info('defineEntity()', ' ROS2 Plugin - Define ROS2 Nodelets')
         if len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
-            out_file = str("%s/%s/native_%s.log" % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
+            out_file = str('ros2_%s.log', entity_uuid)
+            out_file = os.path.join(self.BASE_DIR, self.LOG_DIR, out_file)
             entity = ROS2Entity(entity_uuid, kwargs.get('name'), kwargs.get('command'), kwargs.get('args'),
                                 out_file, kwargs.get('url'))
         else:
@@ -133,7 +134,7 @@ class ROS2(RuntimePlugin):
 
             self.agent.getOSPlugin().createFile(entity.outfile)
             ## download the nodelet file
-            nodelet_dir = str("%s/%s/%s" % (self.BASE_DIR, self.NODLETS_DIR, entity_uuid))
+            nodelet_dir = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid)
             self.agent.getOSPlugin().createDir(nodelet_dir)
             #wget_cmd = str('wget %s -O %s/%s' % (entity.url, nodelet_dir, entity.url.split('/')[-1]))
             #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
@@ -161,12 +162,12 @@ class ROS2(RuntimePlugin):
             
             At the moment using the generated bash script for build
             '''
-            path = str("%s/%s" % (nodelet_dir, entity.url.split('/')[-1].split('.')[0]))
+            path = os.path.join(nodelet_dir, entity.url.split('/')[-1].split('.')[0])
             build_script = self.__generate_build_script(path, nodelet_dir)
             self.agent.getOSPlugin().storeFile(build_script, nodelet_dir, str("%s_build.sh" % entity_uuid))
-            chmod_cmd = str("chmod +x %s/%s" % (nodelet_dir, str("%s_build.sh" % entity_uuid)))
+            chmod_cmd = str("chmod +x %s" % os.path.join(nodelet_dir, str("%s_build.sh" % entity_uuid)))
             self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
-            build_cmd = str("%s/%s" % (nodelet_dir, str("%s_build.sh" % entity_uuid)))
+            build_cmd = os.path.join(nodelet_dir, str("%s_build.sh" % entity_uuid))
             self.agent.getOSPlugin().executeCommand(build_cmd, True)
 
             ### this is only a workaround not a real solution
@@ -225,15 +226,15 @@ class ROS2(RuntimePlugin):
         else:
 
             #cmd = str("ros2 run %s %s" % (entity.command, ' '.join(str(x) for x in entity.args)))
-            nodelet_dir = str("%s/%s/%s" % (self.BASE_DIR, self.NODLETS_DIR, entity_uuid))
-            cmd = str("%s/lib/%s/%s" % (nodelet_dir, entity.name, entity.command))
-            path = str("%s/%s/%s/%s" % (self.BASE_DIR, self.NODLETS_DIR, entity_uuid, entity.name))
+            nodelet_dir = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid)
+            cmd = os.path.join(nodelet_dir, 'lib', entity.name, entity.command)
+            path =os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid, entity.name)
             # ###################### WORKAROUND ##############################
             run_script = self.__generate_run_script(cmd, path)
             self.agent.getOSPlugin().storeFile(run_script, nodelet_dir, str("%s_run.sh" % entity_uuid))
-            chmod_cmd = str("chmod +x %s/%s" % (nodelet_dir, str("%s_run.sh" % entity_uuid)))
+            chmod_cmd = str("chmod +x %s" % os.path.join(nodelet_dir, str("%s_run.sh" % entity_uuid)))
             self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
-            run_cmd = str("%s/%s" % (nodelet_dir, str("%s_run.sh" % entity_uuid)))
+            run_cmd = os.path.join(nodelet_dir, str("%s_run.sh" % entity_uuid))
             # ################################################################
 
 
@@ -262,7 +263,8 @@ class ROS2(RuntimePlugin):
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
 
-            path = str("%s/%s/%s/%s.pid" % (self.BASE_DIR, self.NODLETS_DIR, entity_uuid, entity.name))
+            path = str('%s.pid' % entity.name)
+            path = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid, path)
             pid = int(self.agent.getOSPlugin().readFile(path))
             self.agent.getOSPlugin().sendSigKill(pid)
             '''

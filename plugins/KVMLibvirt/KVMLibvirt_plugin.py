@@ -19,7 +19,8 @@ class KVMLibvirt(RuntimePlugin):
         self.name = name
         self.agent = agent
         self.agent.logger.info('__init__()', ' Hello from KVM Plugin')
-        self.BASE_DIR = "/opt/fos/kvm"
+        self.BASE_DIR = os.path.join(self.agent.base_path, 'kvm')
+        #self.BASE_DIR = "/opt/fos/kvm"
         self.DISK_DIR = "disks"
         self.IMAGE_DIR = "images"
         self.LOG_DIR = "logs"
@@ -41,17 +42,17 @@ class KVMLibvirt(RuntimePlugin):
 
         '''check if dirs exists if not exists create'''
         if self.agent.getOSPlugin().dirExists(self.BASE_DIR):
-            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR)):
-                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR))
-            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR)):
-                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR))
-            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR)):
-                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
+            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.DISK_DIR)):
+                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.DISK_DIR))
+            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.IMAGE_DIR)):
+                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.IMAGE_DIR))
+            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.LOG_DIR)):
+                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
         else:
             self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
-            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR))
-            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR))
-            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
+            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.DISK_DIR))
+            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.IMAGE_DIR))
+            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
 
 
         return self.uuid
@@ -87,16 +88,21 @@ class KVMLibvirt(RuntimePlugin):
         generating xml from templates/vm.xml with jinja2
         """
         self.agent.logger.info('defineEntity()', ' KVM Plugin - Defining a VM')
+
         if len(args) > 0:
             entity_uuid = args[4]
-            disk_path = str("%s/%s/%s.qcow2" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
-            cdrom_path = str("%s/%s/%s_config.iso" % (self.BASE_DIR, self.DISK_DIR,entity_uuid))
+            disk_path = str('%s.qcow2' % entity_uuid)
+            cdrom_path = str('%s_config.iso' % entity_uuid)
+            disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
+            cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
             entity = KVMLibvirtEntity(entity_uuid, args[0], args[2], args[1], disk_path, args[3], cdrom_path, [],
                                    args[5], args[6], args[7])
         elif len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
-            disk_path = str("%s/%s/%s.qcow2" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
-            cdrom_path = str("%s/%s/%s_config.iso" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
+            disk_path = str('%s.qcow2' % entity_uuid)
+            cdrom_path = str('%s_config.iso' % entity_uuid)
+            disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
+            cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
             entity = KVMLibvirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
                                       kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
                                       kwargs.get('base_image'), kwargs.get('user-data'), kwargs.get('ssh-key'))
@@ -180,13 +186,13 @@ class KVMLibvirt(RuntimePlugin):
             if entity.user_file is not None and entity.user_file != '':
                 data_filename = str("userdata_%s" % entity_uuid)
                 self.agent.getOSPlugin().storeFile(entity.user_file, self.BASE_DIR, data_filename)
-                data_filename = str("/%s/%s" % (self.BASE_DIR, data_filename))
+                data_filename = os.path.join(self.BASE_DIR, data_filename)
                 conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
                 #rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
             if entity.ssh_key is not None and entity.ssh_key != '':
                 key_filename = str("key_%s.pub" % entity_uuid)
                 self.agent.getOSPlugin().storeFile(entity.ssh_key, self.BASE_DIR, key_filename)
-                key_filename = str("%s/%s" % (self.BASE_DIR, key_filename))
+                key_filename = os.path.join(self.BASE_DIR, key_filename)
                 conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
                 #rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
 
@@ -194,7 +200,7 @@ class KVMLibvirt(RuntimePlugin):
 
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
 
-            dd_cmd = str("dd if=%s/%s/%s of=%s" % (self.BASE_DIR, self.IMAGE_DIR, image_name, entity.disk))
+            dd_cmd = str("dd if=%s of=%s" % (os.path.join(self.BASE_DIR, self.IMAGE_DIR, image_name), entity.disk))
 
             entity.image = image_name
 
@@ -248,8 +254,8 @@ class KVMLibvirt(RuntimePlugin):
             #self.agent.getOSPlugin().executeCommand(rm_cmd)
             self.agent.getOSPlugin().removeFile(entity.cdrom)
             self.agent.getOSPlugin().removeFile(entity.disk)
-            self.agent.getOSPlugin().removeFile(str("%s/%s/%s") % (self.BASE_DIR, self.IMAGE_DIR, entity.image))
-            self.agent.getOSPlugin().removeFile(str("%s/%s/%s_log.log") % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
+            self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
+            self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.LOG_DIR, entity_uuid))
 
 
             entity.onClean()
@@ -428,8 +434,10 @@ class KVMLibvirt(RuntimePlugin):
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
             entity_info = json.loads(self.agent.dstore.get(uri))
             vm_info = entity_info.get("entity_data")
-            disk_path = str("%s/%s/%s.qcow2" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
-            cdrom_path = str("%s/%s/%s_config.iso" % (self.BASE_DIR, self.DISK_DIR, entity_uuid))
+            disk_path = str('%s.qcow2' % entity_uuid)
+            cdrom_path = str('%s_config.iso' % entity_uuid)
+            disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
+            cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
             entity = KVMLibvirtEntity(entity_uuid, vm_info.get('name'), vm_info.get('cpu'), vm_info.get('memory'),
                                       disk_path,
                                       vm_info.get('disk_size'), cdrom_path, vm_info.get('networks'),
@@ -441,22 +449,22 @@ class KVMLibvirt(RuntimePlugin):
 
             self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
             self.agent.getOSPlugin().createFile(entity.cdrom)
-            self.agent.getOSPlugin().createFile(str("/opt/fos/kvm/logs/%s_log.log" % entity_uuid))
+            self.agent.getOSPlugin().createFile(os.path.join(self.BASE_DIR,self.LOG_DIR,str('%s_log.log' % entity_uuid)))
+            #self.agent.getOSPlugin().createFile(str("/opt/fos/kvm/logs/%s_log.log" % entity_uuid))
 
             conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
-                                                                        'create_config_drive.sh'), entity.name,
-                                                           entity_uuid))
+                                                           'create_config_drive.sh'), entity.name, entity_uuid))
             rm_temp_cmd = str("rm")
             if entity.user_file is not None and entity.user_file != '':
                 data_filename = str("userdata_%s" % entity_uuid)
                 self.agent.getOSPlugin().storeFile(entity.user_file, self.BASE_DIR, data_filename)
-                data_filename = str("/%s/%s" % (self.BASE_DIR, data_filename))
+                data_filename = os.path.join(self.BASE_DIR, data_filename)
                 conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
                 # rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
             if entity.ssh_key is not None and entity.ssh_key != '':
                 key_filename = str("key_%s.pub" % entity_uuid)
                 self.agent.getOSPlugin().storeFile(entity.ssh_key, self.BASE_DIR, key_filename)
-                key_filename = str("%s/%s" % (self.BASE_DIR, key_filename))
+                key_filename = os.path.join(self.BASE_DIR, key_filename)
                 conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
                 # rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
 
@@ -464,7 +472,7 @@ class KVMLibvirt(RuntimePlugin):
 
             self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
             #self.agent.getOSPlugin().createFile(entity.cdrom)
-            self.agent.getOSPlugin().createFile(str("/opt/fos/kvm/logs/%s_log.log" % entity_uuid))
+
             self.agent.getOSPlugin().executeCommand(conf_cmd, True)
 
 
