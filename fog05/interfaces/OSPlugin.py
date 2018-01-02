@@ -11,6 +11,8 @@ class OSPlugin(Plugin):
     def __init__(self,version, plugin_uuid=None):
         super(OSPlugin, self).__init__(version, plugin_uuid)
 
+    def get_base_path(self):
+        raise NotImplemented
     def executeCommand(self, command, blocking):
 
         """
@@ -83,7 +85,7 @@ class OSPlugin(Plugin):
     def readBinaryFile(self, file_path):
         raise NotImplemented
 
-    def downloadFile(self, url,file_path):
+    def downloadFile(self, url, file_path):
         raise NotImplemented
 
     def getCPUID(self):

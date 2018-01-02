@@ -1,6 +1,6 @@
 class Agent(object):
 
-    def __init__(self,uuid):
+    def __init__(self, uuid):
         self.uuid = uuid
 
     def __load_os_plugin(self):

@@ -56,6 +56,8 @@ class FosAgent(Agent):
             super(FosAgent, self).__init__(self.__osPlugin.getUUID())
             sid = str(self.uuid)
 
+            self.base_path = self.__osPlugin.get_base_path()
+
             # Desidered Store. containing the desidered state
             self.droot = "dfos://<sys-id>"
             self.dhome = str("%s/%s" % (self.droot, sid))

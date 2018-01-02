@@ -1,0 +1,1 @@
+(Start-Process {{ path }}\{{ command }} -passthru).ID  > {{outfile}}.pid

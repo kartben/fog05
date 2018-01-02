@@ -48,6 +48,10 @@ class Linux(OSPlugin):
         self.nw_devices = self.__get_nw_devices()
         self.accelerator_devices = self.__get_acc_devices()
 
+
+    def get_base_path(self):
+        return '/opt/fos'
+
     def executeCommand(self, command, blocking=False):
         self.agent.logger.info('executeCommand()', str(' OS Plugin executing command %s' % command))
         cmd_splitted = command.split()
@@ -118,9 +122,8 @@ class Linux(OSPlugin):
         return data
 
     def downloadFile(self, url, file_path):
-        file_path = os.path.join(file_path)
         wget_cmd = str('wget %s -O %s' % (url, file_path))
-        os.system(wget_cmd);
+        os.system(wget_cmd)
 
     def getCPULevel(self):
         return psutil.cpu_percent(interval=1)

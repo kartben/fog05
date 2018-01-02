@@ -19,9 +19,12 @@ class Native(RuntimePlugin):
         self.HOME = str("runtime/%s/entity" % self.uuid)
         file_dir = os.path.dirname(__file__)
         self.DIR = os.path.abspath(file_dir)
-        self.BASE_DIR = "/opt/fos/native"
+        self.BASE_DIR = os.path.join(self.agent.base_path, 'native')
+        # #TODO update in all other plugins
         self.LOG_DIR = "logs"
         self.STORE_DIR = "apps"
+
+        self.operating_system = self.agent.getOSPlugin().name
 
         self.startRuntime()
 
@@ -31,14 +34,14 @@ class Native(RuntimePlugin):
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
         if self.agent.getOSPlugin().dirExists(self.BASE_DIR):
-            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.STORE_DIR)):
-                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.STORE_DIR))
-            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR)):
-                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
+            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.STORE_DIR)):
+                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.STORE_DIR))
+            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.LOG_DIR)):
+                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
         else:
-            self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
-            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.STORE_DIR))
-            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
+            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR))
+            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.STORE_DIR))
+            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
 
         return self.uuid
 
@@ -67,7 +70,8 @@ class Native(RuntimePlugin):
 
         if len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
-            out_file = str("%s/%s/native_%s.log" % (self.BASE_DIR,self.LOG_DIR, entity_uuid))
+            out_file = str("native_%s.log" % entity_uuid)
+            out_file = os.path.join(self.BASE_DIR, self.LOG_DIR, out_file)
             entity = NativeEntity(entity_uuid, kwargs.get('name'), kwargs.get('command'), kwargs.get('source'),
                                   kwargs.get('args'), out_file)
         else:
@@ -121,14 +125,23 @@ class Native(RuntimePlugin):
             self.agent.getOSPlugin().createFile(entity.outfile)
             if entity.source is not None:
                 zip_name = entity.source.split('/')[-1]
-                self.agent.getOSPlugin().createDir(str("%s/%s/%s") % (self.BASE_DIR, self.STORE_DIR, entity.name))
+                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name))
                 #wget_cmd = str('wget %s -O %s/%s/%s/%s' %
                 #               (entity.source, self.BASE_DIR, self.STORE_DIR, entity.name, zip_name))
-                unzip_cmd = str("unzip %s/%s/%s/%s -d %s/%s/%s/" %
-                                (self.BASE_DIR, self.STORE_DIR, entity.name, zip_name,
-                                 self.BASE_DIR, self.STORE_DIR, entity.name))
-                self.agent.getOSPlugin().downloadFile(entity.image, [self.BASE_DIR, self.IMAGE_DIR, zip_name])
-                #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
+
+                zip_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name, zip_name)
+                dest = os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name)
+
+                if self.operating_system == 'linux':
+                    unzip_cmd = str("unzip %s -d %s" % (zip_file, dest))
+                elif self.operating_system == 'windows':
+                    unzip_cmd = str('Expand-Archive -Path %s -DestinationPath %s' % (zip_file, dest))
+                else:
+                    unzip_cmd = ''
+
+                self.agent.getOSPlugin().downloadFile(entity.image,
+                                                      os.path.join(self.BASE_DIR, self.STORE_DIR, zip_name))
+                # self.agent.getOSPlugin().executeCommand(wget_cmd, True)
                 self.agent.getOSPlugin().executeCommand(unzip_cmd, True)
 
             entity.onConfigured()
@@ -157,7 +170,8 @@ class Native(RuntimePlugin):
 
             self.agent.getOSPlugin().removeFile(entity.outfile)
             if entity.source is not None:
-                self.agent.getOSPlugin().removeDir("%s/%s/%s" % (self.BASE_DIR, self.STORE_DIR, entity.name))
+                entity_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name)
+                self.agent.getOSPlugin().removeDir(entity_dir)
             entity.onClean()
             self.current_entities.update({entity_uuid: entity})
 
@@ -186,19 +200,26 @@ class Native(RuntimePlugin):
             if entity.source is None:
                 cmd = str("%s %s" % (entity.command, ' '.join(str(x) for x in entity.args)))
             else:
-                native_dir = str("%s/%s/%s" % (self.BASE_DIR, self.STORE_DIR, entity.name))
-                pid_file = str("%s/%s/%s/%s" % (self.BASE_DIR, self.STORE_DIR, entity.name, entity_uuid))
-                run_script = self.__generate_run_script(entity.command, native_dir, pid_file)
-                self.agent.getOSPlugin().storeFile(run_script, native_dir, str("%s_run.sh" % entity_uuid))
-                chmod_cmd = str("chmod +x %s/%s" % (native_dir, str("%s_run.sh" % entity_uuid)))
-                self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
-                cmd = str("%s/%s" % (native_dir, str("%s_run.sh" % entity_uuid)))
 
+                native_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name)
+                pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name, entity_uuid)
+                run_script = self.__generate_run_script(entity.command, native_dir, pid_file)
+                if self.operating_system == 'linux':
+                    self.agent.getOSPlugin().storeFile(run_script, native_dir, str("%s_run.sh" % entity_uuid))
+                    chmod_cmd = str("chmod +x %s" % os.path.join(native_dir, str("%s_run.sh" % entity_uuid)))
+                    self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
+                    cmd = str("%s" % os.path.join(native_dir, str("%s_run.sh" % entity_uuid)))
+                elif self.operating_system == 'windows':
+                    self.agent.getOSPlugin().storeFile(run_script, native_dir, str("%s_run.ps1" % entity_uuid))
+                    cmd = str("%s" % os.path.join(native_dir, str("%s_run.ps1" % entity_uuid)))
+                else:
+                    cmd = ''
             process = self.__execute_command(cmd, entity.outfile)
 
             if entity.source is not None:
                 time.sleep(1)
-                pid_file = str("%s/%s/%s/%s.pid" % (self.BASE_DIR, self.STORE_DIR, entity.name, entity_uuid))
+                pid_file = str('%s.pid' % entity_uuid)
+                pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name, pid_file)
                 pid = int(self.agent.getOSPlugin().readFile(pid_file))
                 entity.onStart(pid, process)
             else:
@@ -265,9 +286,13 @@ class Native(RuntimePlugin):
         return p
 
     def __generate_run_script(self, cmd, directory, outfile):
-        template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'run_native.sh'))
+        if self.operating_system == 'windows':
+            template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates',
+                                                                          'run_native_windows.ps1'))
+        else:
+            template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'run_native_unix.sh'))
         na_script = Environment().from_string(template_xml)
-        na_script = na_script.render(command=cmd, path=directory,outfile=outfile)
+        na_script = na_script.render(command=cmd, path=directory, outfile=outfile)
         return na_script
 
     def __react_to_cache(self, uri, value, v):
