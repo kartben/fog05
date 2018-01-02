@@ -311,13 +311,12 @@ class Windows(OSPlugin):
         return dev
 
     def __get_default_gw(self):
-        cmd = str("runas /noprofile /user:Administrator %s" % (os.path.join(self.DIR, 'scripts', 'default_gw.sh')))
+        cmd = str("powershell.exe %s" % (os.path.join(self.DIR, 'scripts', 'default_gw.ps1')))
         p = psutil.Popen(cmd.split(), stdout=PIPE)
         p.wait()
         iface = ""
         for line in p.stdout:
             iface = line.decode().strip()
-
         return iface
 
     def __get_nw_devices(self):
