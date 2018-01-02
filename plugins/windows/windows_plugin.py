@@ -40,12 +40,14 @@ class Windows(OSPlugin):
 
     def addKnowHost(self, hostname, ip):
         self.agent.logger.info('addKnowHost()', ' OS Plugin add to hosts file')
-        add_cmd = str("runas /noprofile /user:Administrator %s -a %s %s" % (os.path.join(self.DIR, 'scripts', 'manage_hosts.sh'), hostname, ip))
+        add_cmd = str("runas /noprofile /user:Administrator %s add %s %s" % (os.path.join(self.DIR, 'scripts',
+                                                                             'manage_hosts.ps1'), hostname, ip))
         self.executeCommand(add_cmd, True)
 
     def removeKnowHost(self, hostname):
         self.agent.logger.info('removeKnowHost()', ' OS Plugin remove from hosts file')
-        del_cmd = str("runas /noprofile /user:Administrator %s -d %s" % (os.path.join(self.DIR, 'scripts', 'manage_hosts.sh'), hostname))
+        del_cmd = str("runas /noprofile /user:Administrator %s remove %s" % (os.path.join(self.DIR, 'scripts',
+                                                                             'manage_hosts.sh'), hostname))
         self.executeCommand(del_cmd, True)
 
     def dirExists(self, path):
