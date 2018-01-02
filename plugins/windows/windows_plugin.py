@@ -40,12 +40,12 @@ class Windows(OSPlugin):
 
     def addKnowHost(self, hostname, ip):
         self.agent.logger.info('addKnowHost()', ' OS Plugin add to hosts file')
-        add_cmd = str("sudo %s -a %s %s" % (os.path.join(self.DIR, 'scripts', 'manage_hosts.sh'), hostname, ip))
+        add_cmd = str("runas /noprofile /user:Administrator %s -a %s %s" % (os.path.join(self.DIR, 'scripts', 'manage_hosts.sh'), hostname, ip))
         self.executeCommand(add_cmd, True)
 
     def removeKnowHost(self, hostname):
         self.agent.logger.info('removeKnowHost()', ' OS Plugin remove from hosts file')
-        del_cmd = str("sudo %s -d %s" % (os.path.join(self.DIR, 'scripts', 'manage_hosts.sh'), hostname))
+        del_cmd = str("runas /noprofile /user:Administrator %s -d %s" % (os.path.join(self.DIR, 'scripts', 'manage_hosts.sh'), hostname))
         self.executeCommand(del_cmd, True)
 
     def dirExists(self, path):
@@ -81,7 +81,7 @@ class Windows(OSPlugin):
     def readFile(self, file_path, root=False):
         data = ""
         if root:
-            file_path = str("sudo cat %s" % file_path)
+            file_path = str("runas /noprofile /user:Administrator type %s" % file_path)
             process = subprocess.Popen(file_path.split(), stdout=subprocess.PIPE)
             # read one line at a time, as it becomes available
             for line in iter(process.stdout.readline, ''):
@@ -99,7 +99,7 @@ class Windows(OSPlugin):
 
     def downloadFile(self, url, file_path):
         file_path = os.path.join(file_path)
-        dwn_cmd = str("(new-object System.Net.WebClient).DownloadFile('%s','%s')" % (url, file_path))
+        dwn_cmd = str('wget -Uri "%s" -outfile %s -UseBasicParsing' % (url, file_path))
         os.system(str('powershell.exe %s') % dwn_cmd)
         #wget_cmd = str('wget %s -O %s' % (url, file_path))
         #os.system(wget_cmd);
@@ -221,7 +221,7 @@ class Windows(OSPlugin):
 
         uuid_regex = r"UUID\n(.{0,37})"
         #p = psutil.Popen('sudo cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE)
-        p = psutil.Popen('wmic csproduct get UUID'.split(), stdout=PIPE)
+        p = psutil.Popen('runas /noprofile /user:Administrator wmic csproduct get UUID'.split(), stdout=PIPE)
         # p = psutil.Popen('sudo cat '.split(), stdout=PIPE)
         res = ""
         for line in p.stdout:
@@ -311,7 +311,7 @@ class Windows(OSPlugin):
         return dev
 
     def __get_default_gw(self):
-        cmd = str("sudo %s" % (os.path.join(self.DIR, 'scripts', 'default_gw.sh')))
+        cmd = str("runas /noprofile /user:Administrator %s" % (os.path.join(self.DIR, 'scripts', 'default_gw.sh')))
         p = psutil.Popen(cmd.split(), stdout=PIPE)
         p.wait()
         iface = ""
