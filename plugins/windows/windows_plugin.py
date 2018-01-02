@@ -231,7 +231,7 @@ class Windows(OSPlugin):
             m = re.search(uuid_regex, res)
             if m:
                 found = m.group(1)
-            return found.lower().strip()
+                return found.lower().strip()
 
         #return res.lower().strip()
 
