@@ -104,7 +104,7 @@ class Windows(OSPlugin):
 
     def downloadFile(self, url, file_path):
         dwn_cmd = str('wget -Uri "%s" -outfile %s -UseBasicParsing' % (url, file_path))
-        os.system(str('powershell.exe %s') % dwn_cmd)
+        self.executeCommand(str('powershell.exe %s') % dwn_cmd, True)
         #wget_cmd = str('wget %s -O %s' % (url, file_path))
         #os.system(wget_cmd);
 

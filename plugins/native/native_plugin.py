@@ -20,7 +20,6 @@ class Native(RuntimePlugin):
         file_dir = os.path.dirname(__file__)
         self.DIR = os.path.abspath(file_dir)
         self.BASE_DIR = os.path.join(self.agent.base_path, 'native')
-        # #TODO update in all other plugins
         self.LOG_DIR = "logs"
         self.STORE_DIR = "apps"
 

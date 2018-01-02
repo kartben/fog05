@@ -123,7 +123,7 @@ class Linux(OSPlugin):
 
     def downloadFile(self, url, file_path):
         wget_cmd = str('wget %s -O %s' % (url, file_path))
-        os.system(wget_cmd)
+        self.executeCommand(wget_cmd, True)
 
     def getCPULevel(self):
         return psutil.cpu_percent(interval=1)

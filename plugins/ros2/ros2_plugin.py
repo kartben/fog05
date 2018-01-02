@@ -138,7 +138,8 @@ class ROS2(RuntimePlugin):
             self.agent.getOSPlugin().createDir(nodelet_dir)
             #wget_cmd = str('wget %s -O %s/%s' % (entity.url, nodelet_dir, entity.url.split('/')[-1]))
             #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
-            self.agent.getOSPlugin().downloadFile(entity.image, [self.BASE_DIR, self.IMAGE_DIR, entity.url.split('/')[-1]])
+            self.agent.getOSPlugin().downloadFile(
+                entity.image, os.path.join(self.BASE_DIR, self.IMAGE_DIR,entity.url.split('/')[-1]))
             '''
             from https://github.com/ros2/examples
             I tried to run some c++ example, here the workflow

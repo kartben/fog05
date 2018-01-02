@@ -178,6 +178,7 @@ class KVMLibvirt(RuntimePlugin):
             image_name = entity.image.split('/')[-1]
 
             #wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
+            image_url = entity.image
 
             conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
                                                                  'create_config_drive.sh'), entity.name, entity_uuid))
@@ -205,7 +206,7 @@ class KVMLibvirt(RuntimePlugin):
             entity.image = image_name
 
             #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
-            self.agent.getOSPlugin().downloadFile(entity.image, [self.BASE_DIR, self.IMAGE_DIR, image_name])
+            self.agent.getOSPlugin().downloadFile(image_url, os.path.join(self.BASE_DIR, self.IMAGE_DIR, image_name))
             self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
             self.agent.getOSPlugin().executeCommand(conf_cmd, True)
             self.agent.getOSPlugin().executeCommand(dd_cmd, True)
@@ -449,7 +450,8 @@ class KVMLibvirt(RuntimePlugin):
 
             self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
             self.agent.getOSPlugin().createFile(entity.cdrom)
-            self.agent.getOSPlugin().createFile(os.path.join(self.BASE_DIR,self.LOG_DIR,str('%s_log.log' % entity_uuid)))
+            self.agent.getOSPlugin().createFile(
+                os.path.join(self.BASE_DIR, self.LOG_DIR, str('%s_log.log' % entity_uuid)))
             #self.agent.getOSPlugin().createFile(str("/opt/fos/kvm/logs/%s_log.log" % entity_uuid))
 
             conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
