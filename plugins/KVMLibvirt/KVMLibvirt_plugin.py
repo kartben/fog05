@@ -249,7 +249,11 @@ class KVMLibvirt(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
-            self.__lookup_by_uuid(entity_uuid).undefine()
+            dom = self.__lookup_by_uuid(entity_uuid)
+            if dom is not None:
+                dom.undefine()
+            else:
+                self.agent.logger.error('cleanEntity()', 'KVM Plugin - Domain not found!!')
             #rm_cmd = str("rm -f %s %s /opt/fos/images/%s /opt/fos/logs/%s_log.log" %
             #           (entity.cdrom, entity.disk, entity.image, entity_uuid))
             #self.agent.getOSPlugin().executeCommand(rm_cmd)
