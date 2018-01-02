@@ -99,7 +99,7 @@ class Windows(OSPlugin):
 
     def downloadFile(self, url, file_path):
         file_path = os.path.join(file_path)
-        dwn_cmd = str("(new-object System.Net.WebClient).DownloadFile('%s','%s'" % (url, file_path))
+        dwn_cmd = str("(new-object System.Net.WebClient).DownloadFile('%s','%s')" % (url, file_path))
         os.system(str('powershell.exe %s') % dwn_cmd)
         #wget_cmd = str('wget %s -O %s' % (url, file_path))
         #os.system(wget_cmd);
