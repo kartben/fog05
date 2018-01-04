@@ -10,7 +10,13 @@ from fog05.fosagent import FosAgent
 import time
 import uuid
 import argparse
-import daemon as dmn
+
+import os
+
+
+if os.name == 'posix':
+    import daemon as dmn
+
 
 ##
 ## TODO: sostitute all string with variables in store interaction
@@ -299,11 +305,14 @@ class FOSCli(object):
         if plugins:
             sys.path.append(os.path.abspath(plugins))
             if daemon:
-                print('Forking in backgroud')
-                pid = '/tmp/fos.pid'
-                print('PID file %s' % pid)
-                with dmn.DaemonContext(pidfile=pid, umask=0):
-                    self.__start_node(plugins, verbose)
+                if os.name == 'posix':
+                    print('Forking in backgroud')
+                    pid = '/tmp/fos.pid'
+                    print('PID file %s' % pid)
+                    with dmn.DaemonContext(pidfile=pid, umask=0):
+                        self.__start_node(plugins, verbose)
+                else:
+                    print("Cannot daemonize on {0} at the moment".format(os.name))
             else:
                 self.__start_node(plugins, verbose)
         else:
