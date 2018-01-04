@@ -113,7 +113,7 @@ class FosAgent(Agent):
             self.logger.info('__load_os_plugin()', 'fosAgent running on macOS')
             self.logger.error('__load_os_plugin()', ' Mac plugin not yet implemented...')
             raise RuntimeError("Mac plugin not yet implemented...")
-        elif platform == 'windows':
+        elif platform in ['windows', 'Windows', 'win32']:
             os = self.pl.locatePlugin('windows')
             if os is not None:
                 os = self.pl.loadPlugin(os)

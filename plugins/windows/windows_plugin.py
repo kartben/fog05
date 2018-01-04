@@ -186,11 +186,16 @@ class Windows(OSPlugin):
     def getDisksInformation(self):
         disks = []
         for d in psutil.disk_partitions():
-            dev = d[0]
-            mount = d[1]
-            dim = psutil.disk_usage(mount)[0] / 1024 / 1024 / 1024  # conversion to gb
-            fs = d[2]
-            disks.append({'local_address': dev, 'dimension': dim, 'mount_point': mount, 'filesystem': fs})
+            try:
+                dev = d[0]
+                mount = d[1]
+                dim = psutil.disk_usage(mount)[0] / 1024 / 1024 / 1024  # conversion to gb
+                fs = d[2]
+                disks.append({'local_address': dev, 'dimension': dim, 'mount_point': mount, 'filesystem': fs})
+            except PermissionError as e:
+                self.agent.logger.error('getDisksInformation()', 'Device {0} not ready'.format(mount))
+            finally:
+                pass
         return disks
 
     def getIOInformations(self):
@@ -223,17 +228,19 @@ class Windows(OSPlugin):
         '''
 
 
-        uuid_regex = r"UUID\n(.{0,37})"
+        uuid_regex = r"UUID.+\r\r\n(.{0,36})"
         #p = psutil.Popen('sudo cat /sys/class/dmi/id/product_uuid'.split(), stdout=PIPE)
-        p = psutil.Popen('runas /noprofile /user:Administrator wmic csproduct get UUID'.split(), stdout=PIPE)
+        #runas /noprofile /user:Administrator
+        p = psutil.Popen('wmic csproduct get UUID'.split(), stdout=PIPE)
         # p = psutil.Popen('sudo cat '.split(), stdout=PIPE)
         res = ""
         for line in p.stdout:
             res = str(res + "%s" % line.decode("utf-8"))
-            m = re.search(uuid_regex, res)
-            if m:
-                found = m.group(1)
-                return found.lower().strip()
+
+        m = re.search(uuid_regex, res)
+        if m:
+            found = m.group(1)
+            return found.lower().strip()
 
         #return res.lower().strip()
 
@@ -285,7 +292,7 @@ class Windows(OSPlugin):
             m = re.search(name_regex, line)
             if m:
                 found = m.group(1)
-            return found.lower().strip()
+                return found.lower().strip()
 
             #if "model name" in line:
             #    return re.sub(".*model name.*:", "", line, 1).strip()
@@ -338,7 +345,7 @@ class Windows(OSPlugin):
 
             ipv4_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET]
             ipv6_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET6]
-            l2_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_PACKET]
+            l2_info = [x for x in intf_info if x[0] == -1]
 
             if len(ipv4_info) > 0:
                 ipv4_info = ipv4_info[0]
@@ -365,9 +372,11 @@ class Windows(OSPlugin):
 
             if len(l2_info) > 0:
                 l2_info = l2_info[0]
-                mac = l2_info[1]
+                mac = l2_info[1].replace('-',':')
             else:
                 mac = ''
+            #print(k)
+            #mac = netifaces.ifaddresses(k)[netifaces.AF_LINK][0].get('addr')
 
             speed = psutil.net_if_stats().get(k)[2]
             inft_conf = {'ipv4_address': ipv4, 'ipv4_netmask': ipv4mask, "ipv4_gateway": ipv4gateway, "ipv6_address":
