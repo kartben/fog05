@@ -75,7 +75,7 @@ class FosAgent(Agent):
             self.logger.info('__init__()', '[ DONE ] Creating Actual State Store')
 
             self.logger.info('__init__()', '[ INIT ] Populating Actual Store with data from OS Plugin')
-            val = {'version': self.__osPlugin.version, 'description': 'linux plugin', 'plugin': ''}
+            val = {'version': self.__osPlugin.version, 'description': '{0} plugin'.format(self.__osPlugin.name)}
             uri = str('%s/plugins/%s/%s' % (self.ahome, self.__osPlugin.name, self.__osPlugin.uuid))
             self.astore.put(uri, json.dumps(val))
 
