@@ -105,7 +105,7 @@ class Native(RuntimePlugin):
             self.agent.logger.info('undefineEntity()', '[ DONE ] Native Plugin - Undefine BE uuid %s' % entity_uuid)
             return True
 
-    def configure_entity(self, entity_uuid):
+    def configure_entity(self, entity_uuid, instance_uuid=None):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
@@ -152,7 +152,7 @@ class Native(RuntimePlugin):
             self.agent.logger.info('configureEntity()', '[ DONE ] Native Plugin - Configure BE uuid %s' % entity_uuid)
             return True
 
-    def clean_entity(self, entity_uuid):
+    def clean_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('cleanEntity()', ' Native Plugin - Clean BE uuid %s' % entity_uuid)
@@ -181,7 +181,7 @@ class Native(RuntimePlugin):
             self.agent.logger.info('cleanEntity()', '[ DONE ] Native Plugin - Clean BE uuid %s' % entity_uuid)
             return True
 
-    def run_entity(self, entity_uuid):
+    def run_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('runEntity()', ' Native Plugin - Starting BE uuid %s' % entity_uuid)
@@ -232,7 +232,7 @@ class Native(RuntimePlugin):
             self.agent.logger.info('runEntity()', '[ DONE ] Native Plugin - Running BE uuid %s' % entity_uuid)
             return True
 
-    def stop_entity(self, entity_uuid):
+    def stop_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('stopEntity()', ' Native Plugin - Stop BE uuid %s' % entity_uuid)
@@ -261,11 +261,11 @@ class Native(RuntimePlugin):
             self.agent.logger.info('stopEntity()', '[ DONE ] Native Plugin - Stopped BE uuid %s' % entity_uuid)
             return True
 
-    def pause_entity(self, entity_uuid):
+    def pause_entity(self, entity_uuid, instance_uuid=None):
         self.agent.logger.warning('pauseEntity()', 'Native Plugin - Cannot pause a BE')
         return False
 
-    def resume_entity(self, entity_uuid):
+    def resume_entity(self, entity_uuid, instance_uuid=None):
         self.agent.logger.warning('resumeEntity()', 'Native Plugin - Cannot resume a BE')
         return False
 

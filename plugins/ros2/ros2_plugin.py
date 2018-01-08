@@ -115,7 +115,7 @@ class ROS2(RuntimePlugin):
             self.agent.logger.info('undefineEntity()', 'ROS2 Plugin - Undefine ROS2 Nodelets uuid %s' % entity_uuid)
             return True
 
-    def configure_entity(self, entity_uuid):
+    def configure_entity(self, entity_uuid, instance_uuid=None):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
@@ -183,7 +183,7 @@ class ROS2(RuntimePlugin):
             self.agent.logger.info('configureEntity()', '[ DONE ] ROS2 Plugin - Configure ROS2 Nodelets uuid %s' % entity_uuid)
             return True
 
-    def clean_entity(self, entity_uuid):
+    def clean_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('cleanEntity()', ' ROS2 Plugin - Clean ROS2 Nodelets uuid %s' % entity_uuid)
@@ -211,7 +211,7 @@ class ROS2(RuntimePlugin):
             self.agent.logger.info('cleanEntity()', '[ DONE ] ROS2 Plugin - Clean ROS2 Nodelets uuid %s' % entity_uuid)
             return True
 
-    def run_entity(self, entity_uuid):
+    def run_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('runEntity()', ' ROS2 Plugin - Starting ROS2 Nodelets uuid %s' % entity_uuid)
@@ -249,7 +249,7 @@ class ROS2(RuntimePlugin):
             self.agent.logger.info('runEntity()', '[ DONE ] ROS2 Plugin - Started ROS2 Nodelets uuid %s' % entity_uuid)
             return True
 
-    def stop_entity(self, entity_uuid):
+    def stop_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('stopEntity()', ' ROS2 Plugin - Stopping ROS2 Nodelets uuid %s' % entity_uuid)
@@ -291,11 +291,11 @@ class ROS2(RuntimePlugin):
             self.agent.logger.info('stopEntity()', '[ DONE ] ROS2 Plugin - Clean ROS2 Nodelet uuid %s' % entity_uuid)
             return True
 
-    def pause_entity(self, entity_uuid):
+    def pause_entity(self, entity_uuid, instance_uuid=None):
         self.agent.logger.warning('pauseEntity()', 'ROS2 Plugin - Cannot pause a ROS2 Nodelet')
         return False
 
-    def resume_entity(self, entity_uuid):
+    def resume_entity(self, entity_uuid, instance_uuid=None):
         self.agent.logger.warning('resumeEntity()', 'ROS2 Plugin - Cannot pause a ROS2 Nodelet')
         return False
 

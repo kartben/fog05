@@ -130,7 +130,7 @@ class LXD(RuntimePlugin):
                                    entity_uuid)
             return True
 
-    def configure_entity(self, entity_uuid):
+    def configure_entity(self, entity_uuid, instance_uuid=None):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
@@ -200,7 +200,7 @@ class LXD(RuntimePlugin):
                                    entity_uuid)
             return True
 
-    def clean_entity(self, entity_uuid):
+    def clean_entity(self, entity_uuid, instance_uuid=None):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
@@ -249,7 +249,7 @@ class LXD(RuntimePlugin):
 
             return True
 
-    def run_entity(self, entity_uuid):
+    def run_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('runEntity()', ' LXD Plugin - Starting a Container uuid %s ' % entity_uuid)
@@ -279,7 +279,7 @@ class LXD(RuntimePlugin):
             self.agent.logger.info('runEntity()', '[ DONE ] LXD Plugin - Starting a Container uuid %s ' % entity_uuid)
             return True
 
-    def stop_entity(self, entity_uuid):
+    def stop_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('stopEntity()', ' LXD Plugin - Stop a Container uuid %s ' % entity_uuid)
@@ -314,7 +314,7 @@ class LXD(RuntimePlugin):
 
             return True
 
-    def pause_entity(self, entity_uuid):
+    def pause_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('pauseEntity()', ' LXD Plugin - Pause a Container uuid %s ' % entity_uuid)
@@ -340,7 +340,7 @@ class LXD(RuntimePlugin):
             self.agent.logger.info('pauseEntity()', '[ DONE ] LXD Plugin - Pause a Container uuid %s ' % entity_uuid)
             return True
 
-    def resume_entity(self, entity_uuid):
+    def resume_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('resumeEntity()', ' LXD Plugin - Resume a Container uuid %s ' % entity_uuid)
@@ -368,7 +368,7 @@ class LXD(RuntimePlugin):
             return True
 
 
-    def migrate_entity(self, entity_uuid, dst=False):
+    def migrate_entity(self, entity_uuid, dst=False, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('migrateEntity()', ' LXD Plugin - Migrate a Container uuid %s ' % entity_uuid)
@@ -401,7 +401,7 @@ class LXD(RuntimePlugin):
             self.after_migrate_entity_actions(entity_uuid)
 
 
-    def before_migrate_entity_actions(self, entity_uuid, dst=False):
+    def before_migrate_entity_actions(self, entity_uuid, dst=False, instance_uuid=None):
         if dst is True:
             self.agent.logger.info('beforeMigrateEntityActions()', ' LXD Plugin - Before Migration Destination')
 
@@ -417,7 +417,7 @@ class LXD(RuntimePlugin):
 
             return True
 
-    def after_migrate_entity_actions(self, entity_uuid, dst=False):
+    def after_migrate_entity_actions(self, entity_uuid, dst=False, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         entity = self.current_entities.get(entity_uuid, None)
