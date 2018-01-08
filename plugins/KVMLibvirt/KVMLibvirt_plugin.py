@@ -4,6 +4,7 @@ import uuid
 from fog05.interfaces.States import State
 from fog05.interfaces.RuntimePlugin import *
 from KVMLibvirtEntity import KVMLibvirtEntity
+from KVMLibvirtEntityInstance import KVMLibvirtEntityInstance
 from jinja2 import Environment
 import json
 import random
@@ -86,6 +87,10 @@ class KVMLibvirt(RuntimePlugin):
         """
         Try defining vm
         generating xml from templates/vm.xml with jinja2
+
+
+        the base image should donwloaded now!!
+
         """
         self.agent.logger.info('defineEntity()', ' KVM Plugin - Defining a VM')
 
@@ -108,6 +113,11 @@ class KVMLibvirt(RuntimePlugin):
                                       kwargs.get('base_image'), kwargs.get('user-data'), kwargs.get('ssh-key'))
         else:
             return None
+
+        image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image.split('/')[-1])
+        image_url = entity.image
+        self.agent.getOSPlugin().downloadFile(image_url, image_name)
+        entity.image = image_name
 
         entity.set_state(State.DEFINED)
         self.current_entities.update({entity_uuid: entity})
@@ -141,6 +151,18 @@ class KVMLibvirt(RuntimePlugin):
             return True
 
     def configure_entity(self, entity_uuid, instance_uuid=None):
+        '''
+
+        BETA DISCUSSION:
+
+        GB: in instance_uuid is None, the method will generate a new one, then instanciate the new instance
+        update the instance list of the entity
+
+
+        :param entity_uuid:
+        :param instance_uuid:
+        :return:
+        '''
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
@@ -156,83 +178,102 @@ class KVMLibvirt(RuntimePlugin):
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
 
-            for i, n in enumerate(entity.networks):
-                if n.get('type') in ['wifi']:
+            if instance_uuid is None:
+                instance_uuid = str(uuid.uuid4())
 
-                    nw_ifaces =  self.agent.getOSPlugin().getNetworkInformations()
-                    for iface in nw_ifaces:
-                        if self.agent.getOSPlugin().get_intf_type(iface.get('intf_name')) == 'wireless' and iface.get('available') is True:
-                            self.agent.getOSPlugin().set_interface_unaviable(iface.get('intf_name'))
-                            n.update({'direct_intf': iface.get('intf_name')})
-                    # TODO get available interface from os plugin
-                if n.get('network_uuid') is not None:
-                    nws = self.agent.getNetworkPlugin(None).get(list(self.agent.getNetworkPlugin(None).keys())[0])
-                    #print(nws.getNetworkInfo(n.get('network_uuid')))
-                    br_name = nws.getNetworkInfo(n.get('network_uuid')).get('virtual_device')
-                    #print(br_name)
-                    n.update({'br_name': br_name})
-                if n.get('intf_name') is None:
-                    n.update({'intf_name': 'veth{0}'.format(i)})
+            if entity.has_instance(instance_uuid):
+                print("This instance already existis!!")
+            else:
 
-            vm_xml = self.__generate_dom_xml(entity)
-            image_name = entity.image.split('/')[-1]
+                disk_path = str('%s.qcow2' % instance_uuid)
+                cdrom_path = str('%s_config.iso' % instance_uuid)
+                disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
+                cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
 
-            #wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
-            image_url = entity.image
+                instance = KVMLibvirtEntityInstance(instance_uuid, entity.name, entity.cpu, entity.memory,disk_path,
+                                      entity.disk_size, cdrom_path, entity.networks, entity.image, entity.user_data,
+                                      entity.ssh_key, entity_uuid)
+                for i, n in enumerate(instance.networks):
+                    if n.get('type') in ['wifi']:
 
-            conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
-                                                                 'create_config_drive.sh'), entity.name, entity_uuid))
+                        nw_ifaces =  self.agent.getOSPlugin().getNetworkInformations()
+                        for iface in nw_ifaces:
+                            if self.agent.getOSPlugin().get_intf_type(iface.get('intf_name')) == 'wireless' and iface.get('available') is True:
+                                self.agent.getOSPlugin().set_interface_unaviable(iface.get('intf_name'))
+                                n.update({'direct_intf': iface.get('intf_name')})
+                        # TODO get available interface from os plugin
+                    if n.get('network_uuid') is not None:
+                        nws = self.agent.getNetworkPlugin(None).get(list(self.agent.getNetworkPlugin(None).keys())[0])
+                        #print(nws.getNetworkInfo(n.get('network_uuid')))
+                        br_name = nws.getNetworkInfo(n.get('network_uuid')).get('virtual_device')
+                        #print(br_name)
+                        n.update({'br_name': br_name})
+                    if n.get('intf_name') is None:
+                        n.update({'intf_name': 'veth{0}'.format(i)})
 
-            rm_temp_cmd = str("rm")
-            if entity.user_file is not None and entity.user_file != '':
-                data_filename = str("userdata_%s" % entity_uuid)
-                self.agent.getOSPlugin().storeFile(entity.user_file, self.BASE_DIR, data_filename)
-                data_filename = os.path.join(self.BASE_DIR, data_filename)
-                conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
-                #rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
-            if entity.ssh_key is not None and entity.ssh_key != '':
-                key_filename = str("key_%s.pub" % entity_uuid)
-                self.agent.getOSPlugin().storeFile(entity.ssh_key, self.BASE_DIR, key_filename)
-                key_filename = os.path.join(self.BASE_DIR, key_filename)
-                conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
-                #rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
+                vm_xml = self.__generate_dom_xml(entity)
+                #image_name = instance.image.split('/')[-1]
 
-            conf_cmd = str(conf_cmd + " %s" % entity.cdrom)
+                #wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
+                #image_url = instance.image
 
-            qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
+                conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
+                                                                     'create_config_drive.sh'), entity.name, entity_uuid))
 
-            dd_cmd = str("dd if=%s of=%s" % (os.path.join(self.BASE_DIR, self.IMAGE_DIR, image_name), entity.disk))
+                rm_temp_cmd = str("rm")
+                if instance.user_file is not None and instance.user_file != '':
+                    data_filename = str("userdata_%s" % entity_uuid)
+                    self.agent.getOSPlugin().storeFile(entity.user_file, self.BASE_DIR, data_filename)
+                    data_filename = os.path.join(self.BASE_DIR, data_filename)
+                    conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
+                    #rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
+                if instance.ssh_key is not None and instance.ssh_key != '':
+                    key_filename = str("key_%s.pub" % entity_uuid)
+                    self.agent.getOSPlugin().storeFile(instance.ssh_key, self.BASE_DIR, key_filename)
+                    key_filename = os.path.join(self.BASE_DIR, key_filename)
+                    conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
+                    #rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
 
-            entity.image = image_name
+                conf_cmd = str(conf_cmd + " %s" % instance.cdrom)
 
-            #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
-            self.agent.getOSPlugin().downloadFile(image_url, os.path.join(self.BASE_DIR, self.IMAGE_DIR, image_name))
-            self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
-            self.agent.getOSPlugin().executeCommand(conf_cmd, True)
-            self.agent.getOSPlugin().executeCommand(dd_cmd, True)
+                qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (instance.disk, instance.disk_size))
 
-            if entity.ssh_key is not None and entity.ssh_key != '':
-                self.agent.getOSPlugin().removeFile(key_filename)
-            if entity.user_file is not None and entity.user_file != '':
-                self.agent.getOSPlugin().removeFile(data_filename)
+                dd_cmd = str("dd if=%s of=%s" % (instance.image, instance.disk))
 
-                #self.agent.getOSPlugin().executeCommand(rm_temp_cmd)
+                #instance.image = image_name
 
-            try:
-                self.conn.defineXML(vm_xml)
-            except libvirt.libvirtError as err:
-                self.conn = libvirt.open("qemu:///system")
-                self.conn.defineXML(vm_xml)
+                #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
+                #self.agent.getOSPlugin().downloadFile(image_url, os.path.join(self.BASE_DIR, self.IMAGE_DIR, image_name))
+                self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
+                self.agent.getOSPlugin().executeCommand(conf_cmd, True)
+                self.agent.getOSPlugin().executeCommand(dd_cmd, True)
 
-            entity.on_configured(vm_xml)
-            self.current_entities.update({entity_uuid: entity})
+                if instance.ssh_key is not None and instance.ssh_key != '':
+                    self.agent.getOSPlugin().removeFile(key_filename)
+                if instance.user_file is not None and instance.user_file != '':
+                    self.agent.getOSPlugin().removeFile(data_filename)
 
-            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.dstore.get(uri))
-            vm_info.update({"status": "configured"})
-            self.__update_actual_store(entity_uuid, vm_info)
-            self.agent.logger.info('configureEntity()', '[ DONE ] KVM Plugin - Configure a VM uuid %s ' % entity_uuid)
-            return True
+                    #self.agent.getOSPlugin().executeCommand(rm_temp_cmd)
+
+                try:
+                    self.conn.defineXML(vm_xml)
+                except libvirt.libvirtError as err:
+                    self.conn = libvirt.open("qemu:///system")
+                    self.conn.defineXML(vm_xml)
+
+                instance.on_configured(vm_xml)
+                entity.add_instance(instance_uuid)
+                self.current_entities.update({entity_uuid: entity})
+
+                uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+                vm_info = json.loads(self.agent.dstore.get(uri))
+                vm_info.update({"status": "configured"})
+
+                self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
+                #self.__update_actual_store(entity_uuid, vm_info)
+
+                self.agent.logger.info('configureEntity()', '[ DONE ] KVM Plugin - Configure a VM uuid %s ' % entity_uuid)
+                return True
 
     def clean_entity(self, entity_uuid, instance_uuid=None):
 
@@ -702,12 +743,22 @@ class KVMLibvirt(RuntimePlugin):
         value = json.dumps(value)
         self.agent.astore.put(uri, value)
 
+    def __update_actual_store_instance(self, entity_uuid, instance_uuid, value):
+        uri = str("%s/%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid, instance_uuid))
+        value = json.dumps(value)
+        self.agent.astore.put(uri, value)
+
     def __pop_actual_store(self, entity_uuid):
         #e = uri
         uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid))
         self.agent.astore.remove(uri)
         #uri = str("%s/%s/%s" % (self.agent.dhome, self.HOME, e))
         #self.agent.dstore.remove(uri)
+
+    def __pop_actual_store_instance(self, entity_uuid, instance_uuid):
+        # e = uri
+        uri = str("%s/%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid, instance_uuid))
+        self.agent.astore.remove(uri)
 
     def __netmask_to_cidr(self, netmask):
         return sum([bin(int(x)).count('1') for x in netmask.split('.')])
