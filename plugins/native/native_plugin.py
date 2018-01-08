@@ -25,9 +25,9 @@ class Native(RuntimePlugin):
 
         self.operating_system = self.agent.getOSPlugin().name
 
-        self.startRuntime()
+        self.start_runtime()
 
-    def startRuntime(self):
+    def start_runtime(self):
         uri = str('%s/%s/*' % (self.agent.dhome, self.HOME))
         self.agent.logger.info('startRuntime()', ' Native Plugin - Observing %s' % uri)
         self.agent.dstore.observe(uri, self.__react_to_cache)
@@ -44,28 +44,28 @@ class Native(RuntimePlugin):
 
         return self.uuid
 
-    def stopRuntime(self):
+    def stop_runtime(self):
         self.agent.logger.info('stopRuntime()', ' Native Plugin - Destroy running BE')
         for k in list(self.current_entities.keys()):
             entity = self.current_entities.get(k)
-            if entity.getState() == State.PAUSED:
-                self.resumeEntity(k)
-                self.stopEntity(k)
-                self.cleanEntity(k)
-                self.undefineEntity(k)
-            if entity.getState() == State.RUNNING:
-                self.stopEntity(k)
-                self.cleanEntity(k)
-                self.undefineEntity(k)
-            if entity.getState() == State.CONFIGURED:
-                self.cleanEntity(k)
-                self.undefineEntity(k)
-            if entity.getState() == State.DEFINED:
-                self.undefineEntity(k)
+            if entity.get_state() == State.PAUSED:
+                self.resume_entity(k)
+                self.stop_entity(k)
+                self.clean_entity(k)
+                self.undefine_entity(k)
+            if entity.get_state() == State.RUNNING:
+                self.stop_entity(k)
+                self.clean_entity(k)
+                self.undefine_entity(k)
+            if entity.get_state() == State.CONFIGURED:
+                self.clean_entity(k)
+                self.undefine_entity(k)
+            if entity.get_state() == State.DEFINED:
+                self.undefine_entity(k)
         self.agent.logger.info('stopRuntime()', '[ DONE ] Native Plugin - Bye')
         return True
 
-    def defineEntity(self, *args, **kwargs):
+    def define_entity(self, *args, **kwargs):
 
         if len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
@@ -77,7 +77,7 @@ class Native(RuntimePlugin):
             return None
 
         self.agent.logger.info('defineEntity()', ' Native Plugin - Define BE')
-        entity.setState(State.DEFINED)
+        entity.set_state(State.DEFINED)
         self.current_entities.update({entity_uuid: entity})
         uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
         na_info = json.loads(self.agent.dstore.get(uri))
@@ -86,7 +86,7 @@ class Native(RuntimePlugin):
         self.agent.logger.info('defineEntity()', ' Native Plugin - Defined BE uuid %s' % entity_uuid)
         return entity_uuid
 
-    def undefineEntity(self, entity_uuid):
+    def undefine_entity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('undefineEntity()', ' Native Plugin - Undefine BE uuid %s' % entity_uuid)
@@ -95,7 +95,7 @@ class Native(RuntimePlugin):
             self.agent.logger.error('undefineEntity()', 'Native Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.getState() != State.DEFINED:
+        elif entity.get_state() != State.DEFINED:
             self.agent.logger.error('undefineEntity()', 'Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
@@ -105,7 +105,7 @@ class Native(RuntimePlugin):
             self.agent.logger.info('undefineEntity()', '[ DONE ] Native Plugin - Undefine BE uuid %s' % entity_uuid)
             return True
 
-    def configureEntity(self, entity_uuid):
+    def configure_entity(self, entity_uuid):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
@@ -115,7 +115,7 @@ class Native(RuntimePlugin):
             self.agent.logger.error('configureEntity()', 'Native Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.getState() != State.DEFINED:
+        elif entity.get_state() != State.DEFINED:
             self.agent.logger.error('configureEntity()', 'Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
@@ -143,7 +143,7 @@ class Native(RuntimePlugin):
                 # self.agent.getOSPlugin().executeCommand(wget_cmd, True)
                 self.agent.getOSPlugin().executeCommand(unzip_cmd, True)
 
-            entity.onConfigured()
+            entity.on_configured()
             self.current_entities.update({entity_uuid: entity})
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
             na_info = json.loads(self.agent.dstore.get(uri))
@@ -152,7 +152,7 @@ class Native(RuntimePlugin):
             self.agent.logger.info('configureEntity()', '[ DONE ] Native Plugin - Configure BE uuid %s' % entity_uuid)
             return True
 
-    def cleanEntity(self, entity_uuid):
+    def clean_entity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('cleanEntity()', ' Native Plugin - Clean BE uuid %s' % entity_uuid)
@@ -161,7 +161,7 @@ class Native(RuntimePlugin):
             self.agent.logger.error('cleanEntity()', 'Native Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.getState() != State.CONFIGURED:
+        elif entity.get_state() != State.CONFIGURED:
             self.agent.logger.error('cleanEntity()', 'Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
@@ -171,7 +171,7 @@ class Native(RuntimePlugin):
             if entity.source is not None:
                 entity_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name)
                 self.agent.getOSPlugin().removeDir(entity_dir)
-            entity.onClean()
+            entity.on_clean()
             self.current_entities.update({entity_uuid: entity})
 
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
@@ -181,7 +181,7 @@ class Native(RuntimePlugin):
             self.agent.logger.info('cleanEntity()', '[ DONE ] Native Plugin - Clean BE uuid %s' % entity_uuid)
             return True
 
-    def runEntity(self, entity_uuid):
+    def run_entity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('runEntity()', ' Native Plugin - Starting BE uuid %s' % entity_uuid)
@@ -190,7 +190,7 @@ class Native(RuntimePlugin):
             self.agent.logger.error('runEntity()', 'Native Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.getState() != State.CONFIGURED:
+        elif entity.get_state() != State.CONFIGURED:
             self.agent.logger.error('runEntity()', 'Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
@@ -220,9 +220,9 @@ class Native(RuntimePlugin):
                 pid_file = str('%s.pid' % entity_uuid)
                 pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name, pid_file)
                 pid = int(self.agent.getOSPlugin().readFile(pid_file))
-                entity.onStart(pid, process)
+                entity.on_start(pid, process)
             else:
-                entity.onStart(process.pid, process)
+                entity.on_start(process.pid, process)
 
             self.current_entities.update({entity_uuid: entity})
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
@@ -232,7 +232,7 @@ class Native(RuntimePlugin):
             self.agent.logger.info('runEntity()', '[ DONE ] Native Plugin - Running BE uuid %s' % entity_uuid)
             return True
 
-    def stopEntity(self, entity_uuid):
+    def stop_entity(self, entity_uuid):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('stopEntity()', ' Native Plugin - Stop BE uuid %s' % entity_uuid)
@@ -241,7 +241,7 @@ class Native(RuntimePlugin):
             self.agent.logger.error('stopEntity()', 'Native Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.getState() != State.RUNNING:
+        elif entity.get_state() != State.RUNNING:
             self.agent.logger.error('stopEntity()', 'Native Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
@@ -252,7 +252,7 @@ class Native(RuntimePlugin):
                 pid = entity.pid
                 self.agent.getOSPlugin().sendSigKill(pid)
 
-            entity.onStop()
+            entity.on_stop()
             self.current_entities.update({entity_uuid: entity})
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
             na_info = json.loads(self.agent.dstore.get(uri))
@@ -261,11 +261,11 @@ class Native(RuntimePlugin):
             self.agent.logger.info('stopEntity()', '[ DONE ] Native Plugin - Stopped BE uuid %s' % entity_uuid)
             return True
 
-    def pauseEntity(self, entity_uuid):
+    def pause_entity(self, entity_uuid):
         self.agent.logger.warning('pauseEntity()', 'Native Plugin - Cannot pause a BE')
         return False
 
-    def resumeEntity(self, entity_uuid):
+    def resume_entity(self, entity_uuid):
         self.agent.logger.warning('resumeEntity()', 'Native Plugin - Cannot resume a BE')
         return False
 
@@ -300,7 +300,7 @@ class Native(RuntimePlugin):
         if value is None and v is None:
             self.agent.logger.info('__react_to_cache()', ' Native Plugin - This is a remove for URI: %s' % uri)
             entity_uuid = uri.split('/')[-1]
-            self.undefineEntity(entity_uuid)
+            self.undefine_entity(entity_uuid)
         else:
             uuid = uri.split('/')[-1]
             value = json.loads(value)
@@ -318,13 +318,13 @@ class Native(RuntimePlugin):
 
     def __react(self, action):
         r = {
-            'define': self.defineEntity,
-            'configure': self.configureEntity,
-            'clean': self.cleanEntity,
-            'undefine': self.undefineEntity,
-            'stop': self.stopEntity,
-            'resume': self.resumeEntity,
-            'run': self.runEntity
+            'define': self.define_entity,
+            'configure': self.configure_entity,
+            'clean': self.clean_entity,
+            'undefine': self.undefine_entity,
+            'stop': self.stop_entity,
+            'resume': self.resume_entity,
+            'run': self.run_entity
         }
 
         return r.get(action, None)

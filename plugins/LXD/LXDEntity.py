@@ -19,23 +19,23 @@ class LXDEntity(Entity):
         self.profiles = profiles
         self.conf = None
 
-    def onConfigured(self, configuration):
+    def on_configured(self, configuration):
         self.conf = configuration
         self.state = State.CONFIGURED
 
-    def onClean(self):
+    def on_clean(self):
         self.state = State.DEFINED
 
-    def onStart(self):
+    def on_start(self):
         self.state = State.RUNNING
     
-    def onStop(self):
+    def on_stop(self):
         self.state = State.CONFIGURED
 
-    def onPause(self):
+    def on_pause(self):
         self.state = State.PAUSED
 
-    def onResume(self):
+    def on_resume(self):
         self.state = State.RUNNING
 
     def __str__(self):

@@ -8,33 +8,43 @@ class Entity(object):
         self.state=State.UNDEFINED
         self.uuid=""
         self.name=""
+        self.instances=[]
 
-    def getState(self):
+
+    def get_state(self):
         return self.state
 
-    def setState(self,state):
+    def set_state(self, state):
         self.state = state
 
-    def onConfigured(self, configuration):
+    def on_configured(self, configuration):
         raise NotImplementedError("This is and interface!")
 
-    def onClean(self):
+    def on_clean(self):
         raise NotImplementedError("This is and interface!")
 
-    def onStart(self):
+    def on_start(self):
         raise NotImplementedError("This is and interface!")
 
-    def onStop(self):
+    def on_stop(self):
         raise NotImplementedError("This is and interface!")
 
-    def onPause(self):
+    def on_pause(self):
         raise NotImplementedError("This is and interface!")
 
-    def onResume(self):
+    def on_resume(self):
         raise NotImplementedError("This is and interface!")
 
-    def beforeMigrate(self):
+    def before_migrate(self):
         raise NotImplementedError("This is and interface!")
 
-    def afterMigrate(self):
+    def after_migrate(self):
         raise NotImplementedError("This is and interface!")
+
+    def add_instance(self, instance_uuid):
+        if instance_uuid not in self.instances:
+            self.instances.append(instance_uuid)
+
+    def remove_instance(self, instance_uuid):
+        if instance_uuid in self.instances:
+            self.instances.remove(instance_uuid)

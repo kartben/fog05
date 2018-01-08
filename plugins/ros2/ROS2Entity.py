@@ -17,24 +17,24 @@ class ROS2Entity(Entity):
         self.url = url
         self.pid = -1
 
-    def onConfigured(self):
+    def on_configured(self):
         self.state = State.CONFIGURED
 
-    def onClean(self):
+    def on_clean(self):
         self.state = State.DEFINED
 
-    def onStart(self, pid, process):
+    def on_start(self, pid, process):
         self.pid = pid
         self.process = process
         self.state = State.RUNNING
     
-    def onStop(self):
+    def on_stop(self):
         self.pid = -1
         self.process = None
         self.state = State.CONFIGURED
 
-    def onPause(self):
+    def on_pause(self):
         self.state = State.PAUSED
 
-    def onResume(self):
+    def on_resume(self):
         self.state = State.RUNNING
