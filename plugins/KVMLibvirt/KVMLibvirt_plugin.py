@@ -26,6 +26,7 @@ class KVMLibvirt(RuntimePlugin):
         self.IMAGE_DIR = "images"
         self.LOG_DIR = "logs"
         self.HOME = str("runtime/%s/entity" % self.uuid)
+        self.INSTANCE = "instance"
         file_dir = os.path.dirname(__file__)
         self.DIR = os.path.abspath(file_dir)
         self.conn = None
@@ -92,7 +93,7 @@ class KVMLibvirt(RuntimePlugin):
         the base image should donwloaded now!!
 
         """
-        self.agent.logger.info('defineEntity()', ' KVM Plugin - Defining a VM')
+        self.agent.logger.info('define_entity()', ' KVM Plugin - Defining a VM')
 
         if len(args) > 0:
             entity_uuid = args[4]
@@ -125,29 +126,29 @@ class KVMLibvirt(RuntimePlugin):
         vm_info = json.loads(self.agent.dstore.get(uri))
         vm_info.update({"status": "defined"})
         self.__update_actual_store(entity_uuid, vm_info)
-        self.agent.logger.info('defineEntity()', '[ DONE ] KVM Plugin - VM Defined uuid: %s' % entity_uuid)
+        self.agent.logger.info('define_entity()', '[ DONE ] KVM Plugin - VM Defined uuid: %s' % entity_uuid)
         return entity_uuid
 
     def undefine_entity(self, entity_uuid):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('undefineEntity()', ' KVM Plugin - Undefine a VM uuid %s ' % entity_uuid)
+        self.agent.logger.info('undefine_entity()', ' KVM Plugin - Undefine a VM uuid %s ' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
-            self.agent.logger.error('undefineEntity()', 'KVM Plugin - Entity not exists')
+            self.agent.logger.error('undefine_entity()', 'KVM Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.get_state() != State.DEFINED:
-            self.agent.logger.error('undefineEntity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('undefine_entity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             if(self.current_entities.pop(entity_uuid, None)) is None:
-                self.agent.logger.warning('undefineEntity()', 'KVM Plugin - pop from entities dict returned none')
+                self.agent.logger.warning('undefine_entity()', 'KVM Plugin - pop from entities dict returned none')
 
             self.__pop_actual_store(entity_uuid)
-            self.agent.logger.info('undefineEntity()', '[ DONE ] KVM Plugin - Undefine a VM uuid %s ' % entity_uuid)
+            self.agent.logger.info('undefine_entity()', '[ DONE ] KVM Plugin - Undefine a VM uuid %s ' % entity_uuid)
             return True
 
     def configure_entity(self, entity_uuid, instance_uuid=None):
@@ -166,14 +167,14 @@ class KVMLibvirt(RuntimePlugin):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('configureEntity()', ' KVM Plugin - Configure a VM uuid %s ' % entity_uuid)
+        self.agent.logger.info('configure_entity()', ' KVM Plugin - Configure a VM uuid %s ' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
-            self.agent.logger.error('configureEntity()', 'KVM Plugin - Entity not exists')
+            self.agent.logger.error('configure_entity()', 'KVM Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.get_state() != State.DEFINED:
-            self.agent.logger.error('configureEntity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('configure_entity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
@@ -190,8 +191,8 @@ class KVMLibvirt(RuntimePlugin):
                 disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
                 cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
 
-                instance = KVMLibvirtEntityInstance(instance_uuid, entity.name, entity.cpu, entity.memory,disk_path,
-                                      entity.disk_size, cdrom_path, entity.networks, entity.image, entity.user_data,
+                instance = KVMLibvirtEntityInstance(instance_uuid, entity.name, entity.cpu, entity.ram, disk_path,
+                                      entity.disk_size, cdrom_path, entity.networks, entity.image, entity.user_file,
                                       entity.ssh_key, entity_uuid)
                 for i, n in enumerate(instance.networks):
                     if n.get('type') in ['wifi']:
@@ -211,7 +212,7 @@ class KVMLibvirt(RuntimePlugin):
                     if n.get('intf_name') is None:
                         n.update({'intf_name': 'veth{0}'.format(i)})
 
-                vm_xml = self.__generate_dom_xml(entity)
+                vm_xml = self.__generate_dom_xml(instance)
                 #image_name = instance.image.split('/')[-1]
 
                 #wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
@@ -262,7 +263,7 @@ class KVMLibvirt(RuntimePlugin):
                     self.conn.defineXML(vm_xml)
 
                 instance.on_configured(vm_xml)
-                entity.add_instance(instance_uuid)
+                entity.add_instance(instance)
                 self.current_entities.update({entity_uuid: entity})
 
                 uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
@@ -272,211 +273,268 @@ class KVMLibvirt(RuntimePlugin):
                 self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
                 #self.__update_actual_store(entity_uuid, vm_info)
 
-                self.agent.logger.info('configureEntity()', '[ DONE ] KVM Plugin - Configure a VM uuid %s ' % entity_uuid)
+                self.agent.logger.info('configure_entity()', '[ DONE ] KVM Plugin - Configure a VM uuid %s ' % entity_uuid)
                 return True
 
     def clean_entity(self, entity_uuid, instance_uuid=None):
 
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('cleanEntity()', ' KVM Plugin - Clean a VM uuid %s ' % entity_uuid)
+        self.agent.logger.info('clean_entity()', ' KVM Plugin - Clean a VM uuid %s ' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
-            self.agent.logger.error('cleanEntity()', 'KVM Plugin - Entity not exists')
+            self.agent.logger.error('clean_entity()', 'KVM Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() != State.CONFIGURED:
-            self.agent.logger.error('cleanEntity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
-                                                     str("Entity %s is not in CONFIGURED state" % entity_uuid))
+        elif entity.get_state() != State.DEFINED:
+            self.agent.logger.error('clean_entity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
-            dom = self.__lookup_by_uuid(entity_uuid)
-            if dom is not None:
-                dom.undefine()
+
+            if instance_uuid is None or not entity.has_instance(instance_uuid):
+                self.agent.logger.error('clean_entity()','KVM Plugin - Instance not found!!')
             else:
-                self.agent.logger.error('cleanEntity()', 'KVM Plugin - Domain not found!!')
-            #rm_cmd = str("rm -f %s %s /opt/fos/images/%s /opt/fos/logs/%s_log.log" %
-            #           (entity.cdrom, entity.disk, entity.image, entity_uuid))
-            #self.agent.getOSPlugin().executeCommand(rm_cmd)
-            self.agent.getOSPlugin().removeFile(entity.cdrom)
-            self.agent.getOSPlugin().removeFile(entity.disk)
-            self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
-            self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.LOG_DIR, entity_uuid))
+                instance = entity.get_instance(instance_uuid)
+                if instance.get_state() != State.CONFIGURED:
+                    self.agent.logger.error('clean_entity()',
+                                        'KVM Plugin - Instance state is wrong, or transition not allowed')
+                    raise StateTransitionNotAllowedException("Instance is not in CONFIGURED state",
+                                                         str("Instance %s is not in CONFIGURED state" % entity_uuid))
+                else:
+                    dom = self.__lookup_by_uuid(instance_uuid)
+                    if dom is not None:
+                        dom.undefine()
+                    else:
+                        self.agent.logger.error('clean_entity()', 'KVM Plugin - Domain not found!!')
+                    #rm_cmd = str("rm -f %s %s /opt/fos/images/%s /opt/fos/logs/%s_log.log" %
+                    #           (entity.cdrom, entity.disk, entity.image, entity_uuid))
+                    #self.agent.getOSPlugin().executeCommand(rm_cmd)
+                    self.agent.getOSPlugin().removeFile(instance.cdrom)
+                    self.agent.getOSPlugin().removeFile(instance.disk)
+                    #self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, instance.image))
+                    self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.LOG_DIR, instance_uuid))
 
+                    entity.remove_instance(instance)
+                    #entity.on_clean()
+                    self.current_entities.update({entity_uuid: entity})
 
-            entity.on_clean()
-            self.current_entities.update({entity_uuid: entity})
+                    #uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+                    #vm_info = json.loads(self.agent.dstore.get(uri))
+                    #vm_info.update({"status": "cleaned"})
+                    #self.__update_actual_store(entity_uuid, vm_info)
+                    self.__pop_actual_store_instance(entity_uuid, instance_uuid)
+                    self.agent.logger.info('clean_entity()', '[ DONE ] KVM Plugin - Clean a VM uuid %s ' % entity_uuid)
 
-            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.dstore.get(uri))
-            vm_info.update({"status": "cleaned"})
-            self.__update_actual_store(entity_uuid, vm_info)
-            self.agent.logger.info('cleanEntity()', '[ DONE ] KVM Plugin - Clean a VM uuid %s ' % entity_uuid)
-
-            return True
+                return True
 
     def run_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('runEntity()', ' KVM Plugin - Starting a VM uuid %s ' % entity_uuid)
+        self.agent.logger.info('run_entity()', ' KVM Plugin - Starting a VM uuid %s ' % entity_uuid)
         entity = self.current_entities.get(entity_uuid,None)
         if entity is None:
-            self.agent.logger.error('runEntity()', 'KVM Plugin - Entity not exists')
+            self.agent.logger.error('run_entity()', 'KVM Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() == State.RUNNING:
-            self.agent.logger.warning('runEntity()', 'KVM Plugin - Entity already running, some strange dput/put happen! eg after migration"')
-        elif entity.get_state() != State.CONFIGURED:
-            self.agent.logger.error('runEntity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
-                                                     str("Entity %s is not in CONFIGURED state" % entity_uuid))
+        #elif entity.get_state() == State.RUNNING:
+        #    self.agent.logger.warning('run_entity()', 'KVM Plugin - Entity already running, some strange dput/put
+        # happen! eg after migration"')
+        elif entity.get_state() != State.DEFINED:
+            self.agent.logger.error('run_entity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
-            self.__lookup_by_uuid(entity_uuid).create()
-            entity.on_start()
-            '''
-            Then after boot should update the `actual store` with the run status of the vm  
-            '''
-            log_filename = str("%s/%s/%s_log.log" % (self.BASE_DIR, self.LOG_DIR, entity_uuid))
-            if entity.user_file is not None and entity.user_file != '':
-                self.__wait_boot(log_filename, True)
+            if instance_uuid is None or not entity.has_instance(instance_uuid):
+                self.agent.logger.error('run_entity()','KVM Plugin - Instance not found!!')
             else:
-                self.__wait_boot(log_filename)
+                instance = entity.get_instance(instance_uuid)
+                if instance.get_state() != State.CONFIGURED:
+                    self.agent.logger.error('clean_entity()',
+                                            'KVM Plugin - Instance state is wrong, or transition not allowed')
+                    raise StateTransitionNotAllowedException("Instance is not in CONFIGURED state",
+                                                             str(
+                                                                 "Instance %s is not in CONFIGURED state" % entity_uuid))
+                else:
+                    self.__lookup_by_uuid(instance_uuid).create()
+                    instance.on_start()
+                    '''
+                    Then after boot should update the `actual store` with the run status of the vm  
+                    '''
+                    log_filename = str("%s/%s/%s_log.log" % (self.BASE_DIR, self.LOG_DIR, instance_uuid))
+                    if instance.user_file is not None and instance.user_file != '':
+                        self.__wait_boot(log_filename, True)
+                    else:
+                        self.__wait_boot(log_filename)
 
-            self.agent.logger.info('runEntity()', ' KVM Plugin - VM %s Started!' % entity_uuid)
-            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.dstore.get(uri))
-            vm_info.update({"status": "run"})
-            self.__update_actual_store(entity_uuid, vm_info)
-            '''
-            vm_info = .... load vm info from desidered store, update and save to actual store
-            json_data = json.dumps(vm_info)
-            uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.agent.uuid, self.uuid, entity_uuid))
-            self.agent.store.put(uri, json_data)
-            
-            '''
-            self.current_entities.update({entity_uuid: entity})
-            self.agent.logger.info('runEntity()', '[ DONE ] KVM Plugin - Starting a VM uuid %s ' % entity_uuid)
-            return True
+                    self.agent.logger.info('run_entity()', ' KVM Plugin - VM %s Started!' % instance)
+                    uri = str('%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, instance_uuid))
+                    vm_info = json.loads(self.agent.dstore.get(uri))
+                    vm_info.update({"status": "run"})
+                    self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
+                    '''
+                    vm_info = .... load vm info from desidered store, update and save to actual store
+                    json_data = json.dumps(vm_info)
+                    uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.agent.uuid, self.uuid, entity_uuid))
+                    self.agent.store.put(uri, json_data)
+                    
+                    '''
+                    self.current_entities.update({entity_uuid: entity})
+                    self.agent.logger.info('run_entity()', '[ DONE ] KVM Plugin - Starting a VM uuid %s ' % entity_uuid)
+                    return True
 
     def stop_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('stopEntity()', ' KVM Plugin - Stop a VM uuid %s ' % entity_uuid)
+        self.agent.logger.info('stop_entity()', ' KVM Plugin - Stop a VM uuid %s ' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
-            self.agent.logger.error('stopEntity()', 'KVM Plugin - Entity not exists')
+            self.agent.logger.error('stop_entity()', 'KVM Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() != State.RUNNING:
-            self.agent.logger.error('stopEntity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
-                                                     str("Entity %s is not in RUNNING state" % entity_uuid))
+        elif entity.get_state() != State.DEFINED:
+            self.agent.logger.error('stop_entity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
-            self.__lookup_by_uuid(entity_uuid).destroy()
-            entity.on_stop()
-            self.current_entities.update({entity_uuid: entity})
+            if instance_uuid is None or not entity.has_instance(instance_uuid):
+                self.agent.logger.error('run_entity()', 'KVM Plugin - Instance not found!!')
+            else:
+                instance = entity.get_instance(instance_uuid)
+                if instance.get_state() != State.RUNNING:
+                    self.agent.logger.error('clean_entity()',
+                                            'KVM Plugin - Instance state is wrong, or transition not allowed')
+                    raise StateTransitionNotAllowedException("Instance is not in RUNNING state",
+                                                             str(
+                                                                 "Instance %s is not in RUNNING state" % entity_uuid))
+                else:
+                    self.__lookup_by_uuid(instance_uuid).destroy()
+                    instance.on_stop()
+                    self.current_entities.update({entity_uuid: entity})
 
-            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.dstore.get(uri))
-            vm_info.update({"status": "stop"})
-            self.__update_actual_store(entity_uuid, vm_info)
-            self.agent.logger.info('stopEntity()', '[ DONE ] KVM Plugin - Stop a VM uuid %s ' % entity_uuid)
+                    uri = str('%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, instance_uuid))
+                    vm_info = json.loads(self.agent.dstore.get(uri))
+                    vm_info.update({"status": "stop"})
+                    self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
+                    self.agent.logger.info('stop_entity()', '[ DONE ] KVM Plugin - Stop a VM uuid %s ' % instance_uuid)
 
             return True
 
     def pause_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('pauseEntity()', ' KVM Plugin - Pause a VM uuid %s ' % entity_uuid)
+        self.agent.logger.info('pause_entity()', ' KVM Plugin - Pause a VM uuid %s ' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
-            self.agent.logger.error('pauseEntity()', 'KVM Plugin - Entity not exists')
+            self.agent.logger.error('pause_entity()', 'KVM Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() != State.RUNNING:
-            self.agent.logger.error('pauseEntity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
-                                                     str("Entity %s is not in RUNNING state" % entity_uuid))
+        elif entity.get_state() != State.DEFINED:
+            self.agent.logger.error('pause_entity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
-            self.__lookup_by_uuid(entity_uuid).suspend()
-            entity.on_pause()
-            self.current_entities.update({entity_uuid: entity})
-            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.dstore.get(uri))
-            vm_info.update({"status": "pause"})
-            self.__update_actual_store(entity_uuid, vm_info)
-            self.agent.logger.info('pauseEntity()', '[ DONE ] KVM Plugin - Pause a VM uuid %s ' % entity_uuid)
-            return True
+            if instance_uuid is None or not entity.has_instance(instance_uuid):
+                self.agent.logger.error('run_entity()', 'KVM Plugin - Instance not found!!')
+            else:
+                instance = entity.get_instance(instance_uuid)
+                if instance.get_state() != State.RUNNING:
+                    self.agent.logger.error('clean_entity()',
+                                            'KVM Plugin - Instance state is wrong, or transition not allowed')
+                    raise StateTransitionNotAllowedException("Instance is not in RUNNING state",
+                                                             str(
+                                                                 "Instance %s is not in RUNNING state" % entity_uuid))
+                else:
+                    self.__lookup_by_uuid(instance_uuid).suspend()
+                    instance.on_pause()
+                    self.current_entities.update({entity_uuid: entity})
+                    uri = str('%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, instance_uuid))
+                    vm_info = json.loads(self.agent.dstore.get(uri))
+                    vm_info.update({"status": "pause"})
+                    self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
+                    self.agent.logger.info('pause_entity()', '[ DONE ] KVM Plugin - Pause a VM uuid %s ' % instance_uuid)
+                    return True
 
     def resume_entity(self, entity_uuid, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('resumeEntity()', ' KVM Plugin - Resume a VM uuid %s ' % entity_uuid)
+        self.agent.logger.info('resume_entity()', ' KVM Plugin - Resume a VM uuid %s ' % entity_uuid)
         entity = self.current_entities.get(entity_uuid,None)
         if entity is None:
-            self.agent.logger.error('resumeEntity()', 'KVM Plugin - Entity not exists')
+            self.agent.logger.error('resume_entity()', 'KVM Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() != State.PAUSED:
-            self.agent.logger.error('resumeEntity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in PAUSED state",
-                                                     str("Entity %s is not in PAUSED state" % entity_uuid))
+        elif entity.get_state() != State.DEFINED:
+            self.agent.logger.error('resume_entity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
-            self.__lookup_by_uuid(entity_uuid).resume()
-            entity.on_resume()
-            self.current_entities.update({entity_uuid: entity})
-
-            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-            vm_info = json.loads(self.agent.dstore.get(uri))
-            vm_info.update({"status": "run"})
-            self.__update_actual_store(entity_uuid, vm_info)
-            self.agent.logger.info('resumeEntity()', '[ DONE ] KVM Plugin - Resume a VM uuid %s ' % entity_uuid)
-            return True
+            if instance_uuid is None or not entity.has_instance(instance_uuid):
+                self.agent.logger.error('run_entity()', 'KVM Plugin - Instance not found!!')
+            else:
+                instance = entity.get_instance(instance_uuid)
+                if instance.get_state() != State.PAUSED:
+                    self.agent.logger.error('clean_entity()',
+                                            'KVM Plugin - Instance state is wrong, or transition not allowed')
+                    raise StateTransitionNotAllowedException("Instance is not in PAUSED state",
+                                                             str(
+                                                                 "Instance %s is not in PAUSED state" % entity_uuid))
+                else:
+                    self.__lookup_by_uuid(instance_uuid).resume()
+                    instance_uuid.on_resume()
+                    self.current_entities.update({entity_uuid: entity})
+                    uri = str('%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, instance_uuid))
+                    vm_info = json.loads(self.agent.dstore.get(uri))
+                    vm_info.update({"status": "run"})
+                    self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
+                    self.agent.logger.info('resume_entity()', '[ DONE ] KVM Plugin - Resume a VM uuid %s ' % instance_uuid)
+                    return True
 
 
     def migrate_entity(self, entity_uuid, dst=False, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
-        self.agent.logger.info('migrateEntity()', ' KVM Plugin - Migrate a VM uuid %s ' % entity_uuid)
+        self.agent.logger.info('migrate_entity()', ' KVM Plugin - Migrate a VM uuid %s ' % entity_uuid)
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
             if dst is True:
-                self.agent.logger.info('migrateEntity()', " KVM Plugin - I\'m the Destination Node")
+                self.agent.logger.info('migrate_entity()', " KVM Plugin - I\'m the Destination Node")
                 self.before_migrate_entity_actions(entity_uuid, True)
 
                 while True:  # wait for migration to be finished
                     dom = self.__lookup_by_uuid(entity_uuid)
                     if dom is None:
-                        self.agent.logger.info('migrateEntity()', ' KVM Plugin - Domain not already in this host')
+                        self.agent.logger.info('migrate_entity()', ' KVM Plugin - Domain not already in this host')
                         time.sleep(5)
                     else:
                         if dom.isActive() == 1:
                             break
                         else:
-                            self.agent.logger.info('migrateEntity()', ' KVM Plugin - Domain in this host but not running')
+                            self.agent.logger.info('migrate_entity()', ' KVM Plugin - Domain in this host but not running')
                             time.sleep(5)
 
                 self.after_migrate_entity_actions(entity_uuid, True)
-                self.agent.logger.info('migrateEntity()', '[ DONE ] KVM Plugin - Migrate a VM uuid %s ' % entity_uuid)
+                self.agent.logger.info('migrate_entity()', '[ DONE ] KVM Plugin - Migrate a VM uuid %s ' % entity_uuid)
                 return True
 
             else:
-                self.agent.logger.error('migrateEntity()', 'KVM Plugin - Entity not exists')
+                self.agent.logger.error('migrate_entity()', 'KVM Plugin - Entity not exists')
                 raise EntityNotExistingException("Enitity not existing",
                                                  str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.get_state() not in [State.RUNNING, State.TAKING_OFF]:
-            self.agent.logger.error('migrateEntity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('migrate_entity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
-            self.agent.logger.info('migrateEntity()', " KVM Plugin - I\'m the Source Node")
+            self.agent.logger.info('migrate_entity()', " KVM Plugin - I\'m the Source Node")
             self.before_migrate_entity_actions(entity_uuid)
             self.after_migrate_entity_actions(entity_uuid)
 
 
     def before_migrate_entity_actions(self, entity_uuid, dst=False, instance_uuid=None):
         if dst is True:
-            self.agent.logger.info('beforeMigrateEntityActions()', ' KVM Plugin - Before Migration Destination: Create Domain and destination files')
+            self.agent.logger.info('before_migrate_entity_actions()', ' KVM Plugin - Before Migration Destination: '
+                                                                     'Create Domain and destination files')
             uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
             entity_info = json.loads(self.agent.dstore.get(uri))
             vm_info = entity_info.get("entity_data")
@@ -536,7 +594,8 @@ class KVMLibvirt(RuntimePlugin):
 
             return True
         else:
-            self.agent.logger.info('beforeMigrateEntityActions()', ' KVM Plugin - Before Migration Source: get information about destination node')
+            self.agent.logger.info('before_migrate_entity_actions()', ' KVM Plugin - Before Migration Source: get '
+                                                                     'information about destination node')
             entity = self.current_entities.get(entity_uuid, None)
             uri = str("%s/%s/%s" % (self.agent.dhome, self.HOME, entity_uuid))
             fognode_uuid = json.loads(self.agent.dstore.get(uri)).get("dst")
@@ -547,7 +606,8 @@ class KVMLibvirt(RuntimePlugin):
             runtimes = [x for x in all_plugins if x.get('type') == 'runtime']
             search = [x for x in runtimes if 'KVMLibvirt' in x.get('name')]
             if len(search) == 0:
-                self.agent.logger.error('beforeMigrateEntityActions()', 'KVM Plugin - Before Migration Source: No KVM Plugin, Aborting!!!')
+                self.agent.logger.error('before_migrate_entity_actions()', 'KVM Plugin - Before Migration Source: No '
+                                                                          'KVM Plugin, Aborting!!!')
                 exit()
             else:
                 kvm = search[0]
@@ -556,7 +616,8 @@ class KVMLibvirt(RuntimePlugin):
 
             flag = False
             while flag:
-                self.agent.logger.info('beforeMigrateEntityActions()', ' KVM Plugin - Before Migration Source: Waiting destination to be '
+                self.agent.logger.info('before_migrate_entity_actions()', ' KVM Plugin - Before Migration Source: '
+                                                                         'Waiting destination to be '
                                         'ready')
                 time.sleep(1)
                 uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (dst, kvm.get('uuid'), entity_uuid))
@@ -599,16 +660,19 @@ class KVMLibvirt(RuntimePlugin):
             dst_host = str('qemu+ssh://%s/system' % dst_ip)
             dest_conn = libvirt.open(dst_host)
             if dest_conn is None:
-                self.agent.logger.error('beforeMigrateEntityActions()', 'KVM Plugin - Before Migration Source: Error on libvirt connection')
+                self.agent.logger.error('before_migrate_entity_actions()', 'KVM Plugin - Before Migration Source: '
+                                                                          'Error on libvirt connection')
                 exit(1)
             new_dom = dom.migrate(dest_conn,
                                   libvirt.VIR_MIGRATE_LIVE and libvirt.VIR_MIGRATE_PERSIST_DEST and libvirt.VIR_MIGRATE_NON_SHARED_DISK,
                                                                         entity.name, None, 0)
             if new_dom is None:
-                self.agent.logger.error('beforeMigrateEntityActions()', 'KVM Plugin - Before Migration Source: Migration failed')
+                self.agent.logger.error('before_migrate_entity_actions()', 'KVM Plugin - Before Migration Source: '
+                                                                          'Migration failed')
                 exit(1)
 
-                self.agent.logger.info('beforeMigrateEntityActions()', ' KVM Plugin - Before Migration Source: Migration succeeds')
+                self.agent.logger.info('before_migrate_entity_actions()', ' KVM Plugin - Before Migration Source: '
+                                                                         'Migration succeeds')
             dest_conn.close()
             # #######################################
 
@@ -622,11 +686,11 @@ class KVMLibvirt(RuntimePlugin):
             entity_uuid = entity_uuid.get('entity_uuid')
         entity = self.current_entities.get(entity_uuid, None)
         if entity is None:
-            self.agent.logger.error('afterMigrateEntityActions()', 'KVM Plugin - Entity not exists')
+            self.agent.logger.error('after_migrate_entity_actions()', 'KVM Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
         elif entity.get_state() not in (State.TAKING_OFF, State.LANDING, State.RUNNING):
-            self.agent.logger.error('afterMigrateEntityActions()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
+            self.agent.logger.error('after_migrate_entity_actions()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
             raise StateTransitionNotAllowedException("Entity is not in correct state",
                                                      str("Entity %s is not in correct state" % entity.get_state()))
         else:
@@ -634,7 +698,7 @@ class KVMLibvirt(RuntimePlugin):
                 '''
                 Here the plugin also update to the current status, and remove unused keys
                 '''
-                self.agent.logger.info('afterMigrateEntityActions()', ' KVM Plugin - After Migration Destination: Updating state')
+                self.agent.logger.info('after_migrate_entity_actions()', ' KVM Plugin - After Migration Destination: Updating state')
                 entity.on_start()
                 self.current_entities.update({entity_uuid: entity})
 
@@ -651,7 +715,7 @@ class KVMLibvirt(RuntimePlugin):
                 '''
                 Source node destroys all information about vm
                 '''
-                self.agent.logger.info('afterMigrateEntityActions()', ' KVM Plugin - After Migration Source: Updating state, destroy vm')
+                self.agent.logger.info('after_migrate_entity_actions()', ' KVM Plugin - After Migration Source: Updating state, destroy vm')
                 entity.state = State.CONFIGURED
                 self.current_entities.update({entity_uuid: entity})
                 self.clean_entity(entity_uuid)
@@ -660,28 +724,52 @@ class KVMLibvirt(RuntimePlugin):
 
     def __react_to_cache(self, uri, value, v):
         self.agent.logger.info('__react_to_cache()', ' KVM Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
-        if value is None and v is None:
-            self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
-            entity_uuid = uri.split('/')[-1]
-            self.undefine_entity(entity_uuid)
-        else:
-            uuid = uri.split('/')[-1]
-            value = json.loads(value)
-            action = value.get('status')
-            entity_data = value.get('entity_data')
-            #print(type(entity_data))
-            react_func = self.__react(action)
-            if react_func is not None and entity_data is None:
-                react_func(uuid)
-            elif react_func is not None:
-                entity_data.update({'entity_uuid': uuid})
-                if action == 'define':
-                    react_func(**entity_data)
-                else:
+
+        if uri.split('/')[-2] == 'entity':
+            if value is None and v is None:
+                self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+                entity_uuid = uri.split('/')[-1]
+                self.undefine_entity(entity_uuid)
+            else:
+                uuid = uri.split('/')[-1]
+                value = json.loads(value)
+                action = value.get('status')
+                entity_data = value.get('entity_data')
+                #print(type(entity_data))
+                react_func = self.__react(action)
+                if react_func is not None and entity_data is None:
+                    react_func(uuid)
+                elif react_func is not None:
+                    entity_data.update({'entity_uuid': uuid})
+                    if action == 'define':
+                        react_func(**entity_data)
+                    else:
+                        if action == 'landing':
+                            react_func(entity_data, dst=True)
+                        else:
+                                react_func(entity_data)
+        elif uri.split('/')[-2] == 'instance':
+            if value is None and v is None:
+                self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+                instance_uuid = uri.split('/')[-1]
+                entity_uuid = uri.split('/')[-3]
+                self.__force_entity_instance_termination(entity_uuid,instance_uuid)
+            else:
+                instance_uuid = uri.split('/')[-1]
+                entity_uuid = uri.split('/')[-3]
+                value = json.loads(value)
+                action = value.get('status')
+                entity_data = value.get('entity_data')
+                #print(type(entity_data))
+                react_func = self.__react(action)
+                if react_func is not None and entity_data is None:
+                    react_func(entity_uuid, instance_uuid)
+                elif react_func is not None:
+                    entity_data.update({'entity_uuid': entity_uuid})
                     if action == 'landing':
                         react_func(entity_data, dst=True)
                     else:
-                            react_func(entity_data)
+                        react_func(entity_data)
 
     def __random_mac_generator(self):
         mac = [0x00, 0x16, 0x3e,
@@ -730,12 +818,50 @@ class KVMLibvirt(RuntimePlugin):
                         found = m.group(1)
                         return found
 
-    def __generate_dom_xml(self, entity):
+    # def __generate_dom_xml(self, entity):
+    #     template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'vm.xml'))
+    #     vm_xml = Environment().from_string(template_xml)
+    #     vm_xml = vm_xml.render(name=entity.name, uuid=entity.uuid, memory=entity.ram,
+    #                            cpu=entity.cpu, disk_image=entity.disk,
+    #                            iso_image=entity.cdrom, networks=entity.networks)
+    #     return vm_xml
+
+    def __force_entity_instance_termination(self, entity_uuid, instance_uuid):
+        if type(entity_uuid) == dict:
+            entity_uuid = entity_uuid.get('entity_uuid')
+        self.agent.logger.info('stop_entity()', ' KVM Plugin - Stop a VM uuid %s ' % entity_uuid)
+        entity = self.current_entities.get(entity_uuid, None)
+        if entity is None:
+            self.agent.logger.error('stop_entity()', 'KVM Plugin - Entity not exists')
+            raise EntityNotExistingException("Enitity not existing",
+                                             str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
+        else:
+            if instance_uuid is None or not entity.has_instance(instance_uuid):
+                self.agent.logger.error('run_entity()', 'KVM Plugin - Instance not found!!')
+            else:
+                instance = entity.get_instance(instance_uuid)
+                if instance.get_state() == State.PAUSED:
+                    self.resume_entity(entity_uuid, instance_uuid)
+                    self.stop_entity(entity_uuid, instance_uuid)
+                    self.clean_entity(entity_uuid, instance_uuid)
+                #    self.undefine_entity(k)
+                if instance.get_state() == State.RUNNING:
+                    self.stop_entity(entity_uuid, instance_uuid)
+                    self.clean_entity(entity_uuid, instance_uuid)
+                #    self.undefine_entity(k)
+                if instance.get_state() == State.CONFIGURED:
+                    self.clean_entity(entity_uuid, instance_uuid)
+                #    self.undefine_entity(k)
+                #if instance.get_state() == State.DEFINED:
+                #    self.undefine_entity(k)
+
+
+    def __generate_dom_xml(self, instance):
         template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'vm.xml'))
         vm_xml = Environment().from_string(template_xml)
-        vm_xml = vm_xml.render(name=entity.name, uuid=entity.uuid, memory=entity.ram,
-                               cpu=entity.cpu, disk_image=entity.disk,
-                               iso_image=entity.cdrom, networks=entity.networks)
+        vm_xml = vm_xml.render(name=instance.name, uuid=instance.uuid, memory=instance.ram,
+                               cpu=instance.cpu, disk_image=instance.disk,
+                               iso_image=instance.cdrom, networks=instance.networks)
         return vm_xml
 
     def __update_actual_store(self, uri, value):
@@ -744,7 +870,7 @@ class KVMLibvirt(RuntimePlugin):
         self.agent.astore.put(uri, value)
 
     def __update_actual_store_instance(self, entity_uuid, instance_uuid, value):
-        uri = str("%s/%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid, instance_uuid))
+        uri = str("%s/%s/%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
         value = json.dumps(value)
         self.agent.astore.put(uri, value)
 
@@ -757,7 +883,7 @@ class KVMLibvirt(RuntimePlugin):
 
     def __pop_actual_store_instance(self, entity_uuid, instance_uuid):
         # e = uri
-        uri = str("%s/%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid, instance_uuid))
+        uri = str("%s/%s/%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
         self.agent.astore.remove(uri)
 
     def __netmask_to_cidr(self, netmask):

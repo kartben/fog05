@@ -51,3 +51,6 @@ class Entity(object):
     def remove_instance(self, instance_object):
         if instance_object.uuid in self.instances.keys():
             self.instances.pop(instance_object.uuid);
+
+    def get_instance(self,instance_uuid):
+        return self.instances.get(instance_uuid, None)

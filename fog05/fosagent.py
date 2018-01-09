@@ -507,7 +507,7 @@ class FosAgent(Agent):
         # TODO fix try catch
         for k in keys:
             try:
-                self.__rtPlugins.get(k).stopRuntime()
+                self.__rtPlugins.get(k).stop_runtime()
             except Exception as e:
                 self.logger.error('__exit_gracefully()', '{0}'.format(e))
                 traceback.print_exc()
