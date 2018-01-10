@@ -59,7 +59,7 @@ class Server (object):
         await websocket.send("NOK {}".format(val))
 
     async def send_success(self, websocket, val):
-        await websocket.send("OK ".format(val))
+        await websocket.send("OK {}".format(val))
 
     async def handle_command(self, websocket, cid, sid, args):
         # self.logger.debug("fog05ws", ">> Handling command {}".format(cid))
@@ -72,33 +72,34 @@ class Server (object):
         else:
             self.sessionMap[raddr] = session
 
+        print("### Store Id {} Keys: {}".format(sid, str(session.keys())))
         # -- Create
         if cid == 'create':
             if not (sid in session.keys()):
                 s = self.create_store(sid, args)
                 if s is None:
-                    self.send_error(websocket, cid)
+                    await self.send_error(websocket, cid)
                 else:
-                    self.send_success(websocket, cid)
+                    session[sid] = s
+                    await self.send_success(websocket, cid)
 
         # -- Put
         elif cid == 'put':
             if sid in session.keys():
                 store = session.get(sid)
                 self.put(store, args)
-                self.send_success(cid)
+                await self.send_success(websocket, "{} {} {}".format(cid, sid, args[0]))
             else:
-                self.send_error(cid)
+                await self.send_error(websocket, cid)
 
         elif cid == 'get':
             if sid in session.keys():
                 store = session.get(sid)
                 v = self.get(store, args)
-                self.send_success("{} {} {}".format(cid, args[0], v))
+                await self.send_success(websocket, "{} {} {} {}".format(cid, sid, args[0], v))
             else:
-                self.send_error(cid)
+                await self.send_error(websocket, cid)
 
-        await websocket.send("Command Executed")
 
     async def dispatch(self, websocket, path):
         while True:
