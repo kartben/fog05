@@ -118,8 +118,7 @@ class KVMLibvirt(RuntimePlugin):
             return None
 
         image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image.split('/')[-1])
-        image_url = entity.image
-        self.agent.getOSPlugin().downloadFile(image_url, image_name)
+        self.agent.getOSPlugin().downloadFile(entity.image_url, image_name)
         entity.image = image_name
 
         entity.set_state(State.DEFINED)
@@ -149,6 +148,7 @@ class KVMLibvirt(RuntimePlugin):
             if(self.current_entities.pop(entity_uuid, None)) is None:
                 self.agent.logger.warning('undefine_entity()', 'KVM Plugin - pop from entities dict returned none')
 
+            self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
             self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefine_entity()', '[ DONE ] KVM Plugin - Undefine a VM uuid %s ' % entity_uuid)
             return True
@@ -188,12 +188,13 @@ class KVMLibvirt(RuntimePlugin):
                 print("This instance already existis!!")
             else:
 
+                id = len(entity.instances)
                 disk_path = str('%s.qcow2' % instance_uuid)
                 cdrom_path = str('%s_config.iso' % instance_uuid)
                 disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
                 cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
                 #uuid, name, cpu, ram, disk, disk_size, cdrom, networks, image, user_file, ssh_key, entity_uuid)
-                instance = KVMLibvirtEntityInstance(instance_uuid, entity.name, entity.cpu, entity.ram, disk_path,
+                instance = KVMLibvirtEntityInstance(instance_uuid, entity.name+id, entity.cpu, entity.ram, disk_path,
                                       entity.disk_size, cdrom_path, entity.networks, entity.image, entity.user_file,
                                       entity.ssh_key, entity_uuid)
                 for i, n in enumerate(instance.networks):
@@ -302,7 +303,7 @@ class KVMLibvirt(RuntimePlugin):
                     self.agent.logger.error('clean_entity()',
                                         'KVM Plugin - Instance state is wrong, or transition not allowed')
                     raise StateTransitionNotAllowedException("Instance is not in CONFIGURED state",
-                                                         str("Instance %s is not in CONFIGURED state" % entity_uuid))
+                                                         str("Instance %s is not in CONFIGURED state" % instance_uuid))
                 else:
                     dom = self.__lookup_by_uuid(instance_uuid)
                     if dom is not None:
@@ -356,7 +357,7 @@ class KVMLibvirt(RuntimePlugin):
                                             'KVM Plugin - Instance state is wrong, or transition not allowed')
                     raise StateTransitionNotAllowedException("Instance is not in CONFIGURED state",
                                                              str(
-                                                                 "Instance %s is not in CONFIGURED state" % entity_uuid))
+                                                                 "Instance %s is not in CONFIGURED state" % instance_uuid))
                 else:
                     self.__lookup_by_uuid(instance_uuid).create()
                     instance.on_start()
@@ -408,7 +409,7 @@ class KVMLibvirt(RuntimePlugin):
                                             'KVM Plugin - Instance state is wrong, or transition not allowed')
                     raise StateTransitionNotAllowedException("Instance is not in RUNNING state",
                                                              str(
-                                                                 "Instance %s is not in RUNNING state" % entity_uuid))
+                                                                 "Instance %s is not in RUNNING state" % instance_uuid))
                 else:
                     self.__lookup_by_uuid(instance_uuid).destroy()
                     instance.on_stop()
@@ -446,7 +447,7 @@ class KVMLibvirt(RuntimePlugin):
                                             'KVM Plugin - Instance state is wrong, or transition not allowed')
                     raise StateTransitionNotAllowedException("Instance is not in RUNNING state",
                                                              str(
-                                                                 "Instance %s is not in RUNNING state" % entity_uuid))
+                                                                 "Instance %s is not in RUNNING state" % instance_uuid))
                 else:
                     self.__lookup_by_uuid(instance_uuid).suspend()
                     instance.on_pause()
@@ -717,6 +718,11 @@ class KVMLibvirt(RuntimePlugin):
                 '''
                 self.agent.logger.info('after_migrate_entity_actions()', ' KVM Plugin - After Migration Destination: Updating state')
                 instance.on_start()
+
+                image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image.split('/')[-1])
+                self.agent.getOSPlugin().downloadFile(entity.image_url, image_name)
+                entity.image = image_name
+
                 self.current_entities.update({entity_uuid: entity})
 
                 uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid,self.INSTANCE,instance_uuid))
@@ -738,7 +744,6 @@ class KVMLibvirt(RuntimePlugin):
 
     def __react_to_cache(self, uri, value, v):
         self.agent.logger.info('__react_to_cache()', ' KVM Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
-
         if uri.split('/')[-2] == 'entity':
             if value is None and v is None:
                 self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
