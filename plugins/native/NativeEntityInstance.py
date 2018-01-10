@@ -1,21 +1,20 @@
 import sys
 import os
 from fog05.interfaces.States import State
-from fog05.interfaces.Entity import Entity
 
+from fog05.interfaces.EntityInstance import EntityInstance
 
-class NativeEntity(Entity):
-    def __init__(self, uuid, name, command, source, args, outfile):
-        super(NativeEntity, self).__init__()
+class NativeEntityInstance(EntityInstance):
+    def __init__(self, uuid, name, command, source, args, outfile, entity_uuid):
+        super(NativeEntityInstance, self).__init__(uuid, entity_uuid)
         self.uuid = uuid
         self.name = name
         self.command = command
         self.args = args
         self.outfile = outfile
         self.pid = -1
-        self.source_url = source
+        self.source = source
         self.process = None
-        self.source = ""
 
 
     def on_configured(self):

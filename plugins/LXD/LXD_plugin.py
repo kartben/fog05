@@ -267,14 +267,14 @@ class LXD(RuntimePlugin):
                                                      str("Entity %s is not in CONFIGURED state" % entity_uuid))
         else:
             if instance_uuid is None or not entity.has_instance(instance_uuid):
-                self.agent.logger.error('clean_entity()','KVM Plugin - Instance not found!!')
+                self.agent.logger.error('clean_entity()','LXD Plugin - Instance not found!!')
             else:
                 instance = entity.get_instance(instance_uuid)
                 if instance.get_state() != State.CONFIGURED:
                     self.agent.logger.error('clean_entity()',
-                                        'KVM Plugin - Instance state is wrong, or transition not allowed')
+                                        'LXD Plugin - Instance state is wrong, or transition not allowed')
                     raise StateTransitionNotAllowedException("Instance is not in CONFIGURED state",
-                                                         str("Instance %s is not in CONFIGURED state" % entity_uuid))
+                                                         str("Instance %s is not in CONFIGURED state" % instance_uuid))
                 else:
 
                     self.agent.logger.info('cleanEntity()', '{0}'.format(instance))
@@ -309,7 +309,7 @@ class LXD(RuntimePlugin):
                     #container_info.update({"status": "cleaned"})
                     #self.__update_actual_store(entity_uuid, container_info)
                     self.__pop_actual_store_instance(entity_uuid, instance_uuid)
-                    self.agent.logger.info('cleanEntity()', '[ DONE ] LXD Plugin - Clean a Container uuid %s ' % entity_uuid)
+                    self.agent.logger.info('cleanEntity()', '[ DONE ] LXD Plugin - Clean a Container uuid %s ' % instance_uuid)
 
             return True
 
@@ -382,8 +382,7 @@ class LXD(RuntimePlugin):
                 instance.on_stop()
                 self.current_entities.update({entity_uuid: entity})
 
-                uri = str(
-                    '%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+                uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
                 container_info = json.loads(self.agent.dstore.get(uri))
                 container_info.update({"status": "stop"})
                 self.__update_actual_store_instance(entity_uuid, instance_uuid, container_info)

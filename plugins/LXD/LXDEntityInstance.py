@@ -9,7 +9,6 @@ class LXDEntityInstance(EntityInstance):
     def __init__(self, uuid, name, networks, image, user_file, ssh_key, storage, profiles, entity_uuid):
 
         super(LXDEntityInstance, self).__init__(uuid, entity_uuid)
-        self.uuid = uuid
         self.name = name
         self.networks = networks
         self.image = image
