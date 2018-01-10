@@ -2,16 +2,15 @@ import sys
 import os
 sys.path.append(os.path.join(sys.path[0],'interfaces'))
 from fog05.interfaces.States import State
-from fog05.interfaces.Entity import Entity
+from fog05.interfaces.EntityInstance import EntityInstance
 from jinja2 import Environment
 import json
 
-class KVMLibvirtEntityInstance(Entity):
+class KVMLibvirtEntityInstance(EntityInstance):
 
     def __init__(self, uuid, name, cpu, ram, disk, disk_size, cdrom, networks, image, user_file, ssh_key, entity_uuid):
 
-        super(KVMLibvirtEntityInstance, self).__init__()
-        self.uuid = uuid
+        super(KVMLibvirtEntityInstance, self).__init__(uuid, entity_uuid)
         self.name = name
         self.cpu = cpu
         self.ram = ram
@@ -22,7 +21,6 @@ class KVMLibvirtEntityInstance(Entity):
         self.image = image
         self.user_file = user_file
         self.ssh_key = ssh_key
-        self.entity_uuid = entity_uuid
 
     def on_configured(self, configuration):
         self.xml = configuration

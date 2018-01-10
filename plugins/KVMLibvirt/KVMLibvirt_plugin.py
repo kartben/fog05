@@ -63,18 +63,20 @@ class KVMLibvirt(RuntimePlugin):
         self.agent.logger.info('stopRuntime()', ' KVM Plugin - Destroying running domains')
         for k in list(self.current_entities.keys()):
             entity = self.current_entities.get(k)
-            if entity.get_state() == State.PAUSED:
-                self.resume_entity(k)
-                self.stop_entity(k)
-                self.clean_entity(k)
-                self.undefine_entity(k)
-            if entity.get_state() == State.RUNNING:
-                self.stop_entity(k)
-                self.clean_entity(k)
-                self.undefine_entity(k)
-            if entity.get_state() == State.CONFIGURED:
-                self.clean_entity(k)
-                self.undefine_entity(k)
+            for i in list(entity.instances.keys()):
+                self.__force_entity_instance_termination(k, i)
+            # if entity.get_state() == State.PAUSED:
+            #     self.resume_entity(k)
+            #     self.stop_entity(k)
+            #     self.clean_entity(k)
+            #     self.undefine_entity(k)
+            # if entity.get_state() == State.RUNNING:
+            #     self.stop_entity(k)
+            #     self.clean_entity(k)
+            #     self.undefine_entity(k)
+            # if entity.get_state() == State.CONFIGURED:
+            #     self.clean_entity(k)
+            #     self.undefine_entity(k)
             if entity.get_state() == State.DEFINED:
                 self.undefine_entity(k)
 
@@ -190,7 +192,7 @@ class KVMLibvirt(RuntimePlugin):
                 cdrom_path = str('%s_config.iso' % instance_uuid)
                 disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
                 cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
-
+                #uuid, name, cpu, ram, disk, disk_size, cdrom, networks, image, user_file, ssh_key, entity_uuid)
                 instance = KVMLibvirtEntityInstance(instance_uuid, entity.name, entity.cpu, entity.ram, disk_path,
                                       entity.disk_size, cdrom_path, entity.networks, entity.image, entity.user_file,
                                       entity.ssh_key, entity_uuid)
@@ -368,7 +370,7 @@ class KVMLibvirt(RuntimePlugin):
                         self.__wait_boot(log_filename)
 
                     self.agent.logger.info('run_entity()', ' KVM Plugin - VM %s Started!' % instance)
-                    uri = str('%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, instance_uuid))
+                    uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid,self.INSTANCE, instance_uuid))
                     vm_info = json.loads(self.agent.dstore.get(uri))
                     vm_info.update({"status": "run"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
@@ -412,7 +414,8 @@ class KVMLibvirt(RuntimePlugin):
                     instance.on_stop()
                     self.current_entities.update({entity_uuid: entity})
 
-                    uri = str('%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, instance_uuid))
+                    uri = str(
+                        '%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
                     vm_info = json.loads(self.agent.dstore.get(uri))
                     vm_info.update({"status": "stop"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
@@ -448,7 +451,8 @@ class KVMLibvirt(RuntimePlugin):
                     self.__lookup_by_uuid(instance_uuid).suspend()
                     instance.on_pause()
                     self.current_entities.update({entity_uuid: entity})
-                    uri = str('%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, instance_uuid))
+                    uri = str(
+                        '%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
                     vm_info = json.loads(self.agent.dstore.get(uri))
                     vm_info.update({"status": "pause"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
@@ -483,7 +487,8 @@ class KVMLibvirt(RuntimePlugin):
                     self.__lookup_by_uuid(instance_uuid).resume()
                     instance_uuid.on_resume()
                     self.current_entities.update({entity_uuid: entity})
-                    uri = str('%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, instance_uuid))
+                    uri = str(
+                        '%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
                     vm_info = json.loads(self.agent.dstore.get(uri))
                     vm_info.update({"status": "run"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
