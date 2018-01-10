@@ -217,56 +217,60 @@ class FOSCli(object):
         self.store.desidered.remove(uri)
         time.sleep(5)
 
-    def __send_configure_entity(self, node_uuid, entity_uuid):
+    def __send_configure_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=configure' % (node_uuid, handler, entity_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=configure' % (node_uuid, handler,
+                                                                                        entity_uuid, instance_uuid))
         self.store.desidered.dput(uri)
         while True:
             time.sleep(1)
-            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
             entity_info = json.loads(self.store.actual.get(uri))
             if entity_info is not None and entity_info.get('status') == 'configured':
                 break
 
-    def __send_clean_entity(self, node_uuid, entity_uuid):
+    def __send_clean_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=clean' % (node_uuid, handler, entity_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=clean' % (node_uuid, handler,
+                                                                                        entity_uuid, instance_uuid))
         self.store.desidered.dput(uri)
         while True:
             time.sleep(1)
-            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
             entity_info = json.loads(self.store.actual.get(uri))
             if entity_info is not None and entity_info.get('status') == 'cleaned':
                 break
 
-    def __send_run_entity(self, node_uuid, entity_uuid):
+    def __send_run_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=run' % (node_uuid, handler, entity_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=run' % (node_uuid, handler,
+                                                                                      entity_uuid, instance_uuid))
         self.store.desidered.dput(uri)
 
         tries = 0
 
         while True:
             time.sleep(1)
-            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
             entity_info = json.loads(self.store.actual.get(uri))
             if entity_info is not None and entity_info.get('status') == 'run':
                 break
 
-    def __send_stop_entity(self, node_uuid, entity_uuid):
+    def __send_stop_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s#status=stop' % (node_uuid, handler, entity_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=stop' % (node_uuid, handler,
+                                                                                       entity_uuid, instance_uuid))
         self.store.desidered.dput(uri)
         while True:
             time.sleep(1)
-            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
             entity_info = json.loads(self.store.actual.get(uri))
             if entity_info is not None and entity_info.get('status') == 'stop':
                 break
 
-    def __sent_migrate_entity(self, node_uuid, entity_uuid, destination_uuid):
+    def __sent_migrate_entity(self, node_uuid, entity_uuid, destination_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+        uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
         entity_info = json.loads(self.store.actual.get(uri))
 
         entity_info_src = entity_info.copy()
@@ -283,15 +287,18 @@ class FOSCli(object):
             print("Error Destination node can't handle this type of entity {0}".format(entity_info_dst.get('type')))
             self.exit(-1)
 
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (destination_uuid, destination_handler.get('uuid'), entity_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (destination_uuid, destination_handler.get(
+            'uuid'), entity_uuid, instance_uuid))
         self.store.desidered.put(uri, json.dumps(entity_info_dst))
 
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
         self.store.desidered.dput(uri, json.dumps(entity_info_src))
 
         while True:
             time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (destination_uuid, destination_handler.get('uuid'), entity_uuid))
+            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s" % (destination_uuid,
+                                                                               destination_handler.get('uuid'),
+                                                                               entity_uuid, instance_uuid))
             en_info = json.loads(self.store.actual.get(uri))
             if en_info is not None and en_info.get("status") == "run":
                 break
@@ -462,7 +469,7 @@ class FOSCli(object):
                 return
 
 
-    def entity(self, en_list, action, node_uuid, manifest, entity_uuid, dest_node):
+    def entity(self, en_list, action, node_uuid, manifest, entity_uuid, instance_uuid, dest_node):
         #print(en_list,action,node_uuid,manifest,entity_uuid,dest_node)
         if en_list:
             uri = str('afos://<sys-id>/*/runtime/*/entity/*')
@@ -494,26 +501,25 @@ class FOSCli(object):
         if action == 'undefine':
             self.__send_undefine_entity(node_uuid, entity_uuid)
             print('Entity %s undefined' % entity_uuid)
-            return
-        if action == 'configure':
+        if action == 'configure' and instance_uuid is not None:
             self.__send_configure_entity(node_uuid, entity_uuid)
             print('Entity %s configured' % entity_uuid)
-        if action == 'clean':
+        if action == 'clean' and instance_uuid is not None:
             self.__send_clean_entity(node_uuid, entity_uuid)
             print('Entity %s cleaned' % entity_uuid)
-        if action == 'run':
+        if action == 'run' and instance_uuid is not None:
             self.__send_run_entity(node_uuid, entity_uuid)
             print('Entity %s started' % entity_uuid)
-        if action == 'stop':
+        if action == 'stop' and instance_uuid is not None:
             self.__send_stop_entity(node_uuid, entity_uuid)
             print('Entity %s stopped' % entity_uuid)
-        if action == 'pause':
+        if action == 'pause' and instance_uuid is not None:
             self.__send_pause_entity(node_uuid, entity_uuid)
             print('Pause sended')
-        if action == 'resume':
+        if action == 'resume' and instance_uuid is not None:
             self.__send_resume_entity(node_uuid, entity_uuid)
             print('Resume sended')
-        if action == 'migrate' and dest_node is not None:
+        if action == 'migrate' and dest_node is not None and instance_uuid is not None:
             self.__sent_migrate_entity(node_uuid, entity_uuid, dest_node)
             print('Migration sended')
 
@@ -627,6 +633,7 @@ class FOSCli(object):
 
         parser_entity.add_argument('-m', '--manifest', type=str, default=None, help='entity manifest')
         parser_entity.add_argument('-eu', '--euuid', type=str, default=None, help='entity uuid')
+        parser_entity.add_argument('-iu', '--iuuid', type=str, default=None, help='instance uuid')
         parser_entity.add_argument('-u', '--uuid', type=str, default=None, help='node uuid')
         parser_entity.add_argument('-du', '--duuid', type=str, default=None, help='destination node uuid')
 
@@ -681,7 +688,7 @@ class FOSCli(object):
                 if kwargs['migrate'] is True: action = 'migrate'
 
                 self.entity(kwargs['list'], action, kwargs['uuid'], kwargs['manifest'], kwargs['euuid'],
-                            kwargs['duuid'])
+                            kwargs['iuuid'],kwargs['duuid'])
 
                 self.exit(0)
             else:
