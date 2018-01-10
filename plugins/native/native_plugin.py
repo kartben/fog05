@@ -50,7 +50,6 @@ class Native(RuntimePlugin):
         self.agent.logger.info('stopRuntime()', ' Native Plugin - Destroy running BE')
         for k in list(self.current_entities.keys()):
             entity = self.current_entities.get(k)
-            entity = self.current_entities.get(k)
             for i in list(entity.instances.keys()):
                 self.__force_entity_instance_termination(k, i)
             # if entity.get_state() == State.PAUSED:
