@@ -11,10 +11,17 @@ from fog05.DStore import *
 # arguments for the command.
 #
 # The commands currently supported are:
+#
 #    create  sid root home cache-size
+#    close   sid
+#
 #    put     sid uri val
+#    dput     sid uri [val]
 #    get     sid uri
+#    remove  sid uri
+#
 #    observe sid uri cookie
+
 
 class Dispatcher (object):
     def __init__(self, cookie, wsock):
@@ -197,7 +204,7 @@ class Server (object):
         if self.svc is None:
             # self.logger.info("fog05ws", ">> fog05 web-socket service is listening on port {}".format(self.port))
             print(">> fog05 web-socket service is listening on port {}".format(self.port))
-            self.svc = websockets.serve(self.dispatch, 'localhost', self.port)
+            self.svc = websockets.serve(self.dispatch, '0.0.0.0', self.port)
             asyncio.get_event_loop().run_until_complete(self.svc)
             asyncio.get_event_loop().run_forever()
         else:
@@ -206,6 +213,7 @@ class Server (object):
 
 if __name__=='__main__':
     port = 9669
+
     if len(sys.argv) > 1:
         port = int(sys.argv)
 
