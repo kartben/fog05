@@ -504,10 +504,10 @@ class KVMLibvirt(RuntimePlugin):
         if entity is None:
             if dst is True:
                 self.agent.logger.info('migrate_entity()', " KVM Plugin - I\'m the Destination Node")
-                self.before_migrate_entity_actions(entity_uuid, True)
+                self.before_migrate_entity_actions(entity_uuid, True, instance_uuid)
 
                 while True:  # wait for migration to be finished
-                    dom = self.__lookup_by_uuid(entity_uuid)
+                    dom = self.__lookup_by_uuid(instance_uuid)
                     if dom is None:
                         self.agent.logger.info('migrate_entity()', ' KVM Plugin - Domain not already in this host')
                         time.sleep(5)
@@ -540,45 +540,44 @@ class KVMLibvirt(RuntimePlugin):
         if dst is True:
             self.agent.logger.info('before_migrate_entity_actions()', ' KVM Plugin - Before Migration Destination: '
                                                                      'Create Domain and destination files')
-            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+            uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
             entity_info = json.loads(self.agent.dstore.get(uri))
             vm_info = entity_info.get("entity_data")
-            disk_path = str('%s.qcow2' % entity_uuid)
-            cdrom_path = str('%s_config.iso' % entity_uuid)
+            disk_path = str('%s.qcow2' % instance_uuid)
+            cdrom_path = str('%s_config.iso' % instance_uuid)
             disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
             cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
-            entity = KVMLibvirtEntity(entity_uuid, vm_info.get('name'), vm_info.get('cpu'), vm_info.get('memory'),
-                                      disk_path,
-                                      vm_info.get('disk_size'), cdrom_path, vm_info.get('networks'),
-                                      vm_info.get('base_image'), vm_info.get('user-data'), vm_info.get('ssh-key'))
+            instance = KVMLibvirtEntityInstance(instance_uuid, vm_info.get('name'), vm_info.get('cpu'),
+                vm_info.get('memory'),disk_path,vm_info.get('disk_size'), cdrom_path, vm_info.get('networks'),
+                vm_info.get('base_image'), vm_info.get('user-data'), vm_info.get('ssh-key'),entity_uuid)
 
-            entity.state = State.LANDING
-            qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (entity.disk, entity.disk_size))
-            vm_xml = self.__generate_dom_xml(entity)
+            instance.state = State.LANDING
+            qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (instance.disk, instance.disk_size))
+            vm_xml = self.__generate_dom_xml(instance)
 
             self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
-            self.agent.getOSPlugin().createFile(entity.cdrom)
+            self.agent.getOSPlugin().createFile(instance.cdrom)
             self.agent.getOSPlugin().createFile(
-                os.path.join(self.BASE_DIR, self.LOG_DIR, str('%s_log.log' % entity_uuid)))
+                os.path.join(self.BASE_DIR, self.LOG_DIR, str('%s_log.log' % instance_uuid)))
             #self.agent.getOSPlugin().createFile(str("/opt/fos/kvm/logs/%s_log.log" % entity_uuid))
 
             conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
-                                                           'create_config_drive.sh'), entity.name, entity_uuid))
+                                                           'create_config_drive.sh'), entity.name, instance_uuid))
             rm_temp_cmd = str("rm")
-            if entity.user_file is not None and entity.user_file != '':
-                data_filename = str("userdata_%s" % entity_uuid)
-                self.agent.getOSPlugin().storeFile(entity.user_file, self.BASE_DIR, data_filename)
+            if instance.user_file is not None and instance.user_file != '':
+                data_filename = str("userdata_%s" % instance_uuid)
+                self.agent.getOSPlugin().storeFile(instance.user_file, self.BASE_DIR, data_filename)
                 data_filename = os.path.join(self.BASE_DIR, data_filename)
                 conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
                 # rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
-            if entity.ssh_key is not None and entity.ssh_key != '':
-                key_filename = str("key_%s.pub" % entity_uuid)
-                self.agent.getOSPlugin().storeFile(entity.ssh_key, self.BASE_DIR, key_filename)
+            if instance.ssh_key is not None and instance.ssh_key != '':
+                key_filename = str("key_%s.pub" % instance_uuid)
+                self.agent.getOSPlugin().storeFile(instance.ssh_key, self.BASE_DIR, key_filename)
                 key_filename = os.path.join(self.BASE_DIR, key_filename)
                 conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
                 # rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
 
-            conf_cmd = str(conf_cmd + " %s" % entity.cdrom)
+            conf_cmd = str(conf_cmd + " %s" % instance.cdrom)
 
             self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
             #self.agent.getOSPlugin().createFile(entity.cdrom)
@@ -592,18 +591,26 @@ class KVMLibvirt(RuntimePlugin):
             #     self.conn = libvirt.open("qemu:///system")
             #     self.conn.defineXML(vm_xml)
 
+            entity = KVMLibvirtEntity(instance_uuid, vm_info.get('name'), vm_info.get('cpu'),
+                vm_info.get('memory'),disk_path,vm_info.get('disk_size'), cdrom_path, vm_info.get('networks'),
+                vm_info.get('base_image'), vm_info.get('user-data'), vm_info.get('ssh-key'))
+            entity.state = State.DEFINED
+
             self.current_entities.update({entity_uuid: entity})
+            self.__update_actual_store(entity_uuid, vm_info)
 
             entity_info.update({"status": "landing"})
-            self.__update_actual_store(entity_uuid, vm_info)
+            self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
 
             return True
         else:
             self.agent.logger.info('before_migrate_entity_actions()', ' KVM Plugin - Before Migration Source: get '
                                                                      'information about destination node')
             entity = self.current_entities.get(entity_uuid, None)
-            uri = str("%s/%s/%s" % (self.agent.dhome, self.HOME, entity_uuid))
-            fognode_uuid = json.loads(self.agent.dstore.get(uri)).get("dst")
+            instance = entity.get_instance(instance_uuid)
+            uri = str("%s/%s/%s/%s/%s" % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+            instance_info = json.loads(self.agent.dstore.get(uri))
+            fognode_uuid = instance_info.get("dst")
 
             uri = str('afos://<sys-id>/%s/plugins' % fognode_uuid)
             all_plugins = json.loads(self.agent.astore.get(uri)).get('plugins') # TODO: solve this ASAP
@@ -625,12 +632,16 @@ class KVMLibvirt(RuntimePlugin):
                                                                          'Waiting destination to be '
                                         'ready')
                 time.sleep(1)
-                uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s" % (dst, kvm.get('uuid'), entity_uuid))
+                uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s" % (dst, kvm.get('uuid'), entity_uuid,
+                                                                                   instance_uuid))
                 vm_info = json.loads(self.agent.astore.get(uri)) # TODO: solve this ASAP
                 if vm_info is not None and vm_info.get("status") == "landing":
                         flag = True
 
-            entity.state = State.TAKING_OFF
+            instance.state = State.TAKING_OFF
+            instance_info.update({'status' : 'taking_off'})
+            self.__update_actual_store_instance(entity_uuid,instance_uuid,instance_info)
+
             self.current_entities.update({entity_uuid: entity})
             uri = str("afos://<sys-id>/%s/" % fognode_uuid)
 
@@ -643,7 +654,7 @@ class KVMLibvirt(RuntimePlugin):
             ## json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
             # dst_node_info = json.loads(self.agent.astore.get(uri)[0])
             ##
-            dom = self.__lookup_by_uuid(entity_uuid)
+            dom = self.__lookup_by_uuid(instance_uuid)
             nw = dst_node_info.get('network')
 
             dst_hostname = dst_node_info.get('name')
@@ -700,19 +711,20 @@ class KVMLibvirt(RuntimePlugin):
                                                      str("Entity %s is not in correct state" % entity.get_state()))
         else:
             if dst is True:
+                instance = entity.get_instance(instance_uuid)
                 '''
                 Here the plugin also update to the current status, and remove unused keys
                 '''
                 self.agent.logger.info('after_migrate_entity_actions()', ' KVM Plugin - After Migration Destination: Updating state')
-                entity.on_start()
+                instance.on_start()
                 self.current_entities.update({entity_uuid: entity})
 
-                uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+                uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid,self.INSTANCE,instance_uuid))
                 vm_info = json.loads(self.agent.dstore.get(uri))
                 vm_info.pop('dst')
                 vm_info.update({"status": "run"})
 
-                self.__update_actual_store(entity_uuid, vm_info)
+                self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
                 self.current_entities.update({entity_uuid: entity})
 
                 return True
@@ -721,10 +733,7 @@ class KVMLibvirt(RuntimePlugin):
                 Source node destroys all information about vm
                 '''
                 self.agent.logger.info('after_migrate_entity_actions()', ' KVM Plugin - After Migration Source: Updating state, destroy vm')
-                entity.state = State.CONFIGURED
-                self.current_entities.update({entity_uuid: entity})
-                self.clean_entity(entity_uuid)
-                self.undefine_entity(entity_uuid)
+                self.__force_entity_instance_termination(entity_uuid,instance_uuid)
                 return True
 
     def __react_to_cache(self, uri, value, v):
@@ -748,11 +757,11 @@ class KVMLibvirt(RuntimePlugin):
                     entity_data.update({'entity_uuid': uuid})
                     if action == 'define':
                         react_func(**entity_data)
-                    else:
-                        if action == 'landing':
-                            react_func(entity_data, dst=True)
-                        else:
-                                react_func(entity_data)
+                    # else:
+                    #     if action == 'landing':
+                    #         react_func(entity_data, dst=True)
+                    #     else:
+                    #             react_func(entity_data)
         elif uri.split('/')[-2] == 'instance':
             if value is None and v is None:
                 self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
@@ -772,9 +781,9 @@ class KVMLibvirt(RuntimePlugin):
                 elif react_func is not None:
                     entity_data.update({'entity_uuid': entity_uuid})
                     if action == 'landing':
-                        react_func(entity_data, dst=True)
+                        react_func(entity_data, dst=True, instance_uuid=instance_uuid)
                     else:
-                        react_func(entity_data)
+                        react_func(entity_data, instance_uuid=instance_uuid)
 
     def __random_mac_generator(self):
         mac = [0x00, 0x16, 0x3e,
