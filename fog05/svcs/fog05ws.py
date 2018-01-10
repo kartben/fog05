@@ -9,6 +9,24 @@ from fog05.DStore import *
 #     command store-id arg1 arg2 ... argn
 # where the command represents the method to execute on the given store-id and the args are the
 # arguments for the command.
+#
+# The commands currently supported are:
+#    create  sid root home cache-size
+#    put     sid uri val
+#    get     sid uri
+#    observe sid uri cookie
+
+class Dispatcher (object):
+    def __init__(self, cookie, wsock):
+        self.cookie = cookie
+        self.wsock = wsock
+
+
+    def dispatch(self, key, val, ver):
+        print("Dispatching observer")
+        result = '{} {} {}'.format(self.cookie, key, val)
+        asyncio.ensure_future(self.wsock.send(result))
+
 
 class Server (object):
     def __init__(self, port):
@@ -20,7 +38,7 @@ class Server (object):
         self.logger_impl.addHandler(logging.StreamHandler())
         # self.logger = DLogger()
         # self.logger.logger = self.logger_impl
-        self.sessionMap= {}
+        self.storeMap = {}
 
     async def process(self, websocket, cmd):
         if cmd is not None:
@@ -34,11 +52,18 @@ class Server (object):
                 await self.handle_command(websocket, cid, sid, args)
 
 
-    def create_store(self, sid, args):
+    def create(self, sid, args):
         if len(args) < 3:
             return None
         else:
             return DStore(sid, args[0], args[1], int(args[2]))
+
+    def close(self, sid):
+        if sid in self.storeMap.keys():
+            store = self.storeMap.pop(sid)
+            store.close()
+
+        return True
 
     def put(self, store, args):
         if len(args) < 2:
@@ -55,51 +80,104 @@ class Server (object):
                 v = ''
             return v
 
+    def remove(self, store, args):
+        if len(args) > 0:
+            store.remove(args[0])
+            return True
+        else:
+            return False
+
+    def dput(self, store, args):
+        result  = False
+        if len(args) == 1:
+            store.dput(args[0])
+            result = True
+        elif len(args) > 1:
+            store.dput(args[0],args[1])
+            result = True
+
+        return result
+
+
+
+    def observe(self, store, sid, args, websocket):
+        success = False
+        print("len(args) {}".format(len(args)))
+        if len(args) > 1:
+            success = True
+            cookie = 'observe {} {}'.format(sid, args[1])
+            disp = Dispatcher(cookie, websocket)
+            store.observe(args[0], disp.dispatch)
+        else:
+            print("Observe failed!")
+        print("success = {}".format(success))
+        return success
+
     async def send_error(self, websocket, val):
         await websocket.send("NOK {}".format(val))
 
     async def send_success(self, websocket, val):
         await websocket.send("OK {}".format(val))
 
+
     async def handle_command(self, websocket, cid, sid, args):
         # self.logger.debug("fog05ws", ">> Handling command {}".format(cid))
-        print(">> Handling command {}".format(cid))
+        # print(">> Handling command {}".format(cid))
 
-        raddr = str(websocket.remote_address)
-        session = {}
-        if raddr in self.sessionMap.keys():
-            session = self.sessionMap[raddr]
-        else:
-            self.sessionMap[raddr] = session
+        result = cid
+        success = False
 
-        print("### Store Id {} Keys: {}".format(sid, str(session.keys())))
         # -- Create
         if cid == 'create':
-            if not (sid in session.keys()):
-                s = self.create_store(sid, args)
-                if s is None:
-                    await self.send_error(websocket, cid)
-                else:
-                    session[sid] = s
-                    await self.send_success(websocket, cid)
+            if not (sid in self.storeMap.keys()):
+                s = self.create(sid, args)
+                if s is not None:
+                    self.storeMap[sid] = s
+                    success = True
 
-        # -- Put
-        elif cid == 'put':
-            if sid in session.keys():
-                store = session.get(sid)
-                self.put(store, args)
-                await self.send_success(websocket, "{} {} {}".format(cid, sid, args[0]))
-            else:
-                await self.send_error(websocket, cid)
+        elif cid == 'close':
+            success = self.close(sid)
 
-        elif cid == 'get':
-            if sid in session.keys():
-                store = session.get(sid)
-                v = self.get(store, args)
-                await self.send_success(websocket, "{} {} {} {}".format(cid, sid, args[0], v))
-            else:
-                await self.send_error(websocket, cid)
+        else:
+            store = None
+            if sid in self.storeMap.keys():
+                store = self.storeMap.get(sid)
 
+                # -- Put
+                if cid == 'put':
+                    if self.put(store, args):
+                        result = "{} {} {}".format(cid, sid, args[0])
+                        success = True
+
+                # -- DPut
+                if cid == 'dput':
+                    if self.dput(store, args):
+                        result = "{} {} {}".format(cid, sid, args[0])
+                        success = True
+
+                # -- Remove
+                if cid == 'remove':
+                    if self.removet(store, args):
+                        result = "{} {} {}".format(cid, sid, args[0])
+                        success = True
+
+                # -- Get
+                elif cid == 'get':
+                    v = self.get(store, args)
+                    result = "{} {} {} {}".format(cid, sid, args[0], v)
+                    success = True
+
+                # -- Observe
+                elif cid == 'observe':
+                    if self.observe(store, sid, args, websocket):
+                        result = "{} {} {}".format(cid, args[0], args[1])
+                        success = True
+
+
+        if success:
+            await self.send_success(websocket, result)
+        else:
+            await self.send_error(websocket, result)
 
     async def dispatch(self, websocket, path):
         while True:
