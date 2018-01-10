@@ -12,15 +12,15 @@ from fog05.DStore import *
 #
 # The commands currently supported are:
 #
-#    create  sid root home cache-size
-#    close   sid
+#    create  sid root home cache-size   -> OK | NOK
+#    close   sid                        -> OK | NOK
 #
-#    put     sid uri val
-#    dput     sid uri [val]
-#    get     sid uri
-#    remove  sid uri
+#    put     sid uri val                -> OK | NOK
+#    dput     sid uri [val]             -> OK | NOK
+#    get     sid uri                    -> value sid key values
+#    remove  sid uri                    -> OK | NOK
 #
-#    observe sid uri cookie
+#    observe sid uri cookie             -> stream notify sid cookie key value
 
 
 class Dispatcher (object):
@@ -112,7 +112,7 @@ class Server (object):
         print("len(args) {}".format(len(args)))
         if len(args) > 1:
             success = True
-            cookie = 'observe {} {}'.format(sid, args[1])
+            cookie = 'notify {} {}'.format(sid, args[1])
             disp = Dispatcher(cookie, websocket)
             store.observe(args[0], disp.dispatch)
         else:
@@ -131,7 +131,7 @@ class Server (object):
         # self.logger.debug("fog05ws", ">> Handling command {}".format(cid))
         # print(">> Handling command {}".format(cid))
 
-        result = cid
+        result = '{} {}'.format(cid,sid)
         success = False
 
         # -- Create
@@ -171,7 +171,7 @@ class Server (object):
                 # -- Get
                 elif cid == 'get':
                     v = self.get(store, args)
-                    result = "{} {} {} {}".format(cid, sid, args[0], v)
+                    result = "{} {} {} {}".format('value', sid, args[0], v)
                     success = True
 
                 # -- Observe
@@ -213,9 +213,12 @@ class Server (object):
 
 if __name__=='__main__':
     port = 9669
-
     if len(sys.argv) > 1:
-        port = int(sys.argv)
+        if sys.argv[1] == '--help' or sys.argv[1] == '-h' or sys.argv[1] == 'help':
+            print('\nUSAGE:\n\tpython3 fog05ws [port=9669]\n')
+            exit(0)
+        else:
+            port = int(sys.argv)
 
     s = Server(port)
     s.start()
