@@ -139,6 +139,8 @@ class ROS2(RuntimePlugin):
         else:
             for i in list(entity.instances.keys()):
                 self.__force_entity_instance_termination(entity_uuid, i)
+            nodelet_dir = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid)
+            self.agent.getOSPlugin().removeDir(nodelet_dir)
             self.current_entities.pop(entity_uuid, None)
             self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefineEntity()', 'ROS2 Plugin - Undefine ROS2 Nodelets uuid %s' % entity_uuid)
@@ -168,7 +170,7 @@ class ROS2(RuntimePlugin):
             else:
                 id = len(entity.instances)
                 name = '{0}{1}'.format(entity.name, id)
-                out_file = str("native_%s_%s.log" % entity_uuid, instance_uuid)
+                out_file = str("ros2_%s_%s.log" % (entity_uuid, instance_uuid))
                 out_file = os.path.join(self.BASE_DIR, self.LOG_DIR, out_file)
                 #nodelet_dir = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid)
                 #cmd = os.path.join(nodelet_dir,entity.command)
@@ -176,8 +178,7 @@ class ROS2(RuntimePlugin):
                 instance = ROS2EntityInstance(instance_uuid, name, entity.command, entity.args,
                                               entity.url, out_file, entity_uuid)
 
-
-                self.agent.getOSPlugin().createFile(entity.outfile)
+                self.agent.getOSPlugin().createFile(instance.outfile)
                 ## download the nodelet file
                 # nodelet_dir = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid)
                 # self.agent.getOSPlugin().createDir(nodelet_dir)
@@ -295,7 +296,7 @@ class ROS2(RuntimePlugin):
                     #cmd = str("ros2 run %s %s" % (entity.command, ' '.join(str(x) for x in entity.args)))
                     nodelet_dir = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid)
                     cmd = os.path.join(nodelet_dir, 'lib', entity.name, instance.command)
-                    path =os.path.join(self.BASE_DIR, self.NODLETS_DIR, instance_uuid, instance.name)
+                    path = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid, instance_uuid)
                     # ###################### WORKAROUND ##############################
                     run_script = self.__generate_run_script(cmd, path)
                     self.agent.getOSPlugin().storeFile(run_script, nodelet_dir, str("%s_run.sh" % instance_uuid))
@@ -341,7 +342,7 @@ class ROS2(RuntimePlugin):
                 if instance.source is None:
                     cmd = str("%s %s" % (instance.command, ' '.join(str(x) for x in instance.args)))
                 else:
-                    path = str('%s.pid' % instance.name)
+                    path = str('%s.pid' % instance_uuid)
                     path = os.path.join(self.BASE_DIR, self.NODLETS_DIR, instance_uuid, path)
                     pid = int(self.agent.getOSPlugin().readFile(path))
                     self.agent.getOSPlugin().sendSigKill(pid)
