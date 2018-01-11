@@ -2,30 +2,24 @@ import sys
 import os
 sys.path.append(os.path.join(sys.path[0],'interfaces'))
 from fog05.interfaces.States import State
-from fog05.interfaces.Entity import Entity
-from jinja2 import Environment
-import json
+from fog05.interfaces.EntityInstance import EntityInstance
 
-class KVMLibvirtEntity(Entity):
+class LXDEntityInstance(EntityInstance):
 
-    def __init__(self, uuid, name, cpu, ram, disk, disk_size, cdrom, networks, image, user_file, ssh_key):
+    def __init__(self, uuid, name, networks, image, user_file, ssh_key, storage, profiles, entity_uuid):
 
-        super(KVMLibvirtEntity, self).__init__()
-        self.uuid = uuid
+        super(LXDEntityInstance, self).__init__(uuid, entity_uuid)
         self.name = name
-        self.cpu = cpu
-        self.ram = ram
-        self.disk = disk
-        self.disk_size = disk_size
-        self.cdrom = cdrom
         self.networks = networks
-        self.image_url = image
+        self.image = image
         self.user_file = user_file
         self.ssh_key = ssh_key
-        self.image = ''
+        self.storage = storage
+        self.profiles = profiles
+        self.conf = None
 
     def on_configured(self, configuration):
-        self.xml = configuration
+        self.conf = configuration
         self.state = State.CONFIGURED
 
     def on_clean(self):
@@ -42,3 +36,6 @@ class KVMLibvirtEntity(Entity):
 
     def on_resume(self):
         self.state = State.RUNNING
+
+    def __str__(self):
+        return "Name : {0} UUID: {1}".format(self.name, self.uuid)

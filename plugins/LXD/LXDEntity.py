@@ -12,12 +12,13 @@ class LXDEntity(Entity):
         self.uuid = uuid
         self.name = name
         self.networks = networks
-        self.image = image
+        self.image_url = image
         self.user_file = user_file
         self.ssh_key = ssh_key
         self.storage = storage
         self.profiles = profiles
         self.conf = None
+        self.image = ""
 
     def on_configured(self, configuration):
         self.conf = configuration

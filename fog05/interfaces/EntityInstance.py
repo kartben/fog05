@@ -2,13 +2,13 @@ import sys
 import os
 from fog05.interfaces.States import State
 
-class Entity(object):
+class EntityInstance(object):
 
-    def __init__(self):
-        self.state=State.UNDEFINED
-        self.uuid=""
+    def __init__(self,uuid, entity_uuid):
+        self.state=State.CONFIGURED
+        self.uuid=uuid
         self.name=""
-        self.instances={}
+        self.entity_uuid = entity_uuid
 
 
     def get_state(self):
@@ -41,16 +41,13 @@ class Entity(object):
     def after_migrate(self):
         raise NotImplementedError("This is and interface!")
 
-    def has_instance(self, instance_uuid):
-        return instance_uuid in self.instances.keys()
+    def __eq__(self, other):
+        if isinstance(other, EntityInstance):
+            return self.uuid == other.uuid
+        return NotImplemented
 
-    def add_instance(self, instance_object):
-        if instance_object.uuid not in self.instances.keys():
-            self.instances.update({instance_object.uuid: instance_object})
-
-    def remove_instance(self, instance_object):
-        if instance_object.uuid in self.instances.keys():
-            self.instances.pop(instance_object.uuid);
-
-    def get_instance(self,instance_uuid):
-        return self.instances.get(instance_uuid, None)
+    def __ne__(self, other):
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return result
+        return not result

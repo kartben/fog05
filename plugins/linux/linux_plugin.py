@@ -76,14 +76,17 @@ class Linux(OSPlugin):
         return os.path.isdir(path)
 
     def createDir(self, path):
-        return os.makedirs(path)
+        if not self.dirExists(path):
+            os.makedirs(path)
 
     def createFile(self, path):
-        with open(path, 'a'):
-            os.utime(path, None)
+        if not self.fileExists(path):
+            with open(path, 'a'):
+                os.utime(path, None)
 
     def removeDir(self, path):
-        shutil.rmtree(path)
+        if self.dirExists(path):
+            shutil.rmtree(path)
 
     def removeFile(self, path):
         try:
