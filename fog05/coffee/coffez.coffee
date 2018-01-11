@@ -25,6 +25,7 @@ None.get = () -> undefined
 None.getOrElse = (f) -> f()
 None.orElse = (f) -> f()
 None.isEmpty = () -> true
+None.show = () -> 'None'
 
 class CSome
   constructor: (@value) ->
@@ -34,6 +35,7 @@ class CSome
   getOrElse: (f) -> @value
   orElse: (f) -> this
   isEmpty: () -> false
+  show: () -> 'Some('+JSON.stringify(@value)+')'
 
 
 class CFail

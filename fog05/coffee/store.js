@@ -4,11 +4,13 @@
   // with fog05. Through this API any JS-based runtime can interact with the
   // distributed store used by fog05. As such it can access the full power of
   // fog05
-  var Create, Get, NOK, Notify, OK, Observe, Put, Runtime, Store, Value, exports, fog05, root, z_;
+  var Create, Get, GetAll, NOK, Notify, OK, Observe, Parser, Put, Runtime, Store, Value, Values, WebSocket, exports, fog05, root, z_;
 
   root = this;
 
-  z_ = coffez;
+  z_ = require('./coffez.js').coffez;
+
+  WebSocket = require('ws');
 
   fog05 = {};
 
@@ -25,10 +27,11 @@
 
   // Commands
   OK = class OK {
-    constructor(cid, sid1, rest) {
-      this.cid = cid;
+    constructor(oid, sid1, rest) {
+      this.oid = oid;
       this.sid = sid1;
       this.rest = rest;
+      this.cid = 'OK';
     }
 
     show() {
@@ -36,19 +39,20 @@
       args = this.rest.reduce(function(a, x) {
         return a + " " + x;
       });
-      return `OK ${this.cid} ${this.sid} ${this.args}`;
+      return `${this.cid} ${this.oid} ${this.sid} ${this.args}`;
     }
 
   };
 
   NOK = class NOK {
-    constructor(cid, sid1) {
-      this.cid = cid;
+    constructor(oid, sid1) {
+      this.oid = oid;
       this.sid = sid1;
+      this.cid = 'NOK';
     }
 
     show() {
-      return `NOK ${this.cid} ${this.sid}`;
+      return `${this.cid} ${this.oid} ${this.sid}`;
     }
 
   };
@@ -59,10 +63,11 @@
       this.root = root1;
       this.home = home;
       this.cache_size = cache_size;
+      this.cid = 'create';
     }
 
     show() {
-      return `create ${this.sid} ${this.root} ${this.home} ${this.cache_size}`;
+      return `${this.cid} ${this.sid} ${this.root} ${this.home} ${this.cache_size}`;
     }
 
   };
@@ -72,10 +77,11 @@
       this.sid = sid1;
       this.uri = uri;
       this.value = value1;
+      this.cid = 'put';
     }
 
     show() {
-      return `put ${this.sid} ${this.uri} ${this.value}`;
+      return `${this.cid} ${this.sid} ${this.uri} ${this.value}`;
     }
 
   };
@@ -84,10 +90,24 @@
     constructor(sid1, uri) {
       this.sid = sid1;
       this.uri = uri;
+      this.cid = 'get';
     }
 
     show() {
-      return `get ${this.sid} ${this.uri}`;
+      return `${this.cid} ${this.sid} ${this.uri}`;
+    }
+
+  };
+
+  GetAll = class GetAll {
+    constructor(sid1, uri) {
+      this.sid = sid1;
+      this.uri = uri;
+      this.cid = 'aget';
+    }
+
+    show() {
+      return `${this.cid} ${this.sid} ${this.uri}`;
     }
 
   };
@@ -97,10 +117,11 @@
       this.sid = sid1;
       this.cookie = cookie1;
       this.uri = uri;
+      this.cid = 'observe';
     }
 
     show() {
-      return `observe ${this.sid} ${this.uri}`;
+      return `${this.cid} ${this.sid} ${this.uri}`;
     }
 
   };
@@ -111,10 +132,11 @@
       this.cookie = cookie1;
       this.uri = uri;
       this.value = value1;
+      this.cid = 'notify';
     }
 
     show() {
-      return `notify ${this.sid} ${this.uri} ${this.value}`;
+      return `${this.cid} ${this.sid} ${this.uri} ${this.value}`;
     }
 
   };
@@ -124,82 +146,123 @@
       this.sid = sid1;
       this.key = key1;
       this.value = value1;
+      this.cid = 'value';
     }
 
     show() {
-      return `value ${this.sid} ${this.key} ${this.value}`;
+      return `${this.cid} ${this.sid} ${this.key} ${this.value}`;
     }
 
   };
 
-  ({
-    parseOK: function(ts) {
-      if (ts.length > 2) {
-        return z_.Some(new OK(ts[1], ts[2], ts.slice(3)));
-      } else {
-        return z_.None;
-      }
-    },
-    parseNOK: function(ts) {
-      if (ts.length > 2) {
-        return z_.Some(new NOK(ts[1], ts[2]));
-      } else {
-        return z_.None;
-      }
-    },
-    parseNotify: function(ts) {
-      if (ts.length > 4) {
-        return z_.Some(new Notify(ts[1], ts[2], ts[3], tr[4]));
-      } else {
-        return z_.None;
-      }
-    },
-    parseValue: function(ts) {
-      if (ts.length === 3) {
-        return new Value(ts[1], ts[2], z_.None);
-      } else if (ts.length > 3) {
-        return z_.Some(new Value(ts[1], ts[2], z_.Some(ts[3])));
-      } else {
-        return z_.None;
-      }
-    },
-    parse: function(cmd) {
-      var t, tokens, x;
-      tokens = (function() {
-        var i, len, ref, results;
-        ref = cmd.split(' ')(x !== '');
-        results = [];
-        for (i = 0, len = ref.length; i < len; i++) {
-          x = ref[i];
+  Values = class Values {
+    constructor(sid1, key1, values) {
+      this.sid = sid1;
+      this.key = key1;
+      this.values = values;
+      this.cid = 'values';
+    }
+
+    show() {
+      var vs;
+      vs = this.values.reduce(function(a, v) {
+        return a + ',' + v;
+      });
+      return `${this.cid} ${this.sid} ${this.key} ${vs}`;
+    }
+
+  };
+
+  Parser = {};
+
+  Parser.parseOK = function(ts) {
+    if (ts.length > 2) {
+      return z_.Some(new OK(ts[1], ts[2], ts.slice(3)));
+    } else {
+      return z_.None;
+    }
+  };
+
+  Parser.parseNOK = function(ts) {
+    if (ts.length > 2) {
+      return z_.Some(new NOK(ts[1], ts[2]));
+    } else {
+      return z_.None;
+    }
+  };
+
+  Parser.parseNotify = function(ts) {
+    if (ts.length > 4) {
+      return z_.Some(new Notify(ts[1], ts[2], ts[3], tr[4]));
+    } else {
+      return z_.None;
+    }
+  };
+
+  Parser.parseValue = function(ts) {
+    if (ts.length === 3) {
+      return z_.Some(new Value(ts[1], ts[2], z_.None));
+    } else if (ts.length > 3) {
+      return z_.Some(new Value(ts[1], ts[2], z_.Some(ts[3])));
+    } else {
+      return z_.None;
+    }
+  };
+
+  Parser.parseValues = function(ts) {
+    var xs;
+    if (ts.length === 3) {
+      return z_.Some(new Values(ts[1], ts[2], []));
+    } else if (ts.length > 3) {
+      xs = ts[3].split(',').map(function(x) {
+        return x.split('@');
+      });
+      return z_.Some(new Values(ts[1], ts[2], xs));
+    } else {
+      return z_.None;
+    }
+  };
+
+  Parser.parseCmd = function(cmd) {
+    var t, tokens, x;
+    tokens = (function() {
+      var i, len, ref, results;
+      ref = cmd.split(' ');
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        x = ref[i];
+        if (x !== '') {
           results.push(x);
         }
-        return results;
-      })();
-      if (tokens.length === 0) {
-        return z_.None;
+      }
+      return results;
+    })();
+    if (tokens.length === 0) {
+      return z_.None;
+    } else {
+      t = tokens[0];
+      if (t === 'OK') {
+        return Parser.parseOK(tokens);
+      } else if (t === 'NOK') {
+        return Parser.parseNOK(tokens);
+      } else if (t === 'notify') {
+        return Parser.parseNotify(tokens);
+      } else if (t === 'value') {
+        return Parser.parseValue(tokens);
+      } else if (t === 'values') {
+        return Parser.parseValues(tokens);
       } else {
-        t = tokens[0];
-        if (t === 'OK') {
-          return parseOK(tokens);
-        } else if (t === 'NOK') {
-          return parseNOK(tokens);
-        } else if (t === 'notify') {
-          return parseNotify(tokens);
-        } else if (t === 'value') {
-          return parseValue(tokens);
-        } else {
-          return z_.None;
-        }
+        return z_.None;
       }
     }
-  });
+  };
 
   
   // The `Runtime` maintains the connection with the server, re-establish the connection if dropped and mediates
   // the `DataReader` and `DataWriter` communication.
   Runtime = class Runtime {
     // Creates a new fog05 runtime
-    constructor(url1) {
+    constructor(url) {
       // Establish a connection with the dscript.play server
       this.connect = this.connect.bind(this);
       // Disconnects, withouth closing, a `Runtime`. Notice that there is a big difference between disconnecting and
@@ -211,7 +274,7 @@
       this.isConnected = this.isConnected.bind(this);
       this.isClosed = this.isClosed.bind(this);
       this.handleMessage = this.handleMessage.bind(this);
-      this.url = url1;
+      this.url = url;
       this.onclose = function(evt) {};
       this.onconnect = function() {};
       this.ondisconnect = function(evt) {};
@@ -220,10 +283,10 @@
       this.cookieId = 0;
       this.pendingWebSock = z_.None;
       this.webSock = z_.None;
-      this.storeHandlersMap = {};
+      this.storeMap = {};
     }
 
-    generateEntityId() {
+    generateCookie() {
       var id;
       id = this.cookieId;
       this.cookieId += 1;
@@ -232,11 +295,11 @@
 
     connect() {
       if (this.connected === false) {
-        console.log(`Connecting to: ${url}`);
-        this.pendingWebSock = new z_.Some(new WebSocket(url));
+        console.log(`Connecting to: ${this.url}`);
+        this.pendingWebSock = z_.Some(new WebSocket(this.url));
         this.pendingWebSock.map(((s) => {
           return s.onopen = () => {
-            console.log('Connected to: ' + this.uri);
+            console.log('Connected to: ' + this.url);
             this.webSock = this.pendingWebSock;
             this.connected = true;
             // We may need to re-establish dropped data connection, if this connection is following
@@ -246,7 +309,7 @@
         }));
         this.pendingWebSock.map(((s) => {
           return s.onclose = (evt) => {
-            console.log(`The server at ${this.uri} seems to have dropped the connection.`);
+            console.log(`The server at ${this.url} seems to have dropped the connection.`);
             this.connected = false;
             this.webSock.close();
             this.closed = true;
@@ -288,16 +351,16 @@
     }
 
     handleMessage(s) {
-      var cmd, handlers, msg;
+      var cmd, msg, smap;
       msg = s.data;
-      console.log('received' + msg);
-      cmd = parse(msg);
-      handlers = this.storeHandlersMap;
+      cmd = Parser.parseCmd(msg);
+      smap = this.storeMap;
       return cmd.map((function(c) {
-        var h;
-        h = handlers[c.cid];
-        if ((h != null) === true) {
-          return h(c);
+        var cid;
+        s = smap[c.sid];
+        cid = c.cid;
+        if ((s != null) === true) {
+          return s.handleCommand(c);
         }
       }));
     }
@@ -308,8 +371,8 @@
       });
     }
 
-    register(sid, handlers) {
-      return this.storeHandlersMap[sid] = handlers;
+    register(sid, store) {
+      return this.storeMap[sid] = store;
     }
 
   };
@@ -317,82 +380,102 @@
   root.fog05.Runtime = Runtime;
 
   Store = class Store {
-    constructor(runtime1, sid1, home, root1, cache_size) {
+    constructor(runtime, sid1, home, root1, cache_size) {
       var cmd;
-      this.runtime = runtime1;
+      this.runtime = runtime;
       this.sid = sid1;
       this.home = home;
       this.root = root1;
       this.cache_size = cache_size;
       this.getTable = {};
       this.obsTable = {};
-      this.handlers = {
-        OK: function(cmd) {
-          return self.handleOK(cmd);
-        },
-        NOK: function(cmd) {
-          return self.handleNOK(cmd);
-        },
-        notify: function(cmd) {
-          return self.handleNotify(cmd);
-        },
-        value: function(cmd) {
-          return self.handleValue(cmd);
-        }
-      };
-      runtime.register(this.sid, this.handlers);
+      this.runtime.register(this.sid, this);
       cmd = new Create(this.sid, this.home, this.root, this.cache_size);
       this.runtime.send(cmd.show());
     }
 
     put(key, value) {
       var cmd;
-      cmd = new Put(this.sid, this.key, this.value);
+      cmd = new Put(this.sid, key, value);
       return this.runtime.send(cmd.show());
     }
 
-    get(fun) {
-      return function(key) {
-        var cmd;
-        this.getTable[key] = fun;
-        cmd = new Get(this.sid, key);
-        return this.runtime.send(cmd.show());
-      };
+    get(key, fun) {
+      var cmd;
+      this.getTable[key] = fun;
+      cmd = new Get(this.sid, key);
+      return this.runtime.send(cmd.show());
     }
 
-    observe(key, cookie, fun) {
+    getAll(key, fun) {
       var cmd;
+      this.getTable[key] = fun;
+      cmd = new GetAll(this.sid, key);
+      return this.runtime.send(cmd.show());
+    }
+
+    observe(key, fun) {
+      var cmd, cookie;
+      cookie = this.runtime.generateCookie();
       this.obsTable[cookie] = fun;
-      cmd = new Observe(this.cid, this.cookie, this.uri);
+      cmd = new Observe(this.cid, cookie, key);
       return this.runtime.send(cmd.show());
     }
 
     handleOK(cmd) {
-      return console.log('Store Handling OK');
+      return console.log('>>> Store Handling OK');
+    }
+
+    handleNOK(cmd) {
+      return console.log('>>> Store Handling NOK');
     }
 
     handleValue(cmd) {
       var fun;
+      console.log('>>> Store Handling Value');
       fun = this.getTable[cmd.key];
       if ((fun != null) === true) {
         return fun(cmd.key, cmd.value);
       }
     }
 
+    handleValues(cmd) {
+      var fun;
+      console.log('>>> Store Handling Values');
+      fun = this.getTable[cmd.key];
+      if ((fun != null) === true) {
+        return fun(cmd.key, cmd.values);
+      }
+    }
+
     handleNotify(cmd) {
       var fun;
-      console.log('Store Handling Notify');
+      console.log('>>> Store Handling Notify');
       fun = this.obsTable[cmd.cookie];
       if ((fun != null) === true) {
         return fun(cmd.key.cmd.value);
       }
     }
 
-    handleNOK(cmd) {
-      return console.log('Store Handling NOK');
+    // No so elegant, but there were issues with the map of lambdas.
+    handleCommand(cmd) {
+      switch (cmd.cid) {
+        case 'NOK':
+          return this.handleNOK(cmd);
+        case 'OK':
+          return this.handleOK(cmd);
+        case 'value':
+          return this.handleValue(cmd);
+        case 'values':
+          return this.handleValues(cmd);
+        case 'notify':
+          return this.handleNotify(cmd);
+      }
     }
 
   };
+
+  root.fog05.Store = Store;
 
 }).call(this);
 

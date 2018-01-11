@@ -3,8 +3,11 @@
 # distributed store used by fog05. As such it can access the full power of
 # fog05
 
+
 root = this
-z_ = coffez
+z_ = require('./coffez.js').coffez
+WebSocket = require('ws')
+
 fog05 = {}
 
 if (typeof exports isnt 'undefined')
@@ -19,88 +22,120 @@ fog05.VERSION = "0.1.0"
 # Commands
 
 class OK
-  constructor: (@cid, @sid, @rest) ->
+  constructor: (@oid, @sid, @rest) ->
+    @cid = 'OK'
   show: () ->
     args = @rest.reduce((a, x) -> a + " " + x)
-    "OK #{@cid} #{@sid} #{@args}"
+    "#{@cid} #{@oid} #{@sid} #{@args}"
 
 class NOK
-  constructor: (@cid, @sid) ->
+  constructor: (@oid, @sid) ->
+    @cid = 'NOK'
   show: () ->
-    "NOK #{@cid} #{@sid}"
+    "#{@cid} #{@oid} #{@sid}"
 
 class Create
   constructor: (@sid, @root, @home, @cache_size) ->
+    @cid = 'create'
   show: () ->
-    "create #{@sid} #{@root} #{@home} #{@cache_size}"
+    "#{@cid} #{@sid} #{@root} #{@home} #{@cache_size}"
 
 class Put
   constructor: (@sid, @uri, @value) ->
+    @cid = 'put'
   show: () ->
-    "put #{@sid} #{@uri} #{@value}"
+    "#{@cid} #{@sid} #{@uri} #{@value}"
 
 class Get
   constructor: (@sid, @uri) ->
+    @cid = 'get'
   show: () ->
-    "get #{@sid} #{@uri}"
+    "#{@cid} #{@sid} #{@uri}"
+
+class GetAll
+  constructor: (@sid, @uri) ->
+    @cid = 'aget'
+  show: () ->
+    "#{@cid} #{@sid} #{@uri}"
 
 class Observe
   constructor: (@sid, @cookie, @uri) ->
+    @cid = 'observe'
   show: () ->
-    "observe #{@sid} #{@uri}"
+    "#{@cid} #{@sid} #{@uri}"
 
 class Notify
   constructor: (@sid, @cookie, @uri, @value) ->
+    @cid = 'notify'
   show: () ->
-    "notify #{@sid} #{@uri} #{@value}"
+    "#{@cid} #{@sid} #{@uri} #{@value}"
 
 class Value
   constructor: (@sid, @key, @value) ->
+    @cid = 'value'
   show: () ->
-    "value #{@sid} #{@key} #{@value}"
+    "#{@cid} #{@sid} #{@key} #{@value}"
 
-parseOK: (ts) ->
+class Values
+  constructor: (@sid, @key, @values) ->
+    @cid = 'values'
+  show: () ->
+    vs = @values.reduce((a, v) -> a + ',' + v)
+    "#{@cid} #{@sid} #{@key} #{vs}"
+
+Parser = {}
+Parser.parseOK = (ts) ->
   if ts.length > 2
     z_.Some(new OK(ts[1], ts[2], ts[3..]))
   else
     z_.None
 
-parseNOK: (ts) ->
+Parser.parseNOK = (ts) ->
   if ts.length > 2
     z_.Some(new NOK(ts[1], ts[2]))
   else
     z_.None
 
-parseNotify: (ts) ->
+Parser.parseNotify = (ts) ->
   if ts.length > 4
     z_.Some(new Notify(ts[1], ts[2], ts[3], tr[4]))
   else
     z_.None
 
-parseValue: (ts) ->
+Parser.parseValue = (ts) ->
   if ts.length == 3
-    new Value(ts[1], ts[2], z_.None)
+    z_.Some(new Value(ts[1], ts[2], z_.None))
   else if ts.length > 3
     z_.Some(new Value(ts[1], ts[2], z_.Some(ts[3])))
   else
     z_.None
 
+Parser.parseValues = (ts) ->
+  if ts.length == 3
+    z_.Some(new Values(ts[1], ts[2], []))
+  else if ts.length > 3
+    xs = ts[3].split(',').map((x) -> x.split('@'))
+    z_.Some(new Values(ts[1], ts[2], xs))
+  else
+    z_.None
 
-parse: (cmd) ->
-  tokens = (x for x in cmd.split(' ') x != '')
+
+Parser.parseCmd = (cmd) ->
+  tokens = (x for x in cmd.split(' ') when x != '')
   if tokens.length == 0
     z_.None
   else
     t = tokens[0]
     if t == 'OK'
-      parseOK(tokens)
+      Parser.parseOK(tokens)
     else if t == 'NOK'
-      parseNOK(tokens)
+      Parser.parseNOK(tokens)
     else if t == 'notify'
-      parseNotify(tokens)
+      Parser.parseNotify(tokens)
     else if t == 'value'
-      parseValue(tokens)
-
+      Parser.parseValue(tokens)
+    else if t == 'values'
+      Parser.parseValues(tokens)
     else
       z_.None      
 
@@ -117,10 +152,10 @@ class Runtime
     @cookieId = 0
     @pendingWebSock = z_.None
     @webSock = z_.None
-    @storeHandlersMap = {}
+    @storeMap = {}
 
 
-  generateEntityId: () ->
+  generateCookie: () ->
     id = @cookieId
     @cookieId += 1
     id
@@ -128,13 +163,13 @@ class Runtime
   # Establish a connection with the dscript.play server
   connect: () =>
     if @connected is false
-      console.log("Connecting to: #{url}")
-      @pendingWebSock = new z_.Some(new WebSocket(url))
+      console.log("Connecting to: #{@url}")
+      @pendingWebSock = z_.Some(new WebSocket(@url))
 
       @pendingWebSock.map (
         (s) =>
           s.onopen = () =>
-            console.log('Connected to: ' + @uri)
+            console.log('Connected to: ' + @url)
             @webSock = @pendingWebSock
             @connected = true
             # We may need to re-establish dropped data connection, if this connection is following
@@ -145,7 +180,7 @@ class Runtime
       @pendingWebSock.map (
         (s) => s.onclose =
           (evt) =>
-            console.log("The server at #{@uri} seems to have dropped the connection.")
+            console.log("The server at #{@url} seems to have dropped the connection.")
             @connected = false
             @webSock.close()
             @closed = true
@@ -189,24 +224,22 @@ class Runtime
 
   handleMessage: (s) =>
     msg = s.data
-    console.log('received'+ msg)
-    cmd = parse(msg)
-    handlers = @storeHandlersMap
+    cmd = Parser.parseCmd(msg)
+    smap = @storeMap
     cmd.map ( (c) ->
-      h = handlers[c.cid]
-      if h? == true
-        h(c)
+      s = smap[c.sid]
+      cid = c.cid
+      if s? == true
+        s.handleCommand(c)
     )
-
-
 
   send: (msg) ->
     @webSock.map(
       (s) -> s.send(msg)
     )
 
-  register: (sid, handlers) ->
-    @storeHandlersMap[sid] = handlers
+  register: (sid, store) ->
+    @storeMap[sid] = store
 
 
 root.fog05.Runtime = Runtime
@@ -215,44 +248,72 @@ class Store
   constructor: (@runtime, @sid, @home, @root, @cache_size) ->
     @getTable = {}
     @obsTable = {}
-    @handlers = {
-      OK: (cmd) -> self.handleOK(cmd),
-      NOK: (cmd) -> self.handleNOK(cmd)
-      notify: (cmd) -> self.handleNotify(cmd)
-      value: (cmd) -> self.handleValue(cmd)
-    }
-    runtime.register(@sid, @handlers)
+
+    @runtime.register(@sid, this)
     cmd = new Create(@sid, @home, @root, @cache_size)
     @runtime.send(cmd.show())
 
   put: (key, value)  ->
-    cmd = new Put(@sid, @key, @value)
+    cmd = new Put(@sid, key, value)
     @runtime.send(cmd.show())
 
-  get: (fun) -> (key) ->
+  get: (key, fun) ->
     @getTable[key] = fun
     cmd = new Get(@sid, key)
     @runtime.send(cmd.show())
 
-  observe: (key, cookie, fun) ->
+  getAll: (key, fun) ->
+    @getTable[key] = fun
+    cmd = new GetAll(@sid, key)
+    @runtime.send(cmd.show())
+
+  observe: (key, fun) ->
+    cookie = @runtime.generateCookie()
     @obsTable[cookie] = fun
-    cmd = new Observe(@cid, @cookie, @uri)
+    cmd = new Observe(@cid, cookie, key)
     @runtime.send(cmd.show())
 
   handleOK: (cmd) ->
-    console.log('Store Handling OK')
+    console.log('>>> Store Handling OK')
+
+  handleNOK: (cmd) ->
+    console.log('>>> Store Handling NOK')
+
 
   handleValue: (cmd) ->
-      fun = @getTable[cmd.key]
-      if fun? == true
-        fun(cmd.key, cmd.value)
+    console.log('>>> Store Handling Value')
+    fun = @getTable[cmd.key]
+    if fun? == true
+      fun(cmd.key, cmd.value)
+
+  handleValues: (cmd) ->
+    console.log('>>> Store Handling Values')
+    fun = @getTable[cmd.key]
+    if fun? == true
+      fun(cmd.key, cmd.values)
 
   handleNotify: (cmd) ->
-    console.log('Store Handling Notify')
+    console.log('>>> Store Handling Notify')
     fun = @obsTable[cmd.cookie]
     if fun? == true
       fun(cmd.key. cmd.value)
 
-  handleNOK: (cmd) ->
-    console.log('Store Handling NOK')
 
+  # No so elegant, but there were issues with the map of lambdas.
+  handleCommand: (cmd) ->
+    switch cmd.cid
+      when 'NOK'
+        this.handleNOK(cmd)
+      when 'OK'
+        this.handleOK(cmd)
+      when 'value'
+        this.handleValue(cmd)
+      when 'values'
+        this.handleValues(cmd)
+      when 'notify'
+        this.handleNotify(cmd)
+
+
+
+
+root.fog05.Store = Store

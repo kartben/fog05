@@ -17,7 +17,8 @@ from fog05.DStore import *
 #
 #    put     sid uri val                -> OK | NOK
 #    dput     sid uri [val]             -> OK | NOK
-#    get     sid uri                    -> value sid key values
+#    get     sid uri                    -> value sid key value
+#    aget     sid uri                    -> value sid key values
 #    remove  sid uri                    -> OK | NOK
 #
 #    observe sid uri cookie             -> stream notify sid cookie key value
@@ -87,6 +88,16 @@ class Server (object):
                 v = ''
             return v
 
+    def getAll(self, store, args):
+        xs = []
+        if len(args) > 0:
+            vs = store.getAll(args[0])
+            xs = []
+            for (key, val, ver) in vs:
+                xs.append('{}@{}'.format(key, val))
+
+        return xs
+
     def remove(self, store, args):
         if len(args) > 0:
             store.remove(args[0])
@@ -132,7 +143,7 @@ class Server (object):
         # print(">> Handling command {}".format(cid))
 
         result = '{} {}'.format(cid,sid)
-        success = False
+        prefix = 'NOK'
 
         # -- Create
         if cid == 'create':
@@ -140,10 +151,13 @@ class Server (object):
                 s = self.create(sid, args)
                 if s is not None:
                     self.storeMap[sid] = s
-                    success = True
+                    prefix = 'OK'
 
         elif cid == 'close':
-            success = self.close(sid)
+            if self.close(sid):
+                prefix = 'OK'
+            else:
+                prefix = 'NOK'
 
         else:
             store = None
@@ -153,38 +167,44 @@ class Server (object):
                 # -- Put
                 if cid == 'put':
                     if self.put(store, args):
-                        result = "{} {} {}".format(cid, sid, args[0])
-                        success = True
+                        result = '{} {} {}'.format(cid, sid, args[0])
+                        prefix = 'OK '
 
                 # -- DPut
                 if cid == 'dput':
                     if self.dput(store, args):
-                        result = "{} {} {}".format(cid, sid, args[0])
-                        success = True
+                        result = '{} {} {}'.format(cid, sid, args[0])
+                        prefix = 'OK'
 
                 # -- Remove
                 if cid == 'remove':
-                    if self.removet(store, args):
+                    if self.remove(store, args):
                         result = "{} {} {}".format(cid, sid, args[0])
-                        success = True
+                        prefix = 'OK'
 
                 # -- Get
                 elif cid == 'get':
                     v = self.get(store, args)
                     result = "{} {} {} {}".format('value', sid, args[0], v)
-                    success = True
+                    prefix = ''
+
+                elif cid == 'aget':
+                    vs = self.getAll(store, args)
+                    result = "{} {} {} {}".format('values', sid, args[0], ','.join(vs))
+                    prefix = ''
 
                 # -- Observe
                 elif cid == 'observe':
                     if self.observe(store, sid, args, websocket):
                         result = "{} {} {}".format(cid, args[0], args[1])
-                        success = True
+                        prefix = 'OK'
 
 
-        if success:
-            await self.send_success(websocket, result)
-        else:
-            await self.send_error(websocket, result)
+        await websocket.send('{} {}'.format(prefix, result))
+        # if success:
+        #     await self.send_success(websocket, result)
+        # else:
+        #     await self.send_error(websocket, result)
 
     async def dispatch(self, websocket, path):
         while True:
