@@ -84,8 +84,8 @@ class Native(RuntimePlugin):
 
         if entity.source_url is not None and entity.source_url.startswith("http"):
             zip_name = entity.source_url.split('/')[-1]
-            zip_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name, zip_name)
-            dest = os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name)
+            zip_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, zip_name)
+            dest = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid)
             #entity.source = os.path.join(dest,entity.command)
 
             if self.operating_system == 'linux':
@@ -95,10 +95,13 @@ class Native(RuntimePlugin):
             else:
                 unzip_cmd = ''
 
-            self.agent.getOSPlugin().downloadFile(entity.image,
-                                                  os.path.join(self.BASE_DIR, self.STORE_DIR, zip_name))
+            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid))
+            self.agent.getOSPlugin().downloadFile(entity.source_url,
+                                                  os.path.join(self.BASE_DIR, self.STORE_DIR,entity_uuid, zip_name))
             # self.agent.getOSPlugin().executeCommand(wget_cmd, True)
             self.agent.getOSPlugin().executeCommand(unzip_cmd, True)
+            entity.source = dest
+
 
         entity.set_state(State.DEFINED)
         self.current_entities.update({entity_uuid: entity})
@@ -125,6 +128,7 @@ class Native(RuntimePlugin):
         else:
             for i in list(entity.instances.keys()):
                 self.__force_entity_instance_termination(entity_uuid, i)
+            self.agent.getOSPlugin().removeDir(os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid))
             self.current_entities.pop(entity_uuid, None)
             self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefineEntity()', '[ DONE ] Native Plugin - Undefine BE uuid %s' % entity_uuid)
@@ -153,13 +157,15 @@ class Native(RuntimePlugin):
             else:
                 id = len(entity.instances)
                 name = '{0}{1}'.format(entity.name, id)
-                out_file = str("native_%s_%s.log" % entity_uuid, instance_uuid)
+                out_file = str("native_%s_%s.log" % (entity_uuid, instance_uuid))
                 out_file = os.path.join(self.BASE_DIR, self.LOG_DIR, out_file)
+
                 #uuid, name, command, source, args, outfile, entity_uuid)
                 instance = NativeEntityInstance(instance_uuid, name, entity.command, entity.source,
                                              entity.args, out_file, entity_uuid)
-
+                native_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name)
                 self.agent.getOSPlugin().createFile(instance.outfile)
+                self.agent.getOSPlugin().createDir(native_dir)
                 # if entity.source is not None:
                 #     zip_name = entity.source.split('/')[-1]
                 #     self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name))
@@ -217,6 +223,9 @@ class Native(RuntimePlugin):
                 else:
 
                     self.agent.getOSPlugin().removeFile(instance.outfile)
+                    native_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name)
+                    self.agent.getOSPlugin().removeDir(native_dir)
+
                     #if entity.source is not None:
                     #    entity_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, instance.name)
                     #    self.agent.getOSPlugin().removeDir(entity_dir)
@@ -258,9 +267,12 @@ class Native(RuntimePlugin):
                     cmd = str("%s %s" % (entity.command, ' '.join(str(x) for x in entity.args)))
                 else:
 
-                    native_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, instance.name)
-                    pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, instance.name, instance_uuid)
-                    run_script = self.__generate_run_script(instance_uuid.command, native_dir, pid_file)
+                    native_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name)
+
+                    source_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid)
+
+                    pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid,instance.name, instance_uuid)
+                    run_script = self.__generate_run_script(instance.command, source_dir, pid_file)
                     if self.operating_system == 'linux':
                         self.agent.getOSPlugin().storeFile(run_script, native_dir, str("%s_run.sh" % instance_uuid))
                         chmod_cmd = str("chmod +x %s" % os.path.join(native_dir, str("%s_run.sh" % instance_uuid)))
@@ -275,8 +287,8 @@ class Native(RuntimePlugin):
 
                 if instance.source is not None:
                     time.sleep(1)
-                    pid_file = str('%s.pid' % entity_uuid)
-                    pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, instance.name, pid_file)
+                    pid_file = str('%s.pid' % instance_uuid)
+                    pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid,instance.name, pid_file)
                     pid = int(self.agent.getOSPlugin().readFile(pid_file))
                     instance.on_start(pid, process)
                 else:
