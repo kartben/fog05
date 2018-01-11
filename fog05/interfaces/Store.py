@@ -69,6 +69,10 @@ class Store(object):
         pass
 
 
+    def keys(self):
+        """
+        :return: the keys contained by this store.
+        """
     def put(self,uri,value):
         """
         uri eg. xrce://{nodeid or */** (* is only node ids, ** is all informations) or list of nodeids}/resurce

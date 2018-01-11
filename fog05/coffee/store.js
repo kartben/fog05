@@ -4,7 +4,7 @@
   // with fog05. Through this API any JS-based runtime can interact with the
   // distributed store used by fog05. As such it can access the full power of
   // fog05
-  var Create, Get, GetAll, NOK, Notify, OK, Observe, Parser, Put, Runtime, Store, Value, Values, WebSocket, exports, fog05, root, z_;
+  var Create, Get, GetAll, GetKeys, Keys, NOK, Notify, OK, Observe, Parser, Put, Runtime, Store, Value, Values, WebSocket, exports, fog05, root, z_;
 
   root = this;
 
@@ -164,11 +164,40 @@
     }
 
     show() {
-      var vs;
-      vs = this.values.reduce(function(a, v) {
-        return a + ',' + v;
+      var str;
+      str = this.values.reduce(function(a, v) {
+        return a + ', ' + v;
       });
-      return `${this.cid} ${this.sid} ${this.key} ${vs}`;
+      return `${this.cid} ${this.sid} ${this.key} [${str}]`;
+    }
+
+  };
+
+  GetKeys = class GetKeys {
+    constructor(sid1) {
+      this.sid = sid1;
+      this.cid = 'gkeys';
+    }
+
+    show() {
+      return `${this.cid} ${this.sid}`;
+    }
+
+  };
+
+  Keys = class Keys {
+    constructor(sid1, keys) {
+      this.sid = sid1;
+      this.keys = keys;
+      this.cid = 'keys';
+    }
+
+    show() {
+      var str;
+      str = this.keys.reduce(function(a, v) {
+        return a + ', ' + v;
+      });
+      return `${this.cid} ${this.sid} [${str}]`;
     }
 
   };
@@ -223,6 +252,16 @@
     }
   };
 
+  Parser.parseKeys = function(ts) {
+    var xs;
+    if (ts.length > 2) {
+      xs = ts[2].split(',');
+      return z_.Some(new Keys(ts[1], xs));
+    } else {
+      return z_.None;
+    }
+  };
+
   Parser.parseCmd = function(cmd) {
     var t, tokens, x;
     tokens = (function() {
@@ -241,23 +280,25 @@
       return z_.None;
     } else {
       t = tokens[0];
-      if (t === 'OK') {
-        return Parser.parseOK(tokens);
-      } else if (t === 'NOK') {
-        return Parser.parseNOK(tokens);
-      } else if (t === 'notify') {
-        return Parser.parseNotify(tokens);
-      } else if (t === 'value') {
-        return Parser.parseValue(tokens);
-      } else if (t === 'values') {
-        return Parser.parseValues(tokens);
-      } else {
-        return z_.None;
+      switch (t) {
+        case 'OK':
+          return Parser.parseOK(tokens);
+        case 'NOK':
+          return Parser.parseNOK(tokens);
+        case 'notify':
+          return Parser.parseNotify(tokens);
+        case 'value':
+          return Parser.parseValue(tokens);
+        case 'values':
+          return Parser.parseValues(tokens);
+        case 'keys':
+          return Parser.parseKeys(tokens);
+        default:
+          return z_.None;
       }
     }
   };
 
-  
   // The `Runtime` maintains the connection with the server, re-establish the connection if dropped and mediates
   // the `DataReader` and `DataWriter` communication.
   Runtime = class Runtime {
@@ -355,13 +396,12 @@
       msg = s.data;
       cmd = Parser.parseCmd(msg);
       smap = this.storeMap;
-      return cmd.map((function(c) {
-        var cid;
-        s = smap[c.sid];
-        cid = c.cid;
-        if ((s != null) === true) {
+      return cmd.foreach((function(c) {
+        return z_.get(smap, c.sid).foreach(function(s) {
+          var cid;
+          cid = c.cid;
           return s.handleCommand(c);
-        }
+        });
       }));
     }
 
@@ -389,6 +429,7 @@
       this.cache_size = cache_size;
       this.getTable = {};
       this.obsTable = {};
+      this.keyFun = z_.None;
       this.runtime.register(this.sid, this);
       cmd = new Create(this.sid, this.home, this.root, this.cache_size);
       this.runtime.send(cmd.show());
@@ -397,6 +438,13 @@
     put(key, value) {
       var cmd;
       cmd = new Put(this.sid, key, value);
+      return this.runtime.send(cmd.show());
+    }
+
+    keys(fun) {
+      var cmd;
+      this.keyFun = z_.Some(fun);
+      cmd = new GetKeys(this.sid);
       return this.runtime.send(cmd.show());
     }
 
@@ -431,30 +479,30 @@
     }
 
     handleValue(cmd) {
-      var fun;
       console.log('>>> Store Handling Value');
-      fun = this.getTable[cmd.key];
-      if ((fun != null) === true) {
+      return z_.get(this.getTable, cmd.key).foreach(function(fun) {
         return fun(cmd.key, cmd.value);
-      }
+      });
     }
 
     handleValues(cmd) {
-      var fun;
       console.log('>>> Store Handling Values');
-      fun = this.getTable[cmd.key];
-      if ((fun != null) === true) {
+      return z_.get(this.getTable, cmd.key).foreach(function(fun) {
         return fun(cmd.key, cmd.values);
-      }
+      });
     }
 
     handleNotify(cmd) {
-      var fun;
       console.log('>>> Store Handling Notify');
-      fun = this.obsTable[cmd.cookie];
-      if ((fun != null) === true) {
+      return z_.get(this.obsTable, cmd.cookie).foreach(function(fun) {
         return fun(cmd.key.cmd.value);
-      }
+      });
+    }
+
+    handleKeys(cmd) {
+      return this.keyFun.foreach(function(f) {
+        return f(cmd.keys);
+      });
     }
 
     // No so elegant, but there were issues with the map of lambdas.
@@ -468,6 +516,8 @@
           return this.handleValue(cmd);
         case 'values':
           return this.handleValues(cmd);
+        case 'keys':
+          return this.handleKeys(cmd);
         case 'notify':
           return this.handleNotify(cmd);
       }

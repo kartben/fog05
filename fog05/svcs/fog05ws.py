@@ -15,10 +15,11 @@ from fog05.DStore import *
 #    create  sid root home cache-size   -> OK | NOK
 #    close   sid                        -> OK | NOK
 #
+#    gkeys    sid                        -> keys sid key1,key2,...,keyn
 #    put     sid uri val                -> OK | NOK
 #    dput     sid uri [val]             -> OK | NOK
 #    get     sid uri                    -> value sid key value
-#    aget     sid uri                    -> value sid key values
+#    aget     sid uri                    -> value sid key key1@value1,key2@value2,...,keyn@valuen
 #    remove  sid uri                    -> OK | NOK
 #
 #    observe sid uri cookie             -> stream notify sid cookie key value
@@ -117,7 +118,6 @@ class Server (object):
         return result
 
 
-
     def observe(self, store, sid, args, websocket):
         success = False
         print("len(args) {}".format(len(args)))
@@ -188,9 +188,16 @@ class Server (object):
                     result = "{} {} {} {}".format('value', sid, args[0], v)
                     prefix = ''
 
+                # -- GetAll
                 elif cid == 'aget':
                     vs = self.getAll(store, args)
                     result = "{} {} {} {}".format('values', sid, args[0], ','.join(vs))
+                    prefix = ''
+
+                # -- Keys
+                elif cid == 'gkeys':
+                    ks = store.keys()
+                    result = "{} {} {}".format('keys', sid, ','.join(ks))
                     prefix = ''
 
                 # -- Observe

@@ -80,8 +80,21 @@ class Values
   constructor: (@sid, @key, @values) ->
     @cid = 'values'
   show: () ->
-    vs = @values.reduce((a, v) -> a + ',' + v)
-    "#{@cid} #{@sid} #{@key} #{vs}"
+    str = @values.reduce((a, v) -> a + ', ' + v)
+    "#{@cid} #{@sid} #{@key} [#{str}]"
+
+class GetKeys
+  constructor: (@sid) ->
+    @cid = 'gkeys'
+  show: () ->
+    "#{@cid} #{@sid}"
+
+class Keys
+  constructor: (@sid, @keys) ->
+    @cid = 'keys'
+  show: () ->
+    str= @keys.reduce((a, v) -> a + ', ' + v)
+    "#{@cid} #{@sid} [#{str}]"
 
 Parser = {}
 Parser.parseOK = (ts) ->
@@ -119,6 +132,13 @@ Parser.parseValues = (ts) ->
   else
     z_.None
 
+Parser.parseKeys = (ts) ->
+  if ts.length > 2
+    xs = ts[2].split(',')
+    z_.Some(new Keys(ts[1], xs))
+  else
+    z_.None
+
 
 Parser.parseCmd = (cmd) ->
   tokens = (x for x in cmd.split(' ') when x != '')
@@ -126,18 +146,21 @@ Parser.parseCmd = (cmd) ->
     z_.None
   else
     t = tokens[0]
-    if t == 'OK'
-      Parser.parseOK(tokens)
-    else if t == 'NOK'
-      Parser.parseNOK(tokens)
-    else if t == 'notify'
-      Parser.parseNotify(tokens)
-    else if t == 'value'
-      Parser.parseValue(tokens)
-    else if t == 'values'
-      Parser.parseValues(tokens)
-    else
-      z_.None      
+    switch t
+      when 'OK'
+        Parser.parseOK(tokens)
+      when 'NOK'
+        Parser.parseNOK(tokens)
+      when 'notify'
+        Parser.parseNotify(tokens)
+      when 'value'
+        Parser.parseValue(tokens)
+      when 'values'
+        Parser.parseValues(tokens)
+      when 'keys'
+        Parser.parseKeys(tokens)
+      else
+        z_.None
 
 # The `Runtime` maintains the connection with the server, re-establish the connection if dropped and mediates
 # the `DataReader` and `DataWriter` communication.
@@ -226,11 +249,10 @@ class Runtime
     msg = s.data
     cmd = Parser.parseCmd(msg)
     smap = @storeMap
-    cmd.map ( (c) ->
-      s = smap[c.sid]
-      cid = c.cid
-      if s? == true
-        s.handleCommand(c)
+    cmd.foreach ( (c) ->
+      z_.get(smap, c.sid).foreach( (s) ->
+        cid = c.cid
+        s.handleCommand(c))
     )
 
   send: (msg) ->
@@ -244,17 +266,23 @@ class Runtime
 
 root.fog05.Runtime = Runtime
 
+
 class Store
   constructor: (@runtime, @sid, @home, @root, @cache_size) ->
     @getTable = {}
     @obsTable = {}
-
+    @keyFun = z_.None
     @runtime.register(@sid, this)
     cmd = new Create(@sid, @home, @root, @cache_size)
     @runtime.send(cmd.show())
 
   put: (key, value)  ->
     cmd = new Put(@sid, key, value)
+    @runtime.send(cmd.show())
+
+  keys: (fun) ->
+    @keyFun = z_.Some(fun)
+    cmd = new GetKeys(@sid)
     @runtime.send(cmd.show())
 
   get: (key, fun) ->
@@ -282,22 +310,18 @@ class Store
 
   handleValue: (cmd) ->
     console.log('>>> Store Handling Value')
-    fun = @getTable[cmd.key]
-    if fun? == true
-      fun(cmd.key, cmd.value)
+    z_.get(@getTable, cmd.key).foreach( (fun) -> fun(cmd.key, cmd.value))
 
   handleValues: (cmd) ->
     console.log('>>> Store Handling Values')
-    fun = @getTable[cmd.key]
-    if fun? == true
-      fun(cmd.key, cmd.values)
+    z_.get(@getTable, cmd.key).foreach( (fun) -> fun(cmd.key, cmd.values))
 
   handleNotify: (cmd) ->
     console.log('>>> Store Handling Notify')
-    fun = @obsTable[cmd.cookie]
-    if fun? == true
-      fun(cmd.key. cmd.value)
+    z_.get(@obsTable, cmd.cookie).foreach( (fun) -> fun(cmd.key. cmd.value) )
 
+  handleKeys: (cmd) ->
+    @keyFun.foreach( (f) -> f(cmd.keys))
 
   # No so elegant, but there were issues with the map of lambdas.
   handleCommand: (cmd) ->
@@ -310,6 +334,8 @@ class Store
         this.handleValue(cmd)
       when 'values'
         this.handleValues(cmd)
+      when 'keys'
+        this.handleKeys(cmd)
       when 'notify'
         this.handleNotify(cmd)
 

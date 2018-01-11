@@ -6,13 +6,15 @@ rt.onconnect = () ->
   store.put('fos://root/kydos/one', 1)
   store.put('fos://root/kydos/two', 2)
   store.get('fos://root/kydos/two',
-    (k, v) -> console.log("Received <#{k}, #{v.show()}")
+    (k, v) -> console.log("get #{k} -> #{v.show()}")
   )
   store.get('fos://root/kydos/one',
-    (k, v) -> console.log("Received <#{k}, #{v.show()}"))
+    (k, v) -> console.log("get #{k} ->  #{v.show()}"))
 
   store.getAll('fos://root/kydos/*',
-    (k, vs) -> console.log("Received <#{k}, #{vs}"))
+    (k, vs) -> console.log("aget #{k} -> #{JSON.stringify(vs)}"))
+
+  store.keys( (ks) -> console.log("keys -> #{JSON.stringify(ks)}"))
 
 rt.connect()
 

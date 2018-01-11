@@ -20,6 +20,7 @@ root.coffez = {}
 # `Option` monad implementation.
 None = {}
 None.map = (f) -> None
+None.foreach = (f) -> None
 None.flatMap = (f) -> None
 None.get = () -> undefined
 None.getOrElse = (f) -> f()
@@ -29,6 +30,7 @@ None.show = () -> 'None'
 
 class CSome
   constructor: (@value) ->
+  foreach: (f) -> f(@value)
   map: (f)  -> new CSome(f(@value))
   flatMap: (f) -> f(@value)
   get: () -> @value
@@ -102,9 +104,17 @@ match = (a, b) ->
         else ematch(a, b)
 
 
+get = (map, key) ->
+  v = map[key]
+  if v? == true
+    new CSome(v)
+  else
+    None
+
 root.coffez.None = None
 root.coffez.Some = (value) -> new CSome(value)
 root.coffez.Fail = (what) -> new CFail(what)
 root.coffez.Success = (value) -> new CSuccess(value)
 root.coffez.Failure = (ex) -> new CFailure(ex)
 root.coffez.match = match
+root.coffez.get = get
