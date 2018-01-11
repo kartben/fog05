@@ -95,9 +95,9 @@ class FOSCli(object):
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
         all_plugins = json.loads(self.store.actual.get(uri)).get('plugins')
         nws = [x for x in all_plugins if x.get('type') == 'network']
-        print('locating brctl plugin')
+        #print('locating brctl plugin')
         search = [x for x in nws if 'brctl' in x.get('name')]
-        print(search)
+        #print(search)
         if len(search) == 0:
             print('Plugin was not loaded')
             exit(0)
@@ -207,7 +207,10 @@ class FOSCli(object):
         while True:
             time.sleep(1)
             uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
-            entity_info = json.loads(self.store.actual.get(uri))
+            data = self.store.actual.get(uri)
+            entity_info = None
+            if data is not None:
+                entity_info = entity_info = json.loads(data)
             if entity_info is not None and entity_info.get('status') == 'defined':
                 break
 
@@ -215,7 +218,7 @@ class FOSCli(object):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
         self.store.desidered.remove(uri)
-        time.sleep(5)
+        time.sleep(2)
 
     def __send_configure_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
@@ -225,21 +228,30 @@ class FOSCli(object):
         while True:
             time.sleep(1)
             uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
-            entity_info = json.loads(self.store.actual.get(uri))
+            data = self.store.actual.get(uri)
+            entity_info = None
+            if data is not None:
+                entity_info = entity_info = json.loads(data)
             if entity_info is not None and entity_info.get('status') == 'configured':
                 break
 
     def __send_clean_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=clean' % (node_uuid, handler,
-                                                                                        entity_uuid, instance_uuid))
-        self.store.desidered.dput(uri)
-        while True:
-            time.sleep(1)
-            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
-            entity_info = json.loads(self.store.actual.get(uri))
-            if entity_info is not None and entity_info.get('status') == 'cleaned':
-                break
+        # uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=clean' % (node_uuid, handler,
+        #                                                                                 entity_uuid, instance_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid,
+                                                                           instance_uuid))
+        self.store.desidered.remove(uri)
+        #self.store.desidered.dput(uri)
+        # while True:
+        #     time.sleep(1)
+        #     uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
+        #     data = self.store.actual.get(uri)
+        #     entity_info = None
+        #     if data is not None:
+        #         entity_info = entity_info = json.loads(data)
+        #     if entity_info is not None and entity_info.get('status') == 'cleaned':
+        #         break
 
     def __send_run_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
@@ -252,7 +264,10 @@ class FOSCli(object):
         while True:
             time.sleep(1)
             uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
-            entity_info = json.loads(self.store.actual.get(uri))
+            data = self.store.actual.get(uri)
+            entity_info = None
+            if data is not None:
+                entity_info = entity_info = json.loads(data)
             if entity_info is not None and entity_info.get('status') == 'run':
                 break
 
@@ -264,7 +279,10 @@ class FOSCli(object):
         while True:
             time.sleep(1)
             uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
-            entity_info = json.loads(self.store.actual.get(uri))
+            data = self.store.actual.get(uri)
+            entity_info = None
+            if data is not None:
+                entity_info = entity_info = json.loads(data)
             if entity_info is not None and entity_info.get('status') == 'stop':
                 break
 
@@ -299,14 +317,17 @@ class FOSCli(object):
             uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s" % (destination_uuid,
                                                                                destination_handler.get('uuid'),
                                                                                entity_uuid, instance_uuid))
-            en_info = json.loads(self.store.actual.get(uri))
-            if en_info is not None and en_info.get("status") == "run":
+            data = self.store.actual.get(uri)
+            entity_info = None
+            if data is not None:
+                entity_info = entity_info = json.loads(data)
+            if entity_info is not None and entity_info.get("status") == "run":
                 break
 
-    def __send_pause_entity(self, node_uuid, entity_uuid):
+    def __send_pause_entity(self, node_uuid, entity_uuid, instance_uuid):
         pass
 
-    def __send_resume_entity(self, node_uuid, entity_uuid):
+    def __send_resume_entity(self, node_uuid, entity_uuid, instance_uuid):
         pass
 
     def start(self, plugins, verbose, daemon):
@@ -502,25 +523,25 @@ class FOSCli(object):
             self.__send_undefine_entity(node_uuid, entity_uuid)
             print('Entity %s undefined' % entity_uuid)
         if action == 'configure' and instance_uuid is not None:
-            self.__send_configure_entity(node_uuid, entity_uuid)
+            self.__send_configure_entity(node_uuid, entity_uuid, instance_uuid)
             print('Entity %s configured' % entity_uuid)
         if action == 'clean' and instance_uuid is not None:
-            self.__send_clean_entity(node_uuid, entity_uuid)
+            self.__send_clean_entity(node_uuid, entity_uuid, instance_uuid)
             print('Entity %s cleaned' % entity_uuid)
         if action == 'run' and instance_uuid is not None:
-            self.__send_run_entity(node_uuid, entity_uuid)
+            self.__send_run_entity(node_uuid, entity_uuid, instance_uuid)
             print('Entity %s started' % entity_uuid)
         if action == 'stop' and instance_uuid is not None:
-            self.__send_stop_entity(node_uuid, entity_uuid)
+            self.__send_stop_entity(node_uuid, entity_uuid, instance_uuid)
             print('Entity %s stopped' % entity_uuid)
         if action == 'pause' and instance_uuid is not None:
-            self.__send_pause_entity(node_uuid, entity_uuid)
+            self.__send_pause_entity(node_uuid, entity_uuid, instance_uuid)
             print('Pause sended')
         if action == 'resume' and instance_uuid is not None:
-            self.__send_resume_entity(node_uuid, entity_uuid)
+            self.__send_resume_entity(node_uuid, entity_uuid, instance_uuid)
             print('Resume sended')
         if action == 'migrate' and dest_node is not None and instance_uuid is not None:
-            self.__sent_migrate_entity(node_uuid, entity_uuid, dest_node)
+            self.__sent_migrate_entity(node_uuid, entity_uuid, dest_node, instance_uuid)
             print('Migration sended')
 
 

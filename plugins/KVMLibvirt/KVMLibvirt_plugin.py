@@ -148,6 +148,8 @@ class KVMLibvirt(RuntimePlugin):
             if(self.current_entities.pop(entity_uuid, None)) is None:
                 self.agent.logger.warning('undefine_entity()', 'KVM Plugin - pop from entities dict returned none')
 
+            for i in list(entity.instances.keys()):
+                self.__force_entity_instance_termination(entity_uuid, i)
             self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
             self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefine_entity()', '[ DONE ] KVM Plugin - Undefine a VM uuid %s ' % entity_uuid)
@@ -189,12 +191,13 @@ class KVMLibvirt(RuntimePlugin):
             else:
 
                 id = len(entity.instances)
+                name = '{0}{1}'.format(entity.name, id)
                 disk_path = str('%s.qcow2' % instance_uuid)
                 cdrom_path = str('%s_config.iso' % instance_uuid)
                 disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
                 cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
                 #uuid, name, cpu, ram, disk, disk_size, cdrom, networks, image, user_file, ssh_key, entity_uuid)
-                instance = KVMLibvirtEntityInstance(instance_uuid, entity.name+id, entity.cpu, entity.ram, disk_path,
+                instance = KVMLibvirtEntityInstance(instance_uuid, name, entity.cpu, entity.ram, disk_path,
                                       entity.disk_size, cdrom_path, entity.networks, entity.image, entity.user_file,
                                       entity.ssh_key, entity_uuid)
                 for i, n in enumerate(instance.networks):

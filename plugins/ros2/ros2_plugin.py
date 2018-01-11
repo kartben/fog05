@@ -137,6 +137,8 @@ class ROS2(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
+            for i in list(entity.instances.keys()):
+                self.__force_entity_instance_termination(entity_uuid, i)
             self.current_entities.pop(entity_uuid, None)
             self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefineEntity()', 'ROS2 Plugin - Undefine ROS2 Nodelets uuid %s' % entity_uuid)
@@ -165,12 +167,13 @@ class ROS2(RuntimePlugin):
                 print("This instance already existis!!")
             else:
                 id = len(entity.instances)
+                name = '{0}{1}'.format(entity.name, id)
                 out_file = str("native_%s_%s.log" % entity_uuid, instance_uuid)
                 out_file = os.path.join(self.BASE_DIR, self.LOG_DIR, out_file)
                 #nodelet_dir = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid)
                 #cmd = os.path.join(nodelet_dir,entity.command)
                 #uuid, name, command, args, outfile, url, entity_uuid)
-                instance = ROS2EntityInstance(instance_uuid, entity.name + id, entity.command, entity.args,
+                instance = ROS2EntityInstance(instance_uuid, name, entity.command, entity.args,
                                               entity.url, out_file, entity_uuid)
 
 
@@ -234,10 +237,10 @@ class ROS2(RuntimePlugin):
             self.agent.logger.error('cleanEntity()', 'ROS2 Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() != State.CONFIGURED:
+        elif entity.get_state() != State.DEFINED:
             self.agent.logger.error('cleanEntity()', 'ROS2 Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
-                                                     str("Entity %s is not in CONFIGURED state" % entity_uuid))
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             if instance_uuid is None or not entity.has_instance(instance_uuid):
                 self.agent.logger.error('clean_entity()','Native Plugin - Instance not found!!')
@@ -272,10 +275,10 @@ class ROS2(RuntimePlugin):
             self.agent.logger.error('runEntity()', 'ROS2 Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() != State.CONFIGURED:
+        elif entity.get_state() != State.DEFINED:
             self.agent.logger.error('runEntity()', 'ROS2 Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
-                                                     str("Entity %s is not in CONFIGURED state" % entity_uuid))
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
 
             instance = entity.get_instance(instance_uuid)
@@ -328,11 +331,11 @@ class ROS2(RuntimePlugin):
         else:
 
             instance = entity.get_instance(instance_uuid)
-            if instance.get_state() != State.CONFIGURED:
+            if instance.get_state() != State.RUNNING:
                 self.agent.logger.error('clean_entity()',
                                         'KVM Plugin - Instance state is wrong, or transition not allowed')
-                raise StateTransitionNotAllowedException("Instance is not in CONFIGURED state",
-                                                         str("Instance %s is not in CONFIGURED state" % instance_uuid))
+                raise StateTransitionNotAllowedException("Instance is not in RUNNING state",
+                                                         str("Instance %s is not in RUNNING state" % instance_uuid))
             else:
 
                 if instance.source is None:

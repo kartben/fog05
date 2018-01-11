@@ -104,9 +104,9 @@ class LXD(RuntimePlugin):
         else:
             return None
 
-        image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image.split('/')[-1])
-        image_url = entity.image
-        self.agent.getOSPlugin().downloadFile(image_url, image_name)
+
+        image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image_url.split('/')[-1])
+        self.agent.getOSPlugin().downloadFile(entity.image_url, image_name)
         entity.image = image_name
         entity.set_state(State.DEFINED)
 
@@ -158,6 +158,17 @@ class LXD(RuntimePlugin):
             raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
+            for i in list(entity.instances.keys()):
+                self.__force_entity_instance_termination(entity_uuid, i)
+
+            try:
+
+                img = self.conn.images.get_by_alias(entity_uuid)
+                img.delete()
+            except LXDAPIException as e:
+                self.agent.logger.error('undefine_entity()', 'Error {0}'.format(e))
+                pass
+
             self.current_entities.pop(entity_uuid, None)
             self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
             self.__pop_actual_store(entity_uuid)
@@ -193,9 +204,11 @@ class LXD(RuntimePlugin):
                 print("This instance already existis!!")
             else:
                 id = len(entity.instances)
+                name = '{0}{1}'.format(entity.name,id)
                 #uuid, name, networks, image, user_file, ssh_key, storage, profiles, entity_uuid)
-                instance = LXDEntityInstance(instance_uuid, entity.name+id, entity.networks,entity.image,
-                                            entity.user_file, entity.ssh_key, entity.storage, entity.profile,entity_uuid)
+                instance = LXDEntityInstance(instance_uuid, name, entity.networks,entity.image,
+                                            entity.user_file, entity.ssh_key, entity.storage, entity.profiles ,
+                                             entity_uuid)
 
                 #wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
 
@@ -230,7 +243,7 @@ class LXD(RuntimePlugin):
                 if instance.profiles is None:
                     instance.profiles = list()
 
-                    instance.profiles.append(entity_uuid)
+                instance.profiles.append(instance_uuid)
 
                 config = self.__generate_container_dict(instance)
 
@@ -261,10 +274,10 @@ class LXD(RuntimePlugin):
             self.agent.logger.error('cleanEntity()', 'LXD Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() != State.CONFIGURED:
+        elif entity.get_state() != State.DEFINED:
             self.agent.logger.error('cleanEntity()', 'LXD Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
-                                                     str("Entity %s is not in CONFIGURED state" % entity_uuid))
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             if instance_uuid is None or not entity.has_instance(instance_uuid):
                 self.agent.logger.error('clean_entity()','LXD Plugin - Instance not found!!')
@@ -322,12 +335,10 @@ class LXD(RuntimePlugin):
             self.agent.logger.error('runEntity()', 'LXD Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() == State.RUNNING:
-            self.agent.logger.warning('runEntity()', 'LXD Plugin - Entity already running, some strange dput/put happen! eg after migration"')
-        elif entity.get_state() != State.CONFIGURED:
+        elif entity.get_state() != State.DEFINED:
             self.agent.logger.error('runEntity()', 'LXD Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in CONFIGURED state",
-                                                     str("Entity %s is not in CONFIGURED state" % entity_uuid))
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             instance = entity.get_instance(instance_uuid)
             if instance.get_state() != State.CONFIGURED:
@@ -358,17 +369,17 @@ class LXD(RuntimePlugin):
             self.agent.logger.error('stopEntity()', 'LXD Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() != State.RUNNING:
+        elif entity.get_state() != State.DEFINED:
             self.agent.logger.error('stopEntity()', 'LXD Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
                                                      str("Entity %s is not in RUNNING state" % entity_uuid))
         else:
             instance = entity.get_instance(instance_uuid)
-            if instance.get_state() != State.CONFIGURED:
+            if instance.get_state() != State.RUNNING:
                 self.agent.logger.error('clean_entity()',
                                         'KVM Plugin - Instance state is wrong, or transition not allowed')
-                raise StateTransitionNotAllowedException("Instance is not in CONFIGURED state",
-                                                         str("Instance %s is not in CONFIGURED state" % entity_uuid))
+                raise StateTransitionNotAllowedException("Instance is not in RUNNING state",
+                                                         str("Instance %s is not in RUNNING state" % entity_uuid))
             else:
 
                 c = self.conn.containers.get(instance.name)
@@ -399,10 +410,10 @@ class LXD(RuntimePlugin):
             self.agent.logger.error('pauseEntity()', 'LXD Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() != State.RUNNING:
+        elif entity.get_state() != State.DEFINED:
             self.agent.logger.error('pauseEntity()', 'LXD Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
-                                                     str("Entity %s is not in RUNNING state" % entity_uuid))
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             if instance_uuid is None or not entity.has_instance(instance_uuid):
                 self.agent.logger.error('run_entity()', 'KVM Plugin - Instance not found!!')
@@ -422,7 +433,7 @@ class LXD(RuntimePlugin):
                     self.current_entities.update({entity_uuid: entity})
                     uri = str(
                         '%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
-                    v = json.loads(self.agent.dstore.get(uri))
+                    container_info = json.loads(self.agent.dstore.get(uri))
                     container_info.update({"status": "pause"})
                     self.__update_actual_store_instance(entity_uuid, instance_uuid, container_info)
                     self.agent.logger.info('pauseEntity()', '[ DONE ] LXD Plugin - Pause a Container uuid %s ' % instance_uuid)
@@ -437,21 +448,21 @@ class LXD(RuntimePlugin):
             self.agent.logger.error('resumeEntity()', 'LXD Plugin - Entity not exists')
             raise EntityNotExistingException("Enitity not existing",
                                              str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() != State.PAUSED:
+        elif entity.get_state() != State.DEFINED:
             self.agent.logger.error('resumeEntity()', 'LXD Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in PAUSED state",
-                                                     str("Entity %s is not in PAUSED state" % entity_uuid))
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
             if instance_uuid is None or not entity.has_instance(instance_uuid):
                 self.agent.logger.error('run_entity()', 'KVM Plugin - Instance not found!!')
             else:
                 instance = entity.get_instance(instance_uuid)
-                if instance.get_state() != State.RUNNING:
+                if instance.get_state() != State.PAUSED:
                     self.agent.logger.error('clean_entity()',
                                             'KVM Plugin - Instance state is wrong, or transition not allowed')
-                    raise StateTransitionNotAllowedException("Instance is not in RUNNING state",
+                    raise StateTransitionNotAllowedException("Instance is not in PAUSED state",
                                                              str(
-                                                                 "Instance %s is not in RUNNING state" % instance_uuid))
+                                                                 "Instance %s is not in PAUSED state" % instance_uuid))
                 else:
                     c = self.conn.containers.get(instance.name)
                     c.unfreeze()
@@ -728,9 +739,9 @@ class LXD(RuntimePlugin):
         #devices = devices.render(networks=entity.networks)
         return devices
 
-    def __generate_container_dict(self, entity):
-        conf = {'name': entity.name, "profiles":  entity.profiles,
-                'source': {'type': 'image', 'alias': entity.uuid}}
+    def __generate_container_dict(self, instance):
+        conf = {'name': instance.name, "profiles":  instance.profiles,
+                'source': {'type': 'image', 'alias': instance.entity_uuid}}
         return conf
 
     def __update_actual_store(self, uri, value):
