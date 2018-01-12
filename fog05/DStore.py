@@ -86,6 +86,8 @@ class DStore(Store):
         
         '''
 
+    def keys(self):
+        return list(self.__store.keys())
 
     def is_stored_value(self, uri):
         if uri.startswith(self.home):
@@ -253,6 +255,7 @@ class DStore(Store):
                 data = self.data_merge(data, d)
                 ##self.logger.debug('DStore','>>>merged data  {0} '.format(data))
         else:
+            #print('{0} type {1}'.format(values,type(values)))
             jvalues = json.loads(values)
             ###self.logger.debug('DStore','dput delta value = {0}, data = {1}'.format(jvalues, data))
             data = self.data_merge(data, jvalues)
