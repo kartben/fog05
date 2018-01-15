@@ -99,6 +99,16 @@ class Server (object):
 
         return xs
 
+    def resolveAll(self, store, args):
+        xs = []
+        if len(args) > 0:
+            vs = store.resolveAll(args[0])
+            xs = []
+            for (key, val, ver) in vs:
+                xs.append('{}@{}'.format(key, val))
+
+        return xs
+
     def remove(self, store, args):
         if len(args) > 0:
             store.remove(args[0])
@@ -194,6 +204,11 @@ class Server (object):
                     result = "{} {} {} {}".format('values', sid, args[0], '|'.join(vs))
                     prefix = ''
 
+                elif cid == 'aresolve':
+                    vs = self.resolveAll(store, args)
+                    result = "{} {} {} {}".format('values', sid, args[0], '|'.join(vs))
+                    prefix = ''
+
                 # -- Keys
                 elif cid == 'gkeys':
                     ks = store.keys()
@@ -238,14 +253,14 @@ class Server (object):
             raise RuntimeError("Service Already Running")
 
 
-if __name__=='__main__':
-    port = 9669
-    if len(sys.argv) > 1:
-        if sys.argv[1] == '--help' or sys.argv[1] == '-h' or sys.argv[1] == 'help':
-            print('\nUSAGE:\n\tpython3 fog05ws [port=9669]\n')
-            exit(0)
-        else:
-            port = int(sys.argv)
-
-    s = Server(port)
-    s.start()
+# if __name__=='__main__':
+#     port = 9669
+#     if len(sys.argv) > 1:
+#         if sys.argv[1] == '--help' or sys.argv[1] == '-h' or sys.argv[1] == 'help':
+#             print('\nUSAGE:\n\tpython3 fog05ws [port=9669]\n')
+#             exit(0)
+#         else:
+#             port = int(sys.argv)
+#
+#     s = Server(port)
+#     s.start()

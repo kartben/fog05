@@ -15,6 +15,9 @@ import os
 ## cli using webserver
 import asyncio
 import websockets
+import tempfile
+
+
 
 
 if os.name == 'posix':
@@ -85,9 +88,6 @@ class WSStore(object):
         async with self.websocket as ws:
             await ws.send(cmd)
             response = await ws.recv()
-        async with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
         infos = response.split(uri)[-1].replace(' ', '')
         if infos is not None and infos != '':
             return infos
@@ -112,6 +112,23 @@ class WSStore(object):
 
         return tuple(values)
 
+    async def resolveAll(self, uri):
+        cmd = 'aresolve {0} {1}'.format(self.sid, uri)
+        values=[]
+        async with self.websocket as ws:
+            await ws.send(cmd)
+            response = await ws.recv()
+        infos = response.split(uri)[-1].replace(' ', '')
+        if infos is not None and infos != '':
+            nodes_list = infos.split('|')
+            for e in nodes_list:
+                i = e.split('@')
+                v = []
+                v.append(i[0])
+                v.append(''.join(i[1:]))
+                values.append(tuple(v))
+
+        return tuple(values)
 
     async def remove(self, uri):
         cmd = 'remove {} {}'.format(self.sid, uri)
@@ -155,6 +172,7 @@ class FOSCli(object):
         self.uuid = 'localhost'
         self.host = host
 
+        self.server_file = os.path.join(tempfile.gettempdir(), 'server.info')
 
 
         # TODO should be removed after wrapping implemented
@@ -165,9 +183,19 @@ class FOSCli(object):
 
 
     def __initialize(self):
+
+
+        if os.path.isfile(self.server_file) is False:
+            # TODO should lauch the server
+            pass
+            #cmd = 'dstoresvc'
+            #import
+
+
+
         self.websocket = websockets.connect('ws://localhost:9669')
 
-        self.store = FOSStore(self.aroot, self.droot, self.uuid,self.host)
+        self.store = FOSStore(self.aroot, self.droot, self.uuid, self.host)
 
         #if len(self.store.actual.discovered_stores) == 0:
         #    time.sleep(3)
@@ -724,18 +752,20 @@ class FOSCli(object):
 
     async def __get_nodes(self):
         uri = str('afos://<sys-id>/*/')
-        cmd = 'aget {0} {1}'.format(self.asid, uri)
-        async with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
-        infos = response.split(uri)[-1].replace(' ','')
+
+        infos = await self.store.actual.resolveAll(uri)
+        # cmd = 'aget {0} {1}'.format(self.asid, uri)
+        # async with self.websocket as ws:
+        #     await ws.send(cmd)
+        #     response = await ws.recv()
+        # infos = response.split(uri)[-1].replace(' ','')
         if infos is not None and infos != '':
             print('+-------------------------------------------------------+')
-            nodes_list = infos.split('|')
-            for e in nodes_list:
-                e = e.split('@')
-                i = ''.join(e[1:])
-                node_info = json.loads(i)
+            #nodes_list = infos.split('|')
+            for e in infos:
+                # e = e.split('@')
+                # i = ''.join(e[1:])
+                node_info = json.loads(e[1])
 
                 print('| Name: {0} \t| UUID: {1}\t '.format(node_info.get('name'), node_info.get('uuid')))
             print('+-------------------------------------------------------+')
@@ -1125,5 +1155,5 @@ class FOSCli(object):
 
 
 if __name__ == '__main__':
-        c = FOSCli()
+        c = FOSCli('localhost')
         c.main()
