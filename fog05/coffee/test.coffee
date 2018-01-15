@@ -14,7 +14,11 @@ rt.onconnect = () ->
   store.getAll('fos://root/kydos/*',
     (k, vs) -> console.log("aget #{k} -> #{JSON.stringify(vs)}"))
 
-  store.keys( (ks) -> console.log("keys -> #{JSON.stringify(ks)}"))
+  #store.keys( (ks) -> console.log("keys -> #{JSON.stringify(ks)}"))
+
+  store.get('afos://<sys-id>/84610ec8a5424b67a776d5d79e904ff7/plugins',
+    (k, v) -> console.log("get #{k} -> #{v.show()}")
+  )
 
 rt.connect()
 

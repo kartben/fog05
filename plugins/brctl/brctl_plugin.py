@@ -249,9 +249,9 @@ class brctl(NetworkPlugin):
         self.agent.logger.info('__react_to_cache_networks()',
                                ' BRCTL Plugin - React to to URI: %s Value: %s Version: %s' % (key, value, v))
         if value is None and v is None:
-            self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
-            entity_uuid = key.split('/')[-1]
-            self.deleteVirtualNetwork(entity_uuid)
+            self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % key)
+            net_uuid = key.split('/')[-1]
+            self.deleteVirtualNetwork(net_uuid)
         else:
             uuid = key.split('/')[-1]
             value = json.loads(value)

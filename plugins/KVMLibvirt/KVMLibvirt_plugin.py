@@ -117,7 +117,7 @@ class KVMLibvirt(RuntimePlugin):
         else:
             return None
 
-        image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image.split('/')[-1])
+        image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image_url.split('/')[-1])
         self.agent.getOSPlugin().downloadFile(entity.image_url, image_name)
         entity.image = image_name
 

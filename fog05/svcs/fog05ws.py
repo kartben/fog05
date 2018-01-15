@@ -191,13 +191,13 @@ class Server (object):
                 # -- GetAll
                 elif cid == 'aget':
                     vs = self.getAll(store, args)
-                    result = "{} {} {} {}".format('values', sid, args[0], ','.join(vs))
+                    result = "{} {} {} {}".format('values', sid, args[0], '|'.join(vs))
                     prefix = ''
 
                 # -- Keys
                 elif cid == 'gkeys':
                     ks = store.keys()
-                    result = "{} {} {}".format('keys', sid, ','.join(ks))
+                    result = "{} {} {}".format('keys', sid, '|'.join(ks))
                     prefix = ''
 
                 # -- Observe
