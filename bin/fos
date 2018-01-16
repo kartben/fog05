@@ -123,10 +123,11 @@ class WSStore(object):
             nodes_list = infos.split('|')
             for e in nodes_list:
                 i = e.split('@')
-                v = []
-                v.append(i[0])
-                v.append(''.join(i[1:]))
-                values.append(tuple(v))
+                if e[1] is not None and e[1] not in ['',' ']:
+                    v = []
+                    v.append(i[0])
+                    v.append(''.join(i[1:]))
+                    values.append(tuple(v))
 
         return tuple(values)
 
@@ -154,7 +155,7 @@ class FOSStore(object):
         self.dhome = str('%s/%s' % (droot, home))  # str('dfos://<sys-id>/%s' % self.uuid)
 
         self.actual = WSStore('a{}'.format(home), self.aroot, self.ahome, host)
-        self.desidered = WSStore('d{}'.format(home), self.droot, self.dhome, host)
+        self.desired = WSStore('d{}'.format(home), self.droot, self.dhome, host)
 
     def close(self):
         pass
@@ -212,19 +213,15 @@ class FOSCli(object):
             self.store.close()
         exit(exit_code)
 
-    # TODO wrap command to webservice
-    #async def __send_to_ws(self, id, uri, values=None):
-
-
-
     async def __get_all_node_plugin(self,node_uuid):
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
-        cmd = 'get {} {}'.format(self.asid, uri)
-        async with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
-            response = response.split(uri)[-1].replace(' ', '')
-        if response is not None and response !='':
+        response = await self.store.actual.resolveAll(uri)
+        # cmd = 'get {} {}'.format(self.asid, uri)
+        # async with self.websocket as ws:
+        #     await ws.send(cmd)
+        #     response = await ws.recv()
+        #     response = response.split(uri)[-1].replace(' ', '')
+        if response is not None and response != '':
             return json.loads(response).get('plugins')
         else:
             return None
@@ -242,25 +239,29 @@ class FOSCli(object):
             return
         brctl = nws[0]  # will use the first plugin
 
-        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
-        #print(uri)
         json_data = json.dumps(manifest)
         uri = str('dfos://<sys-id>/%s/network/%s/networks/%s' %
                   (node_uuid, brctl.get('uuid'), manifest.get('uuid')))
 
-        cmd = 'put {0} {1} {2}'.format(self.sid, uri, json_data)
-        async with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
-        print('{0} NETWORK {1} ADD'.format(response,manifest.get('uuid')))
-
-        response = response.split(' ')
-        if response[0] == 'OK':
-            print('Network UUID is %s' % manifest.get('uuid'))
-        elif response[0] == 'NOK':
-            print("Error on adding network")
+        res = await self.store.desired.put(uri,json_data)
+        if res:
+            print("Network {} added to {}".format(manifest.get('uuid'), node_uuid))
         else:
-            print("Wrong response for dStore server")
+            print("Error on adding network")
+
+        # cmd = 'put {0} {1} {2}'.format(self.sid, uri, json_data)
+        # async with self.websocket as ws:
+        #     await ws.send(cmd)
+        #     response = await ws.recv()
+        # print('{0} NETWORK {1} ADD'.format(response,manifest.get('uuid')))
+        #
+        # response = response.split(' ')
+        # if response[0] == 'OK':
+        #     print('Network UUID is %s' % manifest.get('uuid'))
+        # elif response[0] == 'NOK':
+        #     print("Error on adding network")
+        # else:
+        #     print("Wrong response for dStore server")
         #r = self.store.desidered.put(uri, json_data)
         #if r is None:
         #    print('Resolved failed')
@@ -284,22 +285,25 @@ class FOSCli(object):
             brctl = search[0]
 
         uri = str('dfos://<sys-id>/%s/network/%s/networks/%s' % (node_uuid, brctl.get('uuid'), net_id))
-
-        cmd = 'remove {0} {1}'.format(self.sid, uri)
-        async with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
-        print('{0} NETWORK {1} REMOVE'.format(response, net_id))
-
-        response = response.split(' ')
-        if response[0] == 'OK':
-            print('Network UUID is %s' % net_id)
-        elif response[0] == 'NOK':
-            print("Error on adding network")
+        res = await self.store.desired.remove(uri)
+        if res:
+            print("Network {} removed from {}".format(net_id, node_uuid))
         else:
-            print("Wrong response for dStore server")
+            print("Error on adding network")
 
-
+        # cmd = 'remove {0} {1}'.format(self.sid, uri)
+        # async with self.websocket as ws:
+        #     await ws.send(cmd)
+        #     response = await ws.recv()
+        # print('{0} NETWORK {1} REMOVE'.format(response, net_id))
+        #
+        # response = response.split(' ')
+        # if response[0] == 'OK':
+        #     print('Network UUID is %s' % net_id)
+        # elif response[0] == 'NOK':
+        #     print("Error on adding network")
+        # else:
+        #     print("Wrong response for dStore server")
         #self.store.desidered.dput(uri)
 
     def __catch_signal(self, signal, frame):
@@ -319,15 +323,15 @@ class FOSCli(object):
 
     async def __search_plugin_by_name(self, name, node_uuid):
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
-        cmd = 'get {0} {1}'.format(self.asid, uri)
-        with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
-        all_plugins = response.split(uri)[-1].replace(' ','')
+        all_plugins = await self.store.actual.resolveAll(uri)
+        # cmd = 'get {0} {1}'.format(self.asid, uri)
+        # with self.websocket as ws:
+        #     await ws.send(cmd)
+        #     response = await ws.recv()
+        # all_plugins = response.split(uri)[-1].replace(' ','')
         if all_plugins is None or all_plugins=='':
             print('Cannot get plugin')
             return None
-        #all_plugins = all_plugins
         all_plugins = json.loads(all_plugins).get('plugins')
         search = [x for x in all_plugins if name in x.get('name')]
         if len(search) == 0:
@@ -337,26 +341,20 @@ class FOSCli(object):
 
     async def __get_entity_handler_by_uuid(self, node_uuid, entity_uuid):
         uri = str('afos://<sys-id>/%s/runtime/*/entity/%s' % (node_uuid, entity_uuid))
-        cmd = 'aget {0} {1}'.format(self.asid, uri)
-        with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
-        infos = response.split(uri)[-1].replace(' ', '')
-        if infos is not None and infos != '':
-            #print('+-------------------------------------------------------+')
-            infos_list = infos.split('|')
-            for e in infos_list:
-                k = e[1]
-                if fnmatch.fnmatch(k, uri):
-                    # print('MATCH {0}'.format(k))
-                    # print('Extracting uuid...')
-                    regex = uri.replace('/', '\/')
-                    regex = regex.replace('*', '(.*)')
-                    reobj = re.compile(regex)
-                    mobj = reobj.match(k)
-                    uuid = mobj.group(1)
-                    # print('UUID {0}'.format(uuid))
-                    return uuid
+        all = await self.store.actual.resolveAll(uri)
+        for i in all:
+            k = i[0]
+            if fnmatch.fnmatch(k, uri):
+                # print('MATCH {0}'.format(k))
+                # print('Extracting uuid...')
+                regex = uri.replace('/', '\/')
+                regex = regex.replace('*', '(.*)')
+                reobj = re.compile(regex)
+                mobj = reobj.match(k)
+                uuid = mobj.group(1)
+                # print('UUID {0}'.format(uuid))
+
+                return uuid
 
 
 
@@ -413,218 +411,114 @@ class FOSCli(object):
         json_data = json.dumps(entity_definition)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
 
-        cmd = 'put {} {}'.format(self.dsid, uri)
-
-        async with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
-        print('{0} ENTITY {1} ADD'.format(response,manifest.get('uuid')))
-
-        response = response.split(' ')
-        if response[0] == 'OK':
-            print('Entity UUID is %s' % manifest.get('uuid'))
-        elif response[0] == 'NOK':
-            print("Error")
-        else:
-            print("Wrong response for dStore server")
-
-        #self.store.desidered.put(uri, json_data)
-
-
-        while True:
-            time.sleep(1)
-            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
-            cmd = 'get {0} {1}'.format(self.asid, uri)
-            async with self.websocket as ws:
-                await ws.send(cmd)
-                response = await ws.recv()
-            infos = response.split(uri)[-1].replace(' ', '')
-            if infos[-1] is not None and infos!='':
-                entity_info = json.loads(infos[-1])
+        res = await self.store.desired.put(uri, json_data)
+        if res:
+            while True:
+                time.sleep(1)
+                uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
+                data = await self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
                 if entity_info is not None and entity_info.get('status') == 'defined':
                     break
+            print("Entity {} defined on node {}".format(entity_uuid, node_uuid))
+        else:
+
+            print("Error on define entity")
+
+
 
     async def __send_undefine_entity(self, node_uuid, entity_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
 
-        cmd = 'remove {} {}'.format(self.dsid, uri)
-
-        async with self.websocket as ws:
-            await ws.send(cmd)
-        response = await ws.recv()
-
-        response = response.split(' ')
-        if response[0] == 'OK':
-            pass
-        elif response[0] == 'NOK':
-            print("Error")
-            return
+        res = await self.store.desired.remove(uri)
+        if res:
+            print("Entity {} removed from {}".format(entity_uuid, node_uuid))
         else:
-            print("Wrong response for dStore server")
-            return
-
-        #self.store.desidered.remove(uri)
-        #time.sleep(2)
+            print("Error on entity remove")
 
     async def __send_configure_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=configure' % (node_uuid, handler,
-                                                                                        entity_uuid, instance_uuid))
-        #self.store.desidered.dput(uri)
-
-        cmd = 'dput {} {}'.format(self.dsid, uri)
-
-        async with self.websocket as ws:
-            await ws.send(cmd)
-        response = await ws.recv()
-
-        response = response.split(' ')
-        if response[0] == 'OK':
-            pass
-        elif response[0] == 'NOK':
-            print("Error")
-            return
-        else:
-            print("Wrong response for dStore server")
-            return
-
-        while True:
-            time.sleep(1)
-            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid,instance_uuid))
-            cmd = 'get {0} {1}'.format(self.dsid, uri)
-            async with self.websocket as ws:
-                await ws.send(cmd)
-                response = await  ws.recv()
-            infos = response.split(uri)[-1].replace(' ', '')
-            if infos[-1] is not None and infos != '':
-                entity_info = json.loads(infos[-1])
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=configure' % (node_uuid, handler,entity_uuid, instance_uuid))
+        res = await self.store.desired.dput(uri)
+        if res:
+            while True:
+                time.sleep(1)
+                uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (
+                node_uuid, handler, entity_uuid, instance_uuid))
+                data = await self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
                 if entity_info is not None and entity_info.get('status') == 'configured':
-                    break
-
-            #uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid,
-            # instance_uuid))
-            #data = self.store.actual.get(uri)
-            #entity_info = None
-            #if data is not None:
-            #    entity_info = entity_info = json.loads(data)
-            #if entity_info is not None and entity_info.get('status') == 'configured':
-            #    break
+                        break
+            print("Configured instace {} for entity {} on node {}".format(instance_uuid, entity_uuid, node_uuid))
+        else:
+            print("Error on configure entity instance")
 
     async def __send_clean_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        # uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=clean' % (node_uuid, handler,
-        #                                                                                 entity_uuid, instance_uuid))
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid,
                                                                            instance_uuid))
-
-        cmd = 'remove {} {}'.format(self.dsid, uri)
-
-        async with self.websocket as ws:
-            await ws.send(cmd)
-        response = await ws.recv()
-
-        response = response.split(' ')
-        if response[0] == 'OK':
-            pass
-        elif response[0] == 'NOK':
-            print("Error")
-            return
+        res = self.store.desired.remove(uri)
+        if res:
+            while True:
+                 time.sleep(1)
+                 uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
+                 data = await self.store.actual.get(uri)
+                 entity_info = None
+                 if data is not None:
+                     entity_info = json.loads(data)
+                 if entity_info is not None and entity_info.get('status') == 'cleaned':
+                     break
+            print("Instance {} for entity {} cleaned in node {}".format(instance_uuid, entity_uuid, node_uuid))
         else:
-            print("Wrong response for dStore server")
-            return
+            print("Error on clean entity instance")
 
-        #self.store.desidered.remove(uri)
-        #self.store.desidered.dput(uri)
-        # while True:
-        #     time.sleep(1)
-        #     uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
-        #     data = self.store.actual.get(uri)
-        #     entity_info = None
-        #     if data is not None:
-        #         entity_info = entity_info = json.loads(data)
-        #     if entity_info is not None and entity_info.get('status') == 'cleaned':
-        #         break
+
 
     async def __send_run_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=run' % (node_uuid, handler,
                                                                                       entity_uuid, instance_uuid))
 
-        cmd = 'dput {} {}'.format(self.dsid, uri)
-
-        async with self.websocket as ws:
-            await ws.send(cmd)
-        response = await ws.recv()
-
-        response = response.split(' ')
-        if response[0] == 'OK':
-            pass
-        elif response[0] == 'NOK':
-            print("Error")
-            return
-        else:
-            print("Wrong response for dStore server")
-            return
-
-        #self.store.desidered.dput(uri)
-        while True:
-            time.sleep(1)
-            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
-            cmd = 'get {0} {1}'.format(self.dsid, uri)
-            async with self.websocket as ws:
-                await ws.send(cmd)
-                response = await  ws.recv()
-            infos = response.split(uri)[-1].replace(' ', '')
-            if infos[-1] is not None and infos != '':
-                entity_info = json.loads(infos[-1])
+        res = await self.store.desired.dput(uri)
+        if res:
+            while True:
+                time.sleep(1)
+                uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
+                data = await self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
                 if entity_info is not None and entity_info.get('status') == 'run':
                     break
+            print("Running instance {} for entity {} on node {}",format(instance_uuid, entity_uuid, node_uuid))
+        else:
+            print("Error on running entity instance")
 
-            # data = self.store.actual.get(uri)
-            # entity_info = None
-            # if data is not None:
-            #     entity_info = entity_info = json.loads(data)
+
 
 
     async def __send_stop_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=stop' % (node_uuid, handler,
                                                                                        entity_uuid, instance_uuid))
-        cmd = 'dput {} {}'.format(self.dsid, uri)
-
-        async with self.websocket as ws:
-            await ws.send(cmd)
-        response = await ws.recv()
-
-        response = response.split(' ')
-        if response[0] == 'OK':
-            pass
-        elif response[0] == 'NOK':
-            print("Error")
-            return
-        else:
-            print("Wrong response for dStore server")
-            return
-
-
-        #self.store.desidered.dput(uri)
-        while True:
-            uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
-            # data = self.store.actual.get(uri)
-            # entity_info = None
-            # if data is not None:
-            #     entity_info = entity_info = json.loads(data)
-            time.sleep(1)
-            cmd = 'get {0} {1}'.format(self.dsid, uri)
-            async with self.websocket as ws:
-                await ws.send(cmd)
-                response = await  ws.recv()
-            infos = response.split(uri)[-1].replace(' ', '')
-            if infos[-1] is not None and infos != '':
-                entity_info = json.loads(infos[-1])
+        res = await self.store.desired.dput(uri)
+        if res:
+            while True:
+                uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
+                data = await self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
                 if entity_info is not None and entity_info.get('status') == 'stop':
                     break
+            print("Stopped instance {} for entity {} on node {}".format(instance_uuid, entity_uuid, node_uuid))
+        else:
+            print("Error on stopping entity instance")
 
     async def __sent_migrate_entity(self, node_uuid, entity_uuid, destination_uuid, instance_uuid):
         handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
@@ -647,65 +541,28 @@ class FOSCli(object):
 
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (destination_uuid, destination_handler.get(
             'uuid'), entity_uuid, instance_uuid))
-        #self.store.desidered.put(uri, json.dumps(entity_info_dst))
-
-        cmd = 'put {} {}'.format(self.dsid, uri)
-
-        async with self.websocket as ws:
-            await ws.send(cmd)
-        response = await ws.recv()
-
-        response = response.split(' ')
-        if response[0] == 'OK':
-            pass
-        elif response[0] == 'NOK':
-            print("Error")
-            return
+        res = await self.store.desired.put(uri, json.dumps(entity_info_dst))
+        if res:
+            uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
+            res_dest = await self.store.desired.dput(uri, json.dumps(entity_info_src))
+            if res_dest:
+                while True:
+                    time.sleep(1)
+                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s" % (destination_uuid,
+                                                                                       destination_handler.get('uuid'),
+                                                                                       entity_uuid, instance_uuid))
+                    data = await self.store.actual.get(uri)
+                    entity_info = None
+                    if data is not None:
+                        entity_info = json.loads(data)
+                    if entity_info is not None and entity_info.get("status") == "run":
+                        break
+                    print("Migrated {} (entity {}) from {} to {}".format(instance_uuid,entity_uuid,node_uuid,
+                                                                         destination_uuid))
+            else:
+                print("Error on destination node")
         else:
-            print("Wrong response for dStore server")
-            return
-
-
-
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
-
-        cmd = 'dput {} {}'.format(self.dsid, uri)
-
-        async with self.websocket as ws:
-            await ws.send(cmd)
-        response = await ws.recv()
-
-        response = response.split(' ')
-        if response[0] == 'OK':
-            pass
-        elif response[0] == 'NOK':
-            print("Error")
-            return
-        else:
-            print("Wrong response for dStore server")
-            return
-
-
-        #self.store.desidered.dput(uri, json.dumps(entity_info_src))
-
-        while True:
-            time.sleep(1)
-            uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s" % (destination_uuid,
-                                                                               destination_handler.get('uuid'),
-                                                                               entity_uuid, instance_uuid))
-            # data = self.store.actual.get(uri)
-            # entity_info = None
-            # if data is not None:
-            #     entity_info = entity_info = json.loads(data)
-            cmd = 'get {0} {1}'.format(self.dsid, uri)
-            async with self.websocket as ws:
-                await ws.send(cmd)
-                response = await  ws.recv()
-            infos = response.split(uri)[-1].replace(' ', '')
-            if infos[-1] is not None and infos != '':
-                entity_info = json.loads(infos[-1])
-                if entity_info is not None and entity_info.get("status") == "run":
-                    break
+            print("Error on source node")
 
     def __send_pause_entity(self, node_uuid, entity_uuid, instance_uuid):
         pass
@@ -716,7 +573,6 @@ class FOSCli(object):
 
     async def __send_add_plugin(self, node_uuid, manifest):
         plugins = {"plugins": [manifest]}
-
         plugins = json.dumps(plugins)
         plugins = plugins.replace(" ", "")
         # uri = str('afos://<sys-id>/%s/plugins' % uuid)
@@ -724,21 +580,15 @@ class FOSCli(object):
         # plugins.get('plugins').append(manifest)
         # print(plugins)
         uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
-        cmd = 'dput {0} {1} {2}'.format(self.dsid, uri, plugins)
-        async with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
-            print('{0} PLUGIN {1} ADD'.format(response, manifest.get('uuid')))
-
-        # self.store.desidered.dput(uri, json.dumps(plugins))
+        res = await self.store.desired.dput(uri, json.dumps(plugins))
+        if res:
+            print("Plugin {} added to {}".format(manifest.get('uuid'),node_uuid))
+        else:
+            print("Error on adding plugin")
 
     async def __get_plugins(self,node_uuid):
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
-        cmd = 'get {0} {1}'.format(self.asid, uri)
-        async with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
-        plugins = response.split(uri)[-1].replace(' ','')
+        plugins = await self.store.actual.resolveAll(uri)
         if plugins is not None and plugins != '' :
             plugins = json.loads(plugins).get('plugins')
             print('+-----------------------PLUGINS-------------------------+')
@@ -752,22 +602,13 @@ class FOSCli(object):
 
     async def __get_nodes(self):
         uri = str('afos://<sys-id>/*/')
-
         infos = await self.store.actual.resolveAll(uri)
-        # cmd = 'aget {0} {1}'.format(self.asid, uri)
-        # async with self.websocket as ws:
-        #     await ws.send(cmd)
-        #     response = await ws.recv()
-        # infos = response.split(uri)[-1].replace(' ','')
         if infos is not None and infos != '':
             print('+-------------------------------------------------------+')
-            #nodes_list = infos.split('|')
             for e in infos:
-                # e = e.split('@')
-                # i = ''.join(e[1:])
-                node_info = json.loads(e[1])
-
-                print('| Name: {0} \t| UUID: {1}\t '.format(node_info.get('name'), node_info.get('uuid')))
+                if e[1] is not None and e[1] != 'None':
+                    node_info = json.loads(e[1])
+                    print('| Name: {0} \t| UUID: {1}\t '.format(node_info.get('name'), node_info.get('uuid')))
             print('+-------------------------------------------------------+')
         else:
             print('No node found!!')
@@ -775,35 +616,28 @@ class FOSCli(object):
     async def __get_networks(self):
         uri = str('afos://<sys-id>/*/network/*/networks/*/')
         cmd = 'aget {0} {1}'.format(self.asid, uri)
-        async with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
-        infos = response.split(uri)[-1].replace(' ','')
-        if infos is not None and infos != '':
-            print('+-------------------------------------------------------+')
-            nw_list = infos.split('|')
+        nw_list = await self.store.actual.resolveAll(uri)
+        if nw_list is not None:
             for e in nw_list:
-                    net_info = json.loads(e[1])
-                    print('| UUID : %s \t\t' % net_info.get('uuid'))
-                    print('| Name: %s \t\t' % net_info.get('name'))
-                    print('| Virtual Device: %s \t\t' % net_info.get('virtual_device'))
-                    print('| DHCP: %s \t\t' % net_info.get('has_dhcp'))
-                    print('| IP Range: %s \t\t' % net_info.get('ip_range'))
-                    print('| Gateway: %s \t\t' % net_info.get('gateway'))
-                    print('| VxLAN ID: %s \t\t' % net_info.get('vxlan_id'))
-                    print('| Multicast VxLAN Address: %s \t\t' % net_info.get('multicast_address'))
-                    print('| Node: %s \t\t' % e[0].split('/')[-5])
-            print('+-------------------------------------------------------+')
+                net_info = json.loads(e[1])
+                print('+-------------------------------------------------------+')
+                print('| UUID : %s \t\t' % net_info.get('uuid'))
+                print('| Name: %s \t\t' % net_info.get('name'))
+                print('| Virtual Device: %s \t\t' % net_info.get('virtual_device'))
+                print('| DHCP: %s \t\t' % net_info.get('has_dhcp'))
+                print('| IP Range: %s \t\t' % net_info.get('ip_range'))
+                print('| Gateway: %s \t\t' % net_info.get('gateway'))
+                print('| VxLAN ID: %s \t\t' % net_info.get('vxlan_id'))
+                print('| Multicast VxLAN Address: %s \t\t' % net_info.get('multicast_address'))
+                print('| Node: %s \t\t' % e[0].split('/')[-5])
+                print('+-------------------------------------------------------+')
         else:
-            print('No node found!!')
+            print("No network found")
+
 
     async def __get_node_details(self, node_uuid, info):
         uri = str('afos://<sys-id>/{}/'.format(node_uuid))
-        cmd = 'get {0} {1}'.format(self.asid, uri)
-        async with self.websocket as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
-        infos = response.split(uri)[-1].replace(' ', '')
+        infos = await self.store.actual.get(uri)
         if infos is not None and infos != '':
             node = json.loads(infos)
             print('+-------------------------------------------------------+')
