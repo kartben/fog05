@@ -538,8 +538,7 @@ class FOSCli(object):
             print("Error Destination node can't handle this type of entity {0}".format(entity_info_dst.get('type')))
             self.exit(-1)
 
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (destination_uuid, destination_handler.get(
-            'uuid'), entity_uuid, instance_uuid))
+        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (destination_uuid, destination_handler.get('uuid'), entity_uuid, instance_uuid))
         res = await self.store.desired.put(uri, json.dumps(entity_info_dst).replace(' ',''))
         if res:
             uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
