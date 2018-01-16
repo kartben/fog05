@@ -615,7 +615,6 @@ class FOSCli(object):
 
     async def __get_networks(self):
         uri = str('afos://<sys-id>/*/network/*/networks/*/')
-        cmd = 'aget {0} {1}'.format(self.asid, uri)
         nw_list = await self.store.actual.resolveAll(uri)
         if nw_list is not None:
             for e in nw_list:
