@@ -202,6 +202,8 @@ class brctl(NetworkPlugin):
         self.netmap.pop(network_uuid)
         self.__pop_actual_store(network_uuid)
 
+        self.agent.logger.info('deleteVirtualNetwork()', 'Deleted {}'.format(network_uuid))
+
         return True
 
     def stopNetwork(self):

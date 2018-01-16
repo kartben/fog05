@@ -272,9 +272,10 @@ class KVMLibvirt(RuntimePlugin):
                 entity.add_instance(instance)
                 self.current_entities.update({entity_uuid: entity})
 
-                uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-                vm_info = json.loads(self.agent.dstore.get(uri))
+                uri = str('%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid))
+                vm_info = json.loads(self.agent.astore.get(uri))
                 vm_info.update({"status": "configured"})
+
 
                 self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
                 #self.__update_actual_store(entity_uuid, vm_info)
