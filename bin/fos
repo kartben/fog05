@@ -540,10 +540,10 @@ class FOSCli(object):
 
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (destination_uuid, destination_handler.get(
             'uuid'), entity_uuid, instance_uuid))
-        res = await self.store.desired.put(uri, json.dumps(entity_info_dst))
+        res = await self.store.desired.put(uri, json.dumps(entity_info_dst).replace(' ',''))
         if res:
             uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
-            res_dest = await self.store.desired.dput(uri, json.dumps(entity_info_src))
+            res_dest = await self.store.desired.dput(uri, json.dumps(entity_info_src).replace(' ',''))
             if res_dest:
                 while True:
                     time.sleep(1)
@@ -556,8 +556,7 @@ class FOSCli(object):
                         entity_info = json.loads(data)
                     if entity_info is not None and entity_info.get("status") == "run":
                         break
-                    print("Migrated {} (entity {}) from {} to {}".format(instance_uuid,entity_uuid,node_uuid,
-                                                                         destination_uuid))
+                print("Migrated {} (entity {}) from {} to {}".format(instance_uuid,entity_uuid,node_uuid,destination_uuid))
             else:
                 print("Error on destination node")
         else:

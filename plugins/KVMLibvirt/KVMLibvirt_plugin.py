@@ -534,14 +534,21 @@ class KVMLibvirt(RuntimePlugin):
                 self.agent.logger.error('migrate_entity()', 'KVM Plugin - Entity not exists')
                 raise EntityNotExistingException("Enitity not existing",
                                                  str("Entity %s not in runtime %s" % (entity_uuid, self.uuid)))
-        elif entity.get_state() not in [State.RUNNING, State.TAKING_OFF]:
+        elif entity.get_state() != State.DEFINED:
             self.agent.logger.error('migrate_entity()', 'KVM Plugin - Entity state is wrong, or transition not allowed')
-            raise StateTransitionNotAllowedException("Entity is not in RUNNING state",
-                                                     str("Entity %s is not in RUNNING state" % entity_uuid))
+            raise StateTransitionNotAllowedException("Entity is not in DEFINED state",
+                                                     str("Entity %s is not in DEFINED state" % entity_uuid))
         else:
+            instance = entity.get_instance(instance_uuid)
+            if instance.get_state() not in [State.RUNNING, State.TAKING_OFF]:
+                self.agent.logger.error('clean_entity()',
+                                        'KVM Plugin - Instance state is wrong, or transition not allowed')
+                raise StateTransitionNotAllowedException("Instance is not in RUNNING state",
+                                                         str(
+                                                             "Instance %s is not in RUNNING state" % entity_uuid))
             self.agent.logger.info('migrate_entity()', " KVM Plugin - I\'m the Source Node")
-            self.before_migrate_entity_actions(entity_uuid)
-            self.after_migrate_entity_actions(entity_uuid)
+            self.before_migrate_entity_actions(entity_uuid, instance_uuid=instance_uuid)
+            self.after_migrate_entity_actions(entity_uuid,  instance_uuid=instance_uuid)
 
 
     def before_migrate_entity_actions(self, entity_uuid, dst=False, instance_uuid=None):
@@ -570,7 +577,7 @@ class KVMLibvirt(RuntimePlugin):
             #self.agent.getOSPlugin().createFile(str("/opt/fos/kvm/logs/%s_log.log" % entity_uuid))
 
             conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
-                                                           'create_config_drive.sh'), entity.name, instance_uuid))
+                                                           'create_config_drive.sh'), instance.name, instance_uuid))
             rm_temp_cmd = str("rm")
             if instance.user_file is not None and instance.user_file != '':
                 data_filename = str("userdata_%s" % instance_uuid)
