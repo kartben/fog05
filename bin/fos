@@ -466,15 +466,6 @@ class FOSCli(object):
                                                                            instance_uuid))
         res = self.store.desired.remove(uri)
         if res:
-            while True:
-                 time.sleep(1)
-                 uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
-                 data = await self.store.actual.get(uri)
-                 entity_info = None
-                 if data is not None:
-                     entity_info = json.loads(data)
-                 if entity_info is not None and entity_info.get('status') == 'cleaned':
-                     break
             print("Instance {} for entity {} cleaned in node {}".format(instance_uuid, entity_uuid, node_uuid))
         else:
             print("Error on clean entity instance")
@@ -497,7 +488,7 @@ class FOSCli(object):
                     entity_info = json.loads(data)
                 if entity_info is not None and entity_info.get('status') == 'run':
                     break
-            print("Running instance {} for entity {} on node {}",format(instance_uuid, entity_uuid, node_uuid))
+            print("Running instance {} for entity {} on node {}".format(instance_uuid, entity_uuid, node_uuid))
         else:
             print("Error on running entity instance")
 
