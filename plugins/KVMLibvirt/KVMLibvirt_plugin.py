@@ -368,15 +368,18 @@ class KVMLibvirt(RuntimePlugin):
                     '''
                     Then after boot should update the `actual store` with the run status of the vm  
                     '''
-                    log_filename = str("%s/%s/%s_log.log" % (self.BASE_DIR, self.LOG_DIR, instance_uuid))
-                    if instance.user_file is not None and instance.user_file != '':
-                        self.__wait_boot(log_filename, True)
-                    else:
-                        self.__wait_boot(log_filename)
+
+                    # log_filename = str("%s/%s/%s_log.log" % (self.BASE_DIR, self.LOG_DIR, instance_uuid))
+                    # if instance.user_file is not None and instance.user_file != '':
+                    #     self.__wait_boot(log_filename, True)
+                    # else:
+                    #     self.__wait_boot(log_filename)
+                    #     self.__wait_boot(log_filename)
 
                     self.agent.logger.info('run_entity()', ' KVM Plugin - VM %s Started!' % instance)
-                    uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid,self.INSTANCE, instance_uuid))
-                    vm_info = json.loads(self.agent.dstore.get(uri))
+                    uri = str('%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid,self.INSTANCE,
+                                                  instance_uuid))
+                    vm_info = json.loads(self.agent.astore.get(uri))
                     vm_info.update({"status": "run"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
                     '''
@@ -420,8 +423,8 @@ class KVMLibvirt(RuntimePlugin):
                     self.current_entities.update({entity_uuid: entity})
 
                     uri = str(
-                        '%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
-                    vm_info = json.loads(self.agent.dstore.get(uri))
+                        '%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+                    vm_info = json.loads(self.agent.astore.get(uri))
                     vm_info.update({"status": "stop"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
                     self.agent.logger.info('stop_entity()', '[ DONE ] KVM Plugin - Stop a VM uuid %s ' % instance_uuid)
@@ -457,8 +460,8 @@ class KVMLibvirt(RuntimePlugin):
                     instance.on_pause()
                     self.current_entities.update({entity_uuid: entity})
                     uri = str(
-                        '%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
-                    vm_info = json.loads(self.agent.dstore.get(uri))
+                        '%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+                    vm_info = json.loads(self.agent.astore.get(uri))
                     vm_info.update({"status": "pause"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
                     self.agent.logger.info('pause_entity()', '[ DONE ] KVM Plugin - Pause a VM uuid %s ' % instance_uuid)
@@ -493,7 +496,7 @@ class KVMLibvirt(RuntimePlugin):
                     instance_uuid.on_resume()
                     self.current_entities.update({entity_uuid: entity})
                     uri = str(
-                        '%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+                        '%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
                     vm_info = json.loads(self.agent.dstore.get(uri))
                     vm_info.update({"status": "run"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
