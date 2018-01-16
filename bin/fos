@@ -35,11 +35,11 @@ class WSStore(object):
         self.root = root
         self.home = home
         self.host = host
-        self.websocket = websockets.connect('ws://{}:9669'.format(host))
+        #self.websocket = websockets.connect('ws://{}:9669'.format(host))
 
     async def create(self):
         cmd = 'create {} {} {} 1024'.format(self.sid, self.root, self.home)
-        async with self.websocket as ws:
+        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
             await ws.send(cmd)
             response = await ws.recv()
         response = response.split(' ')
@@ -53,7 +53,7 @@ class WSStore(object):
 
     async def put(self, uri, val):
         cmd = 'put {} {} {}'.format(self.sid, uri, val)
-        async with self.websocket as ws:
+        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
             await ws.send(cmd)
             response = await ws.recv()
         response = response.split(' ')
@@ -66,12 +66,10 @@ class WSStore(object):
             return False
 
     async def dput(self, uri, value=None):
-        if value is None:
-            cmd = 'dput {} {}'.format(self.sid, uri)
-        else:
-            cmd = 'dput {} {} {}'.format(self.sid, uri, value)
-
-        async with self.websocket as ws:
+        cmd = 'dput {} {}'.format(self.sid, uri)
+        if value is not None:
+            cmd = str('%s %s' % (cmd, value))
+        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
             await ws.send(cmd)
             response = await ws.recv()
         response = response.split(' ')
@@ -85,10 +83,14 @@ class WSStore(object):
 
     async def get(self, uri):
         cmd = 'get {} {}'.format(self.sid, uri)
-        async with self.websocket as ws:
+
+        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
             await ws.send(cmd)
             response = await ws.recv()
-        infos = response.split(uri)[-1].replace(' ', '')
+        infos = response.split(uri)[-1]
+        if infos in ['', ' ']:
+            return None
+        infos = infos.replace(' ', '')
         if infos is not None and infos != '':
             return infos
         else:
@@ -97,7 +99,7 @@ class WSStore(object):
     async def getAll(self, uri):
         cmd = 'aget {0} {1}'.format(self.sid, uri)
         values=[]
-        async with self.websocket as ws:
+        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
             await ws.send(cmd)
             response = await ws.recv()
         infos = response.split(uri)[-1].replace(' ', '')
@@ -115,7 +117,7 @@ class WSStore(object):
     async def resolveAll(self, uri):
         cmd = 'aresolve {0} {1}'.format(self.sid, uri)
         values=[]
-        async with self.websocket as ws:
+        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
             await ws.send(cmd)
             response = await ws.recv()
         infos = response.split(uri)[-1].replace(' ', '')
@@ -133,7 +135,7 @@ class WSStore(object):
 
     async def remove(self, uri):
         cmd = 'remove {} {}'.format(self.sid, uri)
-        async with self.websocket as ws:
+        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
             await ws.send(cmd)
             response = await ws.recv()
         response = response.split(' ')
@@ -215,7 +217,7 @@ class FOSCli(object):
 
     async def __get_all_node_plugin(self,node_uuid):
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
-        response = await self.store.actual.resolveAll(uri)
+        response = await self.store.actual.get(uri)
         # cmd = 'get {} {}'.format(self.asid, uri)
         # async with self.websocket as ws:
         #     await ws.send(cmd)
@@ -239,11 +241,11 @@ class FOSCli(object):
             return
         brctl = nws[0]  # will use the first plugin
 
-        json_data = json.dumps(manifest)
+        json_data = json.dumps(manifest).replace(' ','')
         uri = str('dfos://<sys-id>/%s/network/%s/networks/%s' %
                   (node_uuid, brctl.get('uuid'), manifest.get('uuid')))
 
-        res = await self.store.desired.put(uri,json_data)
+        res = await self.store.desired.put(uri, json_data)
         if res:
             print("Network {} added to {}".format(manifest.get('uuid'), node_uuid))
         else:
@@ -323,7 +325,7 @@ class FOSCli(object):
 
     async def __search_plugin_by_name(self, name, node_uuid):
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
-        all_plugins = await self.store.actual.resolveAll(uri)
+        all_plugins = await self.store.actual.get(uri)
         # cmd = 'get {0} {1}'.format(self.asid, uri)
         # with self.websocket as ws:
         #     await ws.send(cmd)
@@ -359,16 +361,16 @@ class FOSCli(object):
 
 
 
-    def __get_entity_handler_by_type(self,node_uuid, t):
+    async def __get_entity_handler_by_type(self,node_uuid, t):
         handler = None
         if t == 'vm':
-            handler = self.__search_plugin_by_name('KVM', node_uuid)
+            handler = await self.__search_plugin_by_name('KVM', node_uuid)
         elif t == 'container':
-            handler = self.__search_plugin_by_name('LXD', node_uuid)
+            handler = await self.__search_plugin_by_name('LXD', node_uuid)
         elif t == 'native':
-            handler = self.__search_plugin_by_name('native', node_uuid)
+            handler = await self.__search_plugin_by_name('native', node_uuid)
         elif t == 'ros2':
-            handler = self.__search_plugin_by_name('ros2', node_uuid)
+            handler = await self.__search_plugin_by_name('ros2', node_uuid)
         elif t == 'usvc':
             print('microservice not yet')
         else:
@@ -382,16 +384,16 @@ class FOSCli(object):
 
         try:
             if t == 'vm':
-                handler = self.__search_plugin_by_name('KVM', node_uuid)
+                handler = await self.__search_plugin_by_name('KVM', node_uuid)
                 validate(manifest.get('entity_data'), Schemas.vm_schema)
             elif t == 'container':
-                handler = self.__search_plugin_by_name('LXD', node_uuid)
+                handler = await self.__search_plugin_by_name('LXD', node_uuid)
                 validate(manifest.get('entity_data'), Schemas.container_schema)
             elif t == 'native':
-                handler = self.__search_plugin_by_name('native', node_uuid)
+                handler = await self.__search_plugin_by_name('native', node_uuid)
                 validate(manifest.get('entity_data'), Schemas.native_schema)
             elif t == 'ros2':
-                handler = self.__search_plugin_by_name('ros2', node_uuid)
+                handler = await self.__search_plugin_by_name('ros2', node_uuid)
                 validate(manifest.get('entity_data'), Schemas.ros2_schema)
             elif t == 'usvc':
                 print('microservice not yet')
@@ -408,7 +410,7 @@ class FOSCli(object):
 
         entity_uuid = manifest.get('uuid')
         entity_definition = manifest
-        json_data = json.dumps(entity_definition)
+        json_data = json.dumps(entity_definition).replace(' ','')
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
 
         res = await self.store.desired.put(uri, json_data)
@@ -430,7 +432,7 @@ class FOSCli(object):
 
 
     async def __send_undefine_entity(self, node_uuid, entity_uuid):
-        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
 
         res = await self.store.desired.remove(uri)
@@ -440,7 +442,7 @@ class FOSCli(object):
             print("Error on entity remove")
 
     async def __send_configure_entity(self, node_uuid, entity_uuid, instance_uuid):
-        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=configure' % (node_uuid, handler,entity_uuid, instance_uuid))
         res = await self.store.desired.dput(uri)
         if res:
@@ -459,7 +461,7 @@ class FOSCli(object):
             print("Error on configure entity instance")
 
     async def __send_clean_entity(self, node_uuid, entity_uuid, instance_uuid):
-        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid,
                                                                            instance_uuid))
         res = self.store.desired.remove(uri)
@@ -480,7 +482,7 @@ class FOSCli(object):
 
 
     async def __send_run_entity(self, node_uuid, entity_uuid, instance_uuid):
-        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=run' % (node_uuid, handler,
                                                                                       entity_uuid, instance_uuid))
 
@@ -503,7 +505,7 @@ class FOSCli(object):
 
 
     async def __send_stop_entity(self, node_uuid, entity_uuid, instance_uuid):
-        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=stop' % (node_uuid, handler,
                                                                                        entity_uuid, instance_uuid))
         res = await self.store.desired.dput(uri)
@@ -521,7 +523,7 @@ class FOSCli(object):
             print("Error on stopping entity instance")
 
     async def __sent_migrate_entity(self, node_uuid, entity_uuid, destination_uuid, instance_uuid):
-        handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
         entity_info = json.loads(self.store.actual.get(uri))
 
@@ -534,7 +536,7 @@ class FOSCli(object):
         entity_info_dst.update({"status": "landing"})
         entity_info_dst.update({"dst": destination_uuid})
 
-        destination_handler = self.__get_entity_handler_by_type(destination_uuid, entity_info_dst.get('type'))
+        destination_handler = await self.__get_entity_handler_by_type(destination_uuid, entity_info_dst.get('type'))
         if destination_handler is None:
             print("Error Destination node can't handle this type of entity {0}".format(entity_info_dst.get('type')))
             self.exit(-1)
@@ -564,23 +566,18 @@ class FOSCli(object):
         else:
             print("Error on source node")
 
-    def __send_pause_entity(self, node_uuid, entity_uuid, instance_uuid):
+    async def __send_pause_entity(self, node_uuid, entity_uuid, instance_uuid):
         pass
 
-    def __send_resume_entity(self, node_uuid, entity_uuid, instance_uuid):
+    async def __send_resume_entity(self, node_uuid, entity_uuid, instance_uuid):
         pass
 
 
     async def __send_add_plugin(self, node_uuid, manifest):
         plugins = {"plugins": [manifest]}
-        plugins = json.dumps(plugins)
-        plugins = plugins.replace(" ", "")
-        # uri = str('afos://<sys-id>/%s/plugins' % uuid)
-        # plugins = json.loads(self.store.actual.get(uri))
-        # plugins.get('plugins').append(manifest)
-        # print(plugins)
+        plugins = json.dumps(plugins).replace(' ','')
         uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
-        res = await self.store.desired.dput(uri, json.dumps(plugins))
+        res = await self.store.desired.dput(uri, plugins)
         if res:
             print("Plugin {} added to {}".format(manifest.get('uuid'),node_uuid))
         else:
@@ -588,7 +585,7 @@ class FOSCli(object):
 
     async def __get_plugins(self,node_uuid):
         uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
-        plugins = await self.store.actual.resolveAll(uri)
+        plugins = await self.store.actual.get(uri)
         if plugins is not None and plugins != '' :
             plugins = json.loads(plugins).get('plugins')
             print('+-----------------------PLUGINS-------------------------+')
@@ -615,7 +612,7 @@ class FOSCli(object):
     async def __get_networks(self):
         uri = str('afos://<sys-id>/*/network/*/networks/*/')
         nw_list = await self.store.actual.resolveAll(uri)
-        if nw_list is not None:
+        if nw_list is not None and len(nw_list)>0:
             for e in nw_list:
                 net_info = json.loads(e[1])
                 print('+-------------------------------------------------------+')

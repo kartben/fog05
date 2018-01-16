@@ -144,15 +144,14 @@ class DStore(Store):
         succeeded = False
 
         current_version = self.get_version(uri)
-        ##self.logger.debug('DStore','Updating URI: {0} to value: {1} and version = {2} -- older version was : {
-        # 3}'.format(uri, value, version, current_version))
+        self.logger.debug('DStore','Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
         if current_version != None:
-            ##self.logger.debug('DStore','Updating URI: Version None')
+            self.logger.debug('DStore','Updating URI: Version None')
             if current_version <= version:
                 self.__unchecked_store_value(uri, value, version)
                 succeeded = True
         else:
-            ##self.logger.debug('DStore', 'Updating URI: Version is {0}'.format(version))
+            self.logger.debug('DStore', 'Updating URI: Version is {0}'.format(version))
             self.__unchecked_store_value(uri, value, version)
             succeeded = True
 
@@ -160,18 +159,18 @@ class DStore(Store):
         return succeeded
 
     def notify_observers(self, uri, value, v):
-        #self.logger.debug('DStore',">>>>>>>> notify_observers")
-        #self.logger.debug('DStore','URI {0}'.format(uri))
-        #self.logger.debug('DStore','URI  TYPE {0}'.format(type(uri)))
+        self.logger.debug('DStore',">>>>>>>> notify_observers")
+        self.logger.debug('DStore','URI {0}'.format(uri))
+        self.logger.debug('DStore','URI  TYPE {0}'.format(type(uri)))
 
-        #self.logger.debug('DStore','URI STR CAST {0}'.format(str(uri)))
-        #self.logger.debug('DStore','URI  TYPE {0}'.format(type(uri)))
+        self.logger.debug('DStore','URI STR CAST {0}'.format(str(uri)))
+        self.logger.debug('DStore','URI  TYPE {0}'.format(type(uri)))
 
-        #self.logger.debug('DStore','OBSERVER SIZE {0}'.format(len(list(self.__observers.keys()))))
+        self.logger.debug('DStore','OBSERVER SIZE {0}'.format(len(list(self.__observers.keys()))))
         for key in list(self.__observers.keys()):
-            #self.logger.debug('DStore','OBSERVER KEY {0}'.format(key))
+            self.logger.debug('DStore','OBSERVER KEY {0}'.format(key))
             if fnmatch.fnmatch(uri, key) or fnmatch.fnmatch(key, uri):
-                #self.logger.debug('DStore',">>>>>>>> notify_observers inside if")
+                self.logger.debug('DStore',">>>>>>>> notify_observers inside if")
                 self.__observers.get(key)(uri, value, v)
 
     def put(self, uri, value):
@@ -200,7 +199,7 @@ class DStore(Store):
 
     def dput(self, uri, values = None):
 
-        ##self.logger.debug('DStore','>>> dput >>> URI: {0} VALUE: {1}'.format(uri, values))
+        self.logger.debug('DStore','>>> dput >>> URI: {0} VALUE: {1}'.format(uri, values))
         uri_values = ''
         if values is None:
             ##status=run&entity_data.memory=2GB
@@ -209,8 +208,8 @@ class DStore(Store):
             uri = uri[0]
 
         data = self.get(uri)
-        ##self.logger.debug('DStore','>>> dput resolved {0} to {1}'.format(uri, data))
-        ##self.logger.debug('DStore','>>> dput resolved type is {0}'.format(type(data)))
+        self.logger.debug('DStore','>>> dput resolved {0} to {1}'.format(uri, data))
+        self.logger.debug('DStore','>>> dput resolved type is {0}'.format(type(data)))
         version = 0
         if data is None or data == '':
             data = {}
@@ -237,30 +236,30 @@ class DStore(Store):
         #                 data = json.loads(self.__local_cache.get(key)[0])
         #         version = self.next_version(uri)
 
-        ##self.logger.debug('DStore','>>>VALUES {0} '.format(values))
-        ##self.logger.debug('DStore','>>>VALUES TYPE {0} '.format(type(values)))
+        self.logger.debug('DStore','>>>VALUES {0} '.format(values))
+        self.logger.debug('DStore','>>>VALUES TYPE {0} '.format(type(values)))
         if values is None:
             uri_values = uri_values.split('&')
-            ##self.logger.debug('DStore','>>>URI VALUES {0} '.format(uri_values))
+            self.logger.debug('DStore','>>>URI VALUES {0} '.format(uri_values))
             for tokens in uri_values:
-                ##self.logger.debug('DStore','INSIDE for tokens {0}'.format(tokens))
+                self.logger.debug('DStore','INSIDE for tokens {0}'.format(tokens))
                 v = tokens.split('=')[-1]
                 k = tokens.split('=')[0]
                 #if len(k.split('.')) < 2:
                 #    data.update({k: v})
-                #    #self.logger.debug('DStore','>>>merged data  {0} '.format(data))
+                #    self.logger.debug('DStore','>>>merged data  {0} '.format(data))
                 #else:
                 d = self.dot2dict(k, v)
 
                 data = self.data_merge(data, d)
-                ##self.logger.debug('DStore','>>>merged data  {0} '.format(data))
+                self.logger.debug('DStore','>>>merged data  {0} '.format(data))
         else:
             #print('{0} type {1}'.format(values,type(values)))
             jvalues = json.loads(values)
-            ###self.logger.debug('DStore','dput delta value = {0}, data = {1}'.format(jvalues, data))
+            self.logger.debug('DStore','dput delta value = {0}, data = {1}'.format(jvalues, data))
             data = self.data_merge(data, jvalues)
 
-        ###self.logger.debug('DStore','dput merged data = {0}'.format(mdata))
+        self.logger.debug('DStore','dput merged data = {0}'.format(data))
 
         value = json.dumps(data)
         self.__unchecked_store_value(uri, value , version)
@@ -283,7 +282,7 @@ class DStore(Store):
             self.__store.pop(uri)
         else:
             pass
-            #self.logger.debug('DStore',"REMOVE KEY {0} NOT PRESENT".format(uri))
+            self.logger.debug('DStore',"REMOVE KEY {0} NOT PRESENT".format(uri))
 
         self.notify_observers(uri, None, None)
 
@@ -294,7 +293,7 @@ class DStore(Store):
                 self.__store.pop(uri)
             else:
                 pass
-                #self.logger.debug('DStore',"REMOVE KEY {0} NOT PRESENT".format(uri))
+                self.logger.debug('DStore',"REMOVE KEY {0} NOT PRESENT".format(uri))
 
             self.notify_observers(uri, None, None)
 
@@ -302,10 +301,10 @@ class DStore(Store):
         v = self.get_value(uri)
         if v == None:
             self.__controller.onMiss()
-            ##self.logger.debug('DStore','Resolving: {0}'.format(uri))
+            self.logger.debug('DStore','Resolving: {0}'.format(uri))
             rv = self.__controller.resolve(uri)
             if rv != None:
-                ##self.logger.debug('DStore','URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
+                self.logger.debug('DStore','URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
                 self.update_value(uri, rv[0], rv[1])
                 self.notify_observers(uri, rv[0], rv[1])
                 return rv[0]
@@ -323,12 +322,12 @@ class DStore(Store):
             if fnmatch.fnmatch(k, uri):
                 xs.append((k, v[0], v[1]))
 
-        ##self.logger.debug('DStore','>>>>>> getAll({0}) = {1}'.format(uri, xs))
+        self.logger.debug('DStore','>>>>>> getAll({0}) = {1}'.format(uri, xs))
         return xs
 
     def resolveAll(self, uri):
         xs = self.__controller.resolveAll(uri)
-        #self.logger.debug('DStore',' Resolved resolveAll = {0}'.format(xs))
+        self.logger.debug('DStore',' Resolved resolveAll = {0}'.format(xs))
         ys = self.getAll(uri)
 
         xs_dict = {k : (k, va, ve) for (k, va, ve) in xs}
@@ -342,25 +341,25 @@ class DStore(Store):
                     xs_dict.update({k: (k, va, ve)})
 
 
-        # #self.logger.debug('DStore','resolved getAll = {0}'.format(ys))
+        # self.logger.debug('DStore','resolved getAll = {0}'.format(ys))
         # xs_keys = [v[0] for v in xs]
         # i = 0
         # while i < len(ys):
         #     y = ys[i]
-        #     #self.logger.debug('DStore','merging key: {0}'.format(y))
+        #     self.logger.debug('DStore','merging key: {0}'.format(y))
         #     if y[0] not in xs_keys:
         #         xs.append(y)
-        #         #self.logger.debug('DStore', 'Key is not present... Appending')
+        #         self.logger.debug('DStore', 'Key is not present... Appending')
         #     else:
-        #         #self.logger.debug('DStore', 'Key is present look if need update')
+        #         self.logger.debug('DStore', 'Key is present look if need update')
         #
         #         x = [v for v in xs if xs[0] == y[0]][0]
         #         x = x[0]
-        #         #self.logger.debug('DStore', 'X is {0}'.format(x))
+        #         self.logger.debug('DStore', 'X is {0}'.format(x))
         #         index = xs.index(x)
-        #         #self.logger.debug('DStore', 'X index is'.format(index))
+        #         self.logger.debug('DStore', 'X index is'.format(index))
         #         if y[2] > x[2]:
-        #         #self.logger.debug('DStore', 'Key need update')
+        #         self.logger.debug('DStore', 'Key need update')
         #         xs[index] = y
 
         return list(xs_dict.values())
@@ -393,16 +392,16 @@ class DStore(Store):
         return ld[-1]
 
     def data_merge(self, base, updates):
-        ###self.logger.debug('DStore','data_merge base = {0}, updates= {1}'.format(base, updates))
-        ###self.logger.debug('DStore','type of base  = {0} update = {1}'.format(type(base), type(updates)))
+        #self.logger.debug('DStore','data_merge base = {0}, updates= {1}'.format(base, updates))
+        #self.logger.debug('DStore','type of base  = {0} update = {1}'.format(type(base), type(updates)))
         if base is None or isinstance(base, int) or isinstance(base, str) or isinstance(base, float):
             base = updates
         elif isinstance(base, list):
             if isinstance(updates, list):
                 names = [x.get('name') for x in updates]
                 item_same_name = [item for item in base if item.get('name') in [x.get('name') for x in updates]]
-                ###self.logger.debug('DStore',names)
-                ###self.logger.debug('DStore',item_same_name)
+                #self.logger.debug('DStore',names)
+                #self.logger.debug('DStore',item_same_name)
                 if all(isinstance(x, dict) for x in updates) and len(
                         [item for item in base if item.get('name') in [x.get('name') for x in updates]]) > 0:
                     for e in base:
