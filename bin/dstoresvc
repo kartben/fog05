@@ -16,7 +16,7 @@ if __name__ == '__main__':
             port = int(sys.argv)
 
     pid = os.getpid()
-    path = os.path.join(tempfile.gettempdir(), 'server.info')
+    path = os.path.join(tempfile.gettempdir(), 'server.out')
     with open(path, 'w') as f:
         f.write(str(pid))
         f.close()

@@ -16,7 +16,7 @@ import os
 import asyncio
 import websockets
 import tempfile
-
+import psutil
 
 
 
@@ -107,10 +107,12 @@ class WSStore(object):
             nodes_list = infos.split('|')
             for e in nodes_list:
                 i = e.split('@')
-                v = []
-                v.append(i[0])
-                v.append(''.join(i[1:]))
-                values.append(tuple(v))
+                if len(i)>1:
+                    if i[1] is not None and i[1] not in ['',' ', 'None']:
+                        v = []
+                        v.append(i[0])
+                        v.append(''.join(i[1:]))
+                        values.append(tuple(v))
 
         return tuple(values)
 
@@ -125,11 +127,12 @@ class WSStore(object):
             nodes_list = infos.split('|')
             for e in nodes_list:
                 i = e.split('@')
-                if i[1] is not None and i[1] not in ['',' ', 'None']:
-                    v = []
-                    v.append(i[0])
-                    v.append(''.join(i[1:]))
-                    values.append(tuple(v))
+                if len(i)>1:
+                    if i[1] is not None and i[1] not in ['',' ', 'None']:
+                        v = []
+                        v.append(i[0])
+                        v.append(''.join(i[1:]))
+                        values.append(tuple(v))
 
         return tuple(values)
 
@@ -175,8 +178,9 @@ class FOSCli(object):
         self.uuid = 'localhost'
         self.host = host
 
-        self.server_file = os.path.join(tempfile.gettempdir(), 'server.info')
-
+        self.server_file = os.path.join(tempfile.gettempdir(), 'dstore_server.pid')
+        self.server_file_out = os.path.join(tempfile.gettempdir(), 'dstore_server.out')
+        self.server_file_err = os.path.join(tempfile.gettempdir(), 'sdstore_erver.err')
 
         # TODO should be removed after wrapping implemented
         self.websocket = None
@@ -188,9 +192,33 @@ class FOSCli(object):
     def __initialize(self):
 
 
+        flag = False
+
         if os.path.isfile(self.server_file) is False:
-            # TODO should lauch the server
-            pass
+            f = open(self.server_file, 'w')
+            f_err = open(self.server_file_err, 'w')
+            f_out = open(self.server_file_out, 'w')
+            cmd_splitted = 'dstoresvc'.split()
+            p = psutil.Popen(cmd_splitted, stdout=f_out, stderr=f_err)
+            f.write(str(p.pid))
+            f.close()
+            flag = True
+        else:
+            with open(self.server_file,'r') as f:
+                pid = int(f.read())
+                f.close()
+            if not psutil.pid_exists(pid):
+                f = open(self.server_file, 'w')
+                f_err = open(self.server_file_err,'w')
+                f_out = open(self.server_file_out, 'w')
+                cmd_splitted = 'dstoresvc'.split()
+                p = psutil.Popen(cmd_splitted, stdout=f_out,stderr=f_err)
+                f.write(str(p.pid))
+                f.close()
+                flag = True
+
+
+
             #cmd = 'dstoresvc'
             #import
 
@@ -199,6 +227,12 @@ class FOSCli(object):
         self.websocket = websockets.connect('ws://localhost:9669')
 
         self.store = FOSStore(self.aroot, self.droot, self.uuid, self.host)
+        if flag:
+            time.sleep(5)
+            asyncio.get_event_loop().run_until_complete(self.store.desired.create())
+            time.sleep(1)
+            asyncio.get_event_loop().run_until_complete(self.store.actual.create())
+            time.sleep(1)
 
         #if len(self.store.actual.discovered_stores) == 0:
         #    time.sleep(3)
