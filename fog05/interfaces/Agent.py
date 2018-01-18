@@ -6,13 +6,16 @@ class Agent(object):
     def __load_os_plugin(self):
         raise NotImplementedError
 
-    def __load_runtime_plugin(self, plugin_name):
+    def __load_runtime_plugin(self, plugin_name, plugin_uuid):
         raise NotImplementedError
 
     def refreshPlugins(self):
         raise NotImplementedError
 
-    def __load_network_plugin(self, plugin_name):
+    def __load_network_plugin(self, plugin_name, plugin_uuid):
+        raise NotImplementedError
+
+    def __load_monitoring_plugin(self, plugin_name, plugin_uuid):
         raise NotImplementedError
 
     def getOSPlugin(self):

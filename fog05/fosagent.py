@@ -50,6 +50,7 @@ class FosAgent(Agent):
             self.__osPlugin = None
             self.__rtPlugins = {}
             self.__nwPlugins = {}
+            self.__monPlugins = {}
             self.logger.info('__init__()', '[ INIT ] Loading OS Plugin...')
             self.__load_os_plugin()
             self.logger.info('__init__()', '[ DONE ] Loading OS Plugin...')
@@ -166,7 +167,7 @@ class FosAgent(Agent):
             net = net.run(agent=self, uuid=plugin_uuid)
             self.__nwPlugins.update({net.uuid: net})
 
-            val = {'version': net.version, 'description': str('runtime %s' % net.name),
+            val = {'version': net.version, 'description': str('network %s' % net.name),
                    'plugin': ''}
             uri = str('%s/plugins/%s/%s' % (self.ahome, net.name, net.uuid))
             self.astore.put(uri, json.dumps(val))
@@ -180,6 +181,31 @@ class FosAgent(Agent):
             return net
         else:
             self.logger.warning('__load_network_plugin()', '[ WARN ] Network: %s plugin not found!' % plugin_name)
+            return None
+
+    def __load_monitoring_plugin(self, plugin_name, plugin_uuid):
+        self.logger.info('__load_monitoring_plugin()', 'Loading a Monitoring plugin: %s' % plugin_name)
+        mon = self.pl.locatePlugin(plugin_name)
+        if mon is not None:
+            self.logger.info('__load_monitoring_plugin()', '[ INIT ] Loading a Monitoring plugin: %s' % plugin_name)
+            mon = self.pl.loadPlugin(mon)
+            mon = mon.run(agent=self, uuid=plugin_uuid)
+            self.__monPlugins.update({mon.uuid: mon})
+
+            val = {'version': mon.version, 'description': str('monitoring %s' % mon.name),
+                   'plugin': ''}
+            uri = str('%s/plugins/%s/%s' % (self.ahome, mon.name, mon.uuid))
+            self.astore.put(uri, json.dumps(val))
+
+            val = {'plugins': [{'name': mon.name, 'version': mon.version, 'uuid': str(mon.uuid),
+                                'type': 'network', 'status': 'loaded'}]}
+            uri = str('%s/plugins' % self.ahome)
+            self.astore.dput(uri, json.dumps(val))
+            self.logger.info('__load_network_plugin()', '[ DONE ] Loading a Monitoring plugin: %s' % plugin_name)
+
+            return mon
+        else:
+            self.logger.warning('__load_network_plugin()', '[ WARN ] Monitoring: %s plugin not found!' % plugin_name)
             return None
 
     def __populate_node_information(self):
@@ -232,7 +258,8 @@ class FosAgent(Agent):
     def __load_plugin_method_selection(self, type):
         r = {
             'runtime': self.__load_runtime_plugin,
-            'network': self.__load_network_plugin
+            'network': self.__load_network_plugin,
+            'monitoring':self.__load_monitoring_plugin
         }
         return r.get(type, None)
 
