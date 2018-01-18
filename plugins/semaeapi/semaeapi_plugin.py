@@ -70,6 +70,9 @@ class semaeapi(MonitoringPlugin):
 
 
     def stop_monitoring(self):
+        if not self.__monitoring_active:
+            self.agent.logger.info('start_monitoring()', ' SEMAEApi Plugin - Monitoring already stopped...')
+            return
         self.__monitoring_active = False
         self.__update_actual_store(self.STATUS, {'monitoring': self.__monitoring_active})
         self.agent.logger.info('stop_monitoring()', 'SEMAEApi Plugin - Monitoring stopped...')
