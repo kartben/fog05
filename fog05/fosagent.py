@@ -201,11 +201,11 @@ class FosAgent(Agent):
                                 'type': 'network', 'status': 'loaded'}]}
             uri = str('%s/plugins' % self.ahome)
             self.astore.dput(uri, json.dumps(val))
-            self.logger.info('__load_network_plugin()', '[ DONE ] Loading a Monitoring plugin: %s' % plugin_name)
+            self.logger.info('__load_monitoring_plugin()', '[ DONE ] Loading a Monitoring plugin: %s' % plugin_name)
 
             return mon
         else:
-            self.logger.warning('__load_network_plugin()', '[ WARN ] Monitoring: %s plugin not found!' % plugin_name)
+            self.logger.warning('__load_monitoring_plugin()', '[ WARN ] Monitoring: %s plugin not found!' % plugin_name)
             return None
 
     def __populate_node_information(self):
@@ -543,6 +543,15 @@ class FosAgent(Agent):
         for k in keys:
             try:
                 self.__nwPlugins.get(k).stopNetwork()
+            except Exception:
+                self.logger.error('__exit_gracefully()', '{0}'.format(e))
+                traceback.print_exc()
+                pass
+
+        keys = list(self.__monPlugins.keys())
+        for k in keys:
+            try:
+                self.__monPlugins.get(k).stop_monitoring()
             except Exception:
                 self.logger.error('__exit_gracefully()', '{0}'.format(e))
                 traceback.print_exc()

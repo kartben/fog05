@@ -28,7 +28,7 @@ class semaeapi(MonitoringPlugin):
         self.available_api = {}
         self.__updating_thread = None
         self.__monitoring_active = False
-        self.frequency = 5
+        self.frequency = 30
 
         self.start_monitoring()
 
@@ -46,7 +46,7 @@ class semaeapi(MonitoringPlugin):
             for api in matches:
                 self.available_api.update({api: []})
             for k in list(self.available_api.keys()):
-                exp =  r'(([0-9][0-9]|[0-9]).*)'
+                exp = r'(([0-9][0-9]|[0-9]).*)'
                 cmd = 'semaeapi_tool -a {}'.format(k)
                 res = self.__execute_sema_cli(cmd)
                 v = self.available_api.get(k)
@@ -63,15 +63,15 @@ class semaeapi(MonitoringPlugin):
         self.__monitoring_active = True
         self.__updating_thread.start()
 
-        self.__update_actual_store(self.STATUS, json.dumps({'monitoring': self.__monitoring_active}))
-        self.__update_actual_store(self.UPDATE_FREQUENCY, json.dumps({'frequency': self.frequency}))
+        self.__update_actual_store(self.STATUS, {'monitoring': self.__monitoring_active})
+        self.__update_actual_store(self.UPDATE_FREQUENCY, {'frequency': self.frequency})
         self.agent.logger.info('start_monitoring()', ' SEMAEApi Plugin - Monitoring started...')
 
 
 
     def stop_monitoring(self):
         self.__monitoring_active = False
-        self.__update_actual_store(self.STATUS, json.dumps({'monitoring': self.__monitoring_active}))
+        self.__update_actual_store(self.STATUS, {'monitoring': self.__monitoring_active})
         self.agent.logger.info('stop_monitoring()', 'SEMAEApi Plugin - Monitoring stopped...')
         self.available_api.clear()
 
@@ -91,28 +91,27 @@ class semaeapi(MonitoringPlugin):
     def __monitoring_thread(self):
         while self.__monitoring_active:
             for k in list(self.available_api.keys()):
+                if 'Set' not in k and 'Write' not in k:
+                    v = self.available_api.get(k)
+                    for api in v:
+                        if isinstance(api, dict):
+                            id = api.get('id')
+                            name = api.get('name')
+                            uri = '{}/{}'.format(k, name)
+                            cmd = 'semaeapi_tool -a {} {}'.format(k, id)
+                        else:
+                            uri = '{}/'.format(k)
+                            cmd = 'semaeapi_tool -a {}'.format(k)
 
-                v = self.available_api.get(k)
-                for api in v:
-                    if isinstance(api, dict):
-                        id = api.get('id')
-                        name = api.get('name')
-                        uri = '{}/{}'.format(k, name)
-                        cmd = 'semaeapi_tool -a {} {}'.format(k, id)
-                    else:
-                        uri = '{}/'.format(k)
-                        cmd = 'semaeapi_tool -a {}'.format(k)
+                        res = self.__execute_sema_cli(cmd)
+                        if 'get eapi information failed' in res:
+                            status = 'error'
+                        else:
+                            status = 'ok'
 
-                    res = self.__execute_sema_cli(cmd)
-                    if res == 'get eapi information failed':
-                        status = 'error'
-                    else:
-                        status = 'ok'
-
-                    value = res
-
-                    val = {'status': status, 'value': value}
-                    self.__update_actual_store(uri,json.dumps(val))
+                        value = res
+                        val = {'status': status, 'value': value}
+                        self.__update_actual_store(uri, val)
             time.sleep(self.frequency)
 
 
@@ -130,7 +129,7 @@ class semaeapi(MonitoringPlugin):
             value = json.loads(value)
             if name == 'update':
                 self.frequency = int(value.get('frequency'))
-                self.__update_actual_store(self.UPDATE_FREQUENCY, json.dumps({'frequency': self.frequency}))
+                self.__update_actual_store(self.UPDATE_FREQUENCY, {'frequency': self.frequency})
             if name == 'status':
                 if bool(value.get('monitoring')) is False:
                     self.stop_monitoring()
@@ -155,67 +154,5 @@ class semaeapi(MonitoringPlugin):
         p.wait()
         ret = ''
         for line in p.stdout:
-            ret = ret+line.decode()
+            ret = ret+'{}'.format(line.decode())
         return ret
-
-'''
-SemaEApiBoardGetStringA 
-    SemaEApiBoardSetStringA 
-    SemaEApiBoardGetValue 
-    SemaEApiBoardGetVoltageMonitor 
-    SemaEApiCPUGetString 
-    SemaEApiCPUGetValue 
-    SemaEApiCPUSetValue 
-    SemaEApiMemoryGetValue 
-    SemaEApiNetworkGetString 
-    SemaEApiNetworkGetValue 
-    SemaEApiVgaGetBacklightEnable 
-    SemaEApiVgaSetBacklightEnable 
-    SemaEApiVgaGetBacklightBrightness 
-    SemaEApiVgaSetBacklightBrightness 
-    SemaEApiStorageCap 
-    SemaEApiStorageAreaRead 
-    SemaEApiStorageAreaWrite 
-    SemaEApiI2CGetBusCap 
-    SemaEApiI2CWriteRaw 
-    SemaEApiI2CReadRaw 
-    SemaEApiI2CReadTransfer 
-    SemaEApiI2CWriteTransfer 
-    SemaEApiI2CProbeDevice 
-    SemaEApiWDogGetCap 
-    SemaEApiWDogStart 
-    SemaEApiWDogTrigger 
-    SemaEApiWDogStop 
-    SemaEApiGPIOGetDirectionCaps 
-    SemaEApiGPIOGetDirection 
-    SemaEApiGPIOSetDirection 
-    SemaEApiGPIOGetLevel 
-    SemaEApiGPIOSetLevel 
-    SemaEApiSmartFanSetTempSetpoints 
-    SemaEApiSmartFanGetTempSetpoints 
-    SemaEApiSmartFanSetPWMSetpoints 
-    SemaEApiSmartFanGetPWMSetpoints 
-    SemaEApiSmartFanSetMode 
-    SemaEApiSmartFanGetMode 
-    SemaEApiSmartFanSetTempSrc 
-    SemaEApiSmartFanGetTempSrc 
-    SemaEApiGetActiveBIOSBank 
-    SemaEApiSetActiveBIOSBank 
-    SemaEApiBIOSUpdate 
-    SemaEApiBMCUpdate 
-    SemaEApiSystemBootSet 
-    SemaEApiDiskNum 
-    SemaEApiDiskInfo 
-    SemaEApiDiskSMARTAll 
-    SemaEApiDiskSMART 
-    SemaEApiBoardGetErrorLog 
-    SemaEApiGetErrorDescription 
-    SemaEApi1WireReset 
-    SemaEApi1WireProbeRomID 
-    SemaEApi1WireGetStatus 
-    SemaEApi1WireSelectGPIOPin 
-    SemaEApi1WireGetSelectGPIOPin 
-    SemaEApiPwrUpWDogStart 
-    SemaEApiPwrUpWDogStop 
-
-'''
