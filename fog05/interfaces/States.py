@@ -1,9 +1,9 @@
 from enum import Enum
 
 class State(Enum):
-    """
+    '''
     States of entities
-    """
+    '''
     UNDEFINED = 0
     DEFINED = 1
     CONFIGURED = 3

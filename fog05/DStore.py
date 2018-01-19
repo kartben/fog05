@@ -373,7 +373,7 @@ class DStore(Store):
     def __str__(self):
         ret = ''
         for key, value in self.__local_cache.items():
-            ret = str('%s%s' % (ret,str('Key: %s - Value: %s\n' % (key, value))))
+            ret = '{}{}'.format(ret,'Key: {} - Value {}'.format(key, value))
 
         return ret
 

@@ -16,10 +16,10 @@ import pprint
 class FOSStore(object):
     def __init__(self, aroot, droot, home):
         self.aroot = aroot #'dfos://<sys-id>'
-        self.ahome = str('%s/%s' % (aroot, home)) #str('dfos://<sys-id>/%s' % self.uuid)
+        self.ahome = str('{}/{}'.format(aroot, home)) #str('dfos://<sys-id>/%s' % self.uuid)
 
         self.droot = droot  # 'dfos://<sys-id>'
-        self.dhome = str('%s/%s' % (droot, home))  # str('dfos://<sys-id>/%s' % self.uuid)
+        self.dhome = str('{}/{}'.format(droot, home))  # str('dfos://<sys-id>/%s' % self.uuid)
 
         self.actual = DStore(home, self.aroot, self.ahome, 1024)
         self.desidered = DStore(home, self.droot, self.dhome, 1024)
@@ -65,9 +65,6 @@ class FOSGetCli(object):
     def get(self, uri):
 
         if uri.startswith('a'):
-
-
-
             if '*' in uri:
                 if uri.endswith('/*'):
                     uri = uri+'/'
@@ -98,6 +95,7 @@ class FOSGetCli(object):
         self.get(kwargs['uri'])
 
         self.exit(0)
+
 
 if __name__ == '__main__':
         c = FOSGetCli()

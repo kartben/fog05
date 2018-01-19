@@ -11,7 +11,7 @@ import time
 def my_observer(key, value, version):
     print('Called Observer with Key: {0} Value: {1} Version {2}'.format(key, value, version))
 
-###
+
 def test_miss(sid, root, home):
 
     sroot = 'fos://{0}'.format(root)
@@ -49,7 +49,6 @@ def test_miss(sid, root, home):
         #print('=========> store[{0}] = {1}'.format(uri, v))
 
     input()
-
 
 
 if __name__ == '__main__':

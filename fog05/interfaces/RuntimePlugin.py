@@ -8,37 +8,37 @@ class RuntimePlugin(Plugin):
     def __init__(self, version, plugin_uuid=None):
         super(RuntimePlugin, self).__init__(version, plugin_uuid)
         self.pid=-1
-        self.name=""
+        self.name=''
         self.current_entities={}
 
     def start_runtime(self):
-        """
+        '''
         start the runtime
         :return: runtime pid or runtime uuid?
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
     def stop_runtime(self):
-        """
+        '''
         stop this runtime
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
     def get_entities(self):
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def define_entity(self, *args, **kwargs):
-        """
+        '''
         Define entity from args of from manifest file passed within parameters
         return the entity uuid
         :args: dict
         :return: String
-        """
+        '''
 
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def undefine_entity(self, enitity_uuid):
-        """
+        '''
         Undefine the entity identified by entity_uuid
         if the entity state do not allow transition to UNDEFINED
         should throw an exception
@@ -46,11 +46,11 @@ class RuntimePlugin(Plugin):
         :entity_uuid: String
         :return: bool
 
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
     def run_entity(self, enitity_uuid, instance_uuid=None):
-        """
+        '''
         Start the entity identified by entity_uuid
         if the entity state do not allow transition to RUN (eg is non CONFIGURED)
         should throw an exception
@@ -58,11 +58,11 @@ class RuntimePlugin(Plugin):
         :entity_uuid: String
         :return: bool
 
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
     def stop_entity(self, enitity_uuid, instance_uuid=None):
-        """
+        '''
         Stop the entity identified by entity_uuid
         if the entity state do not allow transition to CONFIGURED (in this case is not in RUNNING)
         should throw an exception
@@ -70,11 +70,11 @@ class RuntimePlugin(Plugin):
         :entity_uuid: String
         :return: bool
 
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
     def migrate_entity(self, entity_uuid, dst=False, instance_uuid=None):
-        """
+        '''
         Migrate the entity identified by entity_uuid to the new FogNode identified by fognode_uuid
         The migration depend to the nature of the entity (native app, µSvc, VM, Container)
         if the entity state do not allow transition to MIGRATE (eg a native app can't be migrated)
@@ -94,37 +94,37 @@ class RuntimePlugin(Plugin):
         :fognode_uuid: String
         :return: bool
 
-        """
+        '''
 
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def before_migrate_entity_actions(self, entity_uuid, dst=False, instance_uuid=None):
-        """
+        '''
         Action to be taken before a migration
         eg. copy disks of vms, save state of µSvc
 
         :entity_uuid: String
         :return: bool
 
-        """
+        '''
 
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def after_migrate_entity_actions(self, entity_uuid, dst=False, instance_uuid=None):
 
-        """
+        '''
         Action to be taken after a migration
         eg. delete disks of vms, delete state of µSvc, undefine entity
 
         :entity_uuid: String
         :return: bool
 
-        """
+        '''
 
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def scale_entity(self, entity_uuid, instance_uuid=None):
-        """
+        '''
         Scale an entity
         eg. give more cpu/ram/disk, maybe passed by parameter the new scale value?
 
@@ -135,11 +135,11 @@ class RuntimePlugin(Plugin):
         :return: bool
 
 
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
     def pause_entity(self, entity_uuid, instance_uuid=None):
-        """
+        '''
         Pause an entity
 
         if the entity state do not allow transition to PAUSED (in this case is not in RUNNING)
@@ -149,11 +149,11 @@ class RuntimePlugin(Plugin):
         :return: bool
 
 
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
     
     def resume_entity(self, entity_uuid, instance_uuid=None):
-        """
+        '''
         Resume an entity
 
         if the entity state do not allow transition to RUNNING (in this case is not in PAUSED)
@@ -163,11 +163,11 @@ class RuntimePlugin(Plugin):
         :return: bool
 
 
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
     def configure_entity(self, entity_uuid, instance_uuid=None):
-        """
+        '''
         Configure an entity
 
         This should create an entity instance that can be addressed by .../entity/<entity_uuid>/instance/<instance_uuid>
@@ -181,11 +181,11 @@ class RuntimePlugin(Plugin):
         :return: bool
 
 
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
     def clean_entity(self, entity_uuid, instance_uuid=None):
-        """
+        '''
         Clean an entity
 
         this mode destroy the entity instance
@@ -198,8 +198,8 @@ class RuntimePlugin(Plugin):
         :return: bool
 
 
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
 class EntityNotExistingException(Exception):
     def __init__(self, message, errors):

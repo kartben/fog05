@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
 
-import sys
-import re
-from jsonschema import validate, ValidationError
-from fog05.DStore import *
-from fog05 import Schemas
-import signal
-from fog05.fosagent import FosAgent
-import time
-import uuid
 import argparse
-
-import os
 ## cli using webserver
 import asyncio
-import websockets
+import os
+import re
+import signal
 import tempfile
+import time
+
 import psutil
+import websockets
+from jsonschema import validate, ValidationError
 
-
+from fog05 import Schemas
+from fog05.DStore import *
+from fog05.fosagent import FosAgent
 
 if os.name == 'posix':
     import daemon as dmn
@@ -68,7 +65,7 @@ class WSStore(object):
     async def dput(self, uri, value=None):
         cmd = 'dput {} {}'.format(self.sid, uri)
         if value is not None:
-            cmd = str('%s %s' % (cmd, value))
+            cmd = str('{} {}'.format(cmd, value))
         async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
             await ws.send(cmd)
             response = await ws.recv()
@@ -154,10 +151,10 @@ class WSStore(object):
 class FOSStore(object):
     def __init__(self, aroot, droot, home, host):
         self.aroot = aroot #'dfos://<sys-id>'
-        self.ahome = str('%s/%s' % (aroot, home)) #str('dfos://<sys-id>/%s' % self.uuid)
+        self.ahome = str('{}/{}'.format(aroot, home)) #str('dfos://<sys-id>/{}' % self.uuid)
 
         self.droot = droot  # 'dfos://<sys-id>'
-        self.dhome = str('%s/%s' % (droot, home))  # str('dfos://<sys-id>/%s' % self.uuid)
+        self.dhome = str('{}/{}'.format(droot, home))  # str('dfos://<sys-id>/{}' % self.uuid)
 
         self.actual = WSStore('a{}'.format(home), self.aroot, self.ahome, host)
         self.desired = WSStore('d{}'.format(home), self.droot, self.dhome, host)
@@ -224,7 +221,7 @@ class FOSCli(object):
 
 
 
-        self.websocket = websockets.connect('ws://localhost:9669')
+        #self.websocket = websockets.connect('ws://localhost:9669')
 
         self.store = FOSStore(self.aroot, self.droot, self.uuid, self.host)
         if flag:
@@ -250,7 +247,7 @@ class FOSCli(object):
         exit(exit_code)
 
     async def __get_all_node_plugin(self,node_uuid):
-        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        uri = str('afos://<sys-id>/{}/plugins'.format(node_uuid))
         response = await self.store.actual.get(uri)
         # cmd = 'get {} {}'.format(self.asid, uri)
         # async with self.websocket as ws:
@@ -276,8 +273,7 @@ class FOSCli(object):
         brctl = nws[0]  # will use the first plugin
 
         json_data = json.dumps(manifest).replace(' ','')
-        uri = str('dfos://<sys-id>/%s/network/%s/networks/%s' %
-                  (node_uuid, brctl.get('uuid'), manifest.get('uuid')))
+        uri = str('dfos://<sys-id>/{}/network/{}/networks/{}'.format(node_uuid, brctl.get('uuid'), manifest.get('uuid')))
 
         res = await self.store.desired.put(uri, json_data)
         if res:
@@ -293,7 +289,7 @@ class FOSCli(object):
         #
         # response = response.split(' ')
         # if response[0] == 'OK':
-        #     print('Network UUID is %s' % manifest.get('uuid'))
+        #     print('Network UUID is {}' % manifest.get('uuid'))
         # elif response[0] == 'NOK':
         #     print("Error on adding network")
         # else:
@@ -316,11 +312,11 @@ class FOSCli(object):
         #print(search)
         if len(search) == 0:
             print('Plugin was not loaded')
-            exit(0)
+            return
         else:
             brctl = search[0]
 
-        uri = str('dfos://<sys-id>/%s/network/%s/networks/%s' % (node_uuid, brctl.get('uuid'), net_id))
+        uri = str('dfos://<sys-id>/{}/network/{}/networks/{}'.format(node_uuid, brctl.get('uuid'), net_id))
         res = await self.store.desired.remove(uri)
         if res:
             print("Network {} removed from {}".format(net_id, node_uuid))
@@ -335,7 +331,7 @@ class FOSCli(object):
         #
         # response = response.split(' ')
         # if response[0] == 'OK':
-        #     print('Network UUID is %s' % net_id)
+        #     print('Network UUID is {}' % net_id)
         # elif response[0] == 'NOK':
         #     print("Error on adding network")
         # else:
@@ -358,7 +354,7 @@ class FOSCli(object):
             time.sleep(100)
 
     async def __search_plugin_by_name(self, name, node_uuid):
-        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        uri = str('afos://<sys-id>/{}/plugins' % node_uuid)
         all_plugins = await self.store.actual.get(uri)
         # cmd = 'get {0} {1}'.format(self.asid, uri)
         # with self.websocket as ws:
@@ -376,7 +372,7 @@ class FOSCli(object):
             return search[0]
 
     async def __get_entity_handler_by_uuid(self, node_uuid, entity_uuid):
-        uri = str('afos://<sys-id>/%s/runtime/*/entity/%s' % (node_uuid, entity_uuid))
+        uri = str('afos://<sys-id>/{}/runtime/*/entity/{}'.format(node_uuid, entity_uuid))
         all = await self.store.actual.resolveAll(uri)
         for i in all:
             k = i[0]
@@ -439,19 +435,19 @@ class FOSCli(object):
                 self.exit(-1)
         except ValidationError as ve:
             print('Manifest is not correct')
-            print('%s' % ve.message)
+            print('{}' % ve.message)
             self.exit(-1)
 
         entity_uuid = manifest.get('uuid')
         entity_definition = manifest
         json_data = json.dumps(entity_definition).replace(' ','')
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
+        uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}'.format(node_uuid, handler.get('uuid'), entity_uuid))
 
         res = await self.store.desired.put(uri, json_data)
         if res:
             while True:
                 time.sleep(1)
-                uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler.get('uuid'), entity_uuid))
+                uri = str('afos://<sys-id>/{}/runtime/{}/entity/{}'.format(node_uuid, handler.get('uuid'), entity_uuid))
                 data = await self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
@@ -467,7 +463,7 @@ class FOSCli(object):
 
     async def __send_undefine_entity(self, node_uuid, entity_uuid):
         handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, handler, entity_uuid))
+        uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}'.format(node_uuid, handler, entity_uuid))
 
         res = await self.store.desired.remove(uri)
         if res:
@@ -477,13 +473,13 @@ class FOSCli(object):
 
     async def __send_configure_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=configure' % (node_uuid, handler,entity_uuid, instance_uuid))
+        uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}#status=configure'.format(node_uuid, handler,
+                                                                                          entity_uuid, instance_uuid))
         res = await self.store.desired.dput(uri)
         if res:
             while True:
                 time.sleep(1)
-                uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (
-                node_uuid, handler, entity_uuid, instance_uuid))
+                uri = str('afos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid, instance_uuid))
                 data = await self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
@@ -496,7 +492,7 @@ class FOSCli(object):
 
     async def __send_clean_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid,
+        uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid,
                                                                            instance_uuid))
         res = await self.store.desired.remove(uri)
         if res:
@@ -508,14 +504,15 @@ class FOSCli(object):
 
     async def __send_run_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=run' % (node_uuid, handler,
+        uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}#status=run'.format(node_uuid, handler,
                                                                                       entity_uuid, instance_uuid))
 
         res = await self.store.desired.dput(uri)
         if res:
             while True:
                 time.sleep(1)
-                uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
+                uri = str('afos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid,
+                                                                                 instance_uuid))
                 data = await self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
@@ -531,12 +528,13 @@ class FOSCli(object):
 
     async def __send_stop_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s#status=stop' % (node_uuid, handler,
+        uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}#status=stop'.format(node_uuid, handler,
                                                                                        entity_uuid, instance_uuid))
         res = await self.store.desired.dput(uri)
         if res:
             while True:
-                uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
+                uri = str('afos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid,
+                                                                                 instance_uuid))
                 data = await self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
@@ -549,7 +547,8 @@ class FOSCli(object):
 
     async def __sent_migrate_entity(self, node_uuid, entity_uuid, destination_uuid, instance_uuid):
         handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
+        uri = str('afos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid,
+                                                                         instance_uuid))
 
         entity_info = await self.store.actual.get(uri)
         if entity_info is None:
@@ -572,15 +571,17 @@ class FOSCli(object):
             print("Error Destination node can't handle this type of entity {0}".format(entity_info_dst.get('type')))
             self.exit(-1)
 
-        uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (destination_uuid, destination_handler.get('uuid'), entity_uuid, instance_uuid))
+        uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(destination_uuid, destination_handler.get(
+            'uuid'), entity_uuid, instance_uuid))
         res = await self.store.desired.put(uri, json.dumps(entity_info_dst).replace(' ',''))
         if res:
-            uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s' % (node_uuid, handler, entity_uuid, instance_uuid))
+            uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid,
+                                                                             instance_uuid))
             res_dest = await self.store.desired.dput(uri, json.dumps(entity_info_src).replace(' ',''))
             if res_dest:
                 while True:
                     time.sleep(1)
-                    uri = str("afos://<sys-id>/%s/runtime/%s/entity/%s/instance/%s" % (destination_uuid,
+                    uri = str("afos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}".format(destination_uuid,
                                                                                        destination_handler.get('uuid'),
                                                                                        entity_uuid, instance_uuid))
                     data = await self.store.actual.get(uri)
@@ -605,7 +606,7 @@ class FOSCli(object):
     async def __send_add_plugin(self, node_uuid, manifest):
         plugins = {"plugins": [manifest]}
         plugins = json.dumps(plugins).replace(' ','')
-        uri = str('dfos://<sys-id>/%s/plugins' % node_uuid)
+        uri = str('dfos://<sys-id>/{}/plugins' % node_uuid)
         res = await self.store.desired.dput(uri, plugins)
         if res:
             print("Plugin {} added to {}".format(manifest.get('uuid'),node_uuid))
@@ -613,7 +614,7 @@ class FOSCli(object):
             print("Error on adding plugin")
 
     async def __get_plugins(self,node_uuid):
-        uri = str('afos://<sys-id>/%s/plugins' % node_uuid)
+        uri = str('afos://<sys-id>/{}/plugins'.format(node_uuid))
         plugins = await self.store.actual.get(uri)
         if plugins is not None and plugins != '' :
             plugins = json.loads(plugins).get('plugins')
@@ -645,15 +646,15 @@ class FOSCli(object):
             for e in nw_list:
                 net_info = json.loads(e[1])
                 print('+-------------------------------------------------------+')
-                print('| UUID : %s \t\t' % net_info.get('uuid'))
-                print('| Name: %s \t\t' % net_info.get('name'))
-                print('| Virtual Device: %s \t\t' % net_info.get('virtual_device'))
-                print('| DHCP: %s \t\t' % net_info.get('has_dhcp'))
-                print('| IP Range: %s \t\t' % net_info.get('ip_range'))
-                print('| Gateway: %s \t\t' % net_info.get('gateway'))
-                print('| VxLAN ID: %s \t\t' % net_info.get('vxlan_id'))
-                print('| Multicast VxLAN Address: %s \t\t' % net_info.get('multicast_address'))
-                print('| Node: %s \t\t' % e[0].split('/')[-5])
+                print('| UUID : {} \t\t'.format(net_info.get('uuid')))
+                print('| Name: {} \t\t'.format(net_info.get('name')))
+                print('| Virtual Device: {} \t\t'.format(net_info.get('virtual_device')))
+                print('| DHCP: {} \t\t'.format(net_info.get('has_dhcp')))
+                print('| IP Range: {} \t\t'.format(net_info.get('ip_range')))
+                print('| Gateway: {} \t\t'.format(net_info.get('gateway')))
+                print('| VxLAN ID: {} \t\t'.format(net_info.get('vxlan_id')))
+                print('| Multicast VxLAN Address: {} \t\t'.format(net_info.get('multicast_address')))
+                print('| Node: {} \t\t'.format(e[0].split('/')[-5]))
                 print('+-------------------------------------------------------+')
         else:
             print("No network found")
@@ -670,29 +671,29 @@ class FOSCli(object):
             if info is True:
                 print('+------------------------CPU----------------------------+')
                 cpus = node.get('cpu')
-                print('| Total CPU %d' % len(cpus))
+                print('| Total CPU {}'.format(len(cpus)))
                 for cpu in cpus:
                     print('+-------------------------------------------------------+')
-                    print('| ARCH: %s' % cpu.get('arch'))
-                    print('| Model: %s' % cpu.get('model'))
-                    print('| Frequency: %s' % cpu.get('frequency'))
+                    print('| ARCH: {}'.format(cpu.get('arch')))
+                    print('| Model: {}'.format(cpu.get('model')))
+                    print('| Frequency: {}'.format(cpu.get('frequency')))
                 print('+-------------------------------------------------------+')
-                print('| RAM: %d' % node.get('ram').get('size'))
+                print('| RAM: {}'.format(node.get('ram').get('size')))
                 print('+----------------------NETWORKS-------------------------+')
                 nws = node.get("network")
                 for nw in nws:
                     print('| ################################################### ')
                     intf_conf = nw.get('inft_configuration')
-                    print("| ## Interface: %s ##" % nw.get('intf_name'))
-                    print("| ### MAC: %s " % nw.get('intf_mac_address'))
-                    print("| ### type: %s " % nw.get('type'))
-                    print("| ### Default gateway: %s " % nw.get('default_gw'))
+                    print("| ## Interface: {} ##".format(nw.get('intf_name')))
+                    print("| ### MAC: {} ".format(nw.get('intf_mac_address')))
+                    print("| ### type: {} ".format(nw.get('type')))
+                    print("| ### Default gateway: {} ".format(nw.get('default_gw')))
                     print("| ##### Interface Configuration #####")
-                    print("| ###### Speed: %s " % intf_conf.get('intf_speed'))
-                    print("| ###### IPV4: %s Netmask: %s Gateway: %s" % (intf_conf.get('ipv4_address'),
+                    print("| ###### Speed: {} ".format(intf_conf.get('intf_speed')))
+                    print("| ###### IPV4: {} Netmask: {} Gateway: {}".format(intf_conf.get('ipv4_address'),
                                                                          intf_conf.get('ipv4_netmask'),
                                                                          intf_conf.get('ipv4_gateway')))
-                    print("| ###### IPV6: %s Netmask: %s" %
+                    print("| ###### IPV6: {} Netmask: {}".format
                           (intf_conf.get('ipv6_address'), intf_conf.get('ipv6_netmask')))
                 print('| ################################################### ')
                 accs = node.get('accelerator')
@@ -700,19 +701,18 @@ class FOSCli(object):
                     print('+----------------------ACCELERATORS-------------------------+')
                     for acc in accs:
                         print('| ################################################### ')
-                        print("| ## Name: %s ##" % acc.get('name'))
-                        print("| ## HW Address: %s ##" % acc.get('hw_address'))
-                        print("| ## Supported libraries: %s ##"
-                              % ' '.join(acc.get('supported_library')))
+                        print("| ## Name: {} ##".format(acc.get('name')))
+                        print("| ## HW Address: {} ##".format(acc.get('hw_address')))
+                        print("| ## Supported libraries: {} ##".format(' '.join(acc.get('supported_library'))))
                     print('| ################################################### ')
                 ios = node.get('io')
                 if ios is not None:
                     print('+----------------------I\O-----------------------------+')
                     for io in ios:
                         print('| ################################################### ')
-                        print("| ## Name: %s ##" % io.get('io_type'))
-                        print("| ## Type: %s ##" % io.get('hw_address'))
-                        print("| ## File: %s ##" % io.get('io_file'))
+                        print("| ## Name: {} ##".format(io.get('io_type')))
+                        print("| ## Type: {} ##".format(io.get('hw_address')))
+                        print("| ## File: {} ##".format(io.get('io_file')))
                     print('| ################################################### ')
                 print('+-------------------------------------------------------+')
 
@@ -723,11 +723,11 @@ class FOSCli(object):
         for entity in entities:
             entity_uri = entity[0]
             entity_info = json.loads(entity[1])
-            print('| UUID : %s \t\t|' % entity_info.get('uuid'))
-            print('| Name: %s \t\t|' % entity_info.get('name'))
-            print('| Type: %s \t\t|' % entity_info.get('type'))
-            print('| Status: %s \t\t|' % entity_info.get('status'))
-            print('| Node: %s \t\t|' % entity_uri.split('/')[3])
+            print('| UUID : {} \t\t|'.format(entity_info.get('uuid')))
+            print('| Name: {} \t\t|'.format(entity_info.get('name')))
+            print('| Type: {} \t\t|'.format(entity_info.get('type')))
+            print('| Status: {} \t\t|'.format(entity_info.get('status')))
+            print('| Node: {} \t\t|'.format(entity_uri.split('/')[3]))
             print('+-------------------------------------------------------+')
 
     def start(self, plugins, verbose, daemon):
@@ -737,11 +737,11 @@ class FOSCli(object):
                 if os.name == 'posix':
                     print('Forking in backgroud')
                     pid = '/tmp/fos.pid'
-                    print('PID file %s' % pid)
+                    print('PID file {}'.format(pid))
                     with dmn.DaemonContext(pidfile=pid, umask=0):
                         self.__start_node(plugins, verbose)
                 else:
-                    print("Cannot daemonize on {0} at the moment".format(os.name))
+                    print("Cannot daemonize on {} at the moment".format(os.name))
             else:
                 self.__start_node(plugins, verbose)
         else:
@@ -756,13 +756,13 @@ class FOSCli(object):
             return
         if node_uuid is not None and plugin_action is True:
             if action == 'add':
-                print('Adding plugin from %s to %s' % (manifest, node_uuid))
+                print('Adding plugin from {} to {}'.format(manifest, node_uuid))
                 manifest = json.loads(self.__read_file(manifest))
                 manifest.update({'status':'add'})
                 asyncio.get_event_loop().run_until_complete(self.__send_add_plugin(node_uuid, manifest))
                 return
             if action == 'remove':
-                print('Removing plugin %s from %s not yet...' % (plugin_uuid, node_uuid))
+                print('Removing plugin {} from {} not yet...'.format(plugin_uuid, node_uuid))
                 return
             if action == '':
                 asyncio.get_event_loop().run_until_complete(self.__get_plugins(node_uuid))
@@ -786,7 +786,7 @@ class FOSCli(object):
                     validate(manifest, Schemas.network_schema)
                 except ValidationError as ve:
                     print('Manifest is not correct')
-                    print('%s' % ve.message)
+                    print('{}'.format(ve.message))
                     return
                 print('manifest Ok')
                 asyncio.get_event_loop().run_until_complete(self.__send_add_network(node_uuid, manifest))
@@ -808,40 +808,29 @@ class FOSCli(object):
                 validate(manifest, Schemas.entity_schema)
             except ValidationError as ve:
                 print('Manifest is not correct')
-                print('%s' % ve.message)
+                print('{}'.format(ve.message))
                 return
             print('manifest Ok')
             asyncio.get_event_loop().run_until_complete(self.__send_define_entity(node_uuid, manifest))
-            #print('Entity %s defined' % manifest.get('uuid'))
             return
         if entity_uuid is None: return
         if action == 'undefine':
             asyncio.get_event_loop().run_until_complete(self.__send_undefine_entity(node_uuid, entity_uuid))
-            #print('Entity %s undefined' % entity_uuid)
         if action == 'configure' and instance_uuid is not None:
-            asyncio.get_event_loop().run_until_complete(self.__send_configure_entity(node_uuid, entity_uuid,
-                                                                                     instance_uuid))
-            #print('Entity %s configured' % entity_uuid)
+            asyncio.get_event_loop().run_until_complete(self.__send_configure_entity(node_uuid, entity_uuid, instance_uuid))
         if action == 'clean' and instance_uuid is not None:
             asyncio.get_event_loop().run_until_complete(self.__send_clean_entity(node_uuid, entity_uuid, instance_uuid))
-            #print('Entity %s cleaned' % entity_uuid)
         if action == 'run' and instance_uuid is not None:
             asyncio.get_event_loop().run_until_complete(self.__send_run_entity(node_uuid, entity_uuid, instance_uuid))
-            #print('Entity %s started' % entity_uuid)
         if action == 'stop' and instance_uuid is not None:
             asyncio.get_event_loop().run_until_complete(self.__send_stop_entity(node_uuid, entity_uuid, instance_uuid))
-            #print('Entity %s stopped' % entity_uuid)
         if action == 'pause' and instance_uuid is not None:
             asyncio.get_event_loop().run_until_complete(self.__send_pause_entity(node_uuid, entity_uuid, instance_uuid))
-            #print('Pause sended')
         if action == 'resume' and instance_uuid is not None:
-            asyncio.get_event_loop().run_until_complete(self.__send_resume_entity(node_uuid, entity_uuid,
-                                                                                  instance_uuid))
-            #print('Resume sended')
+            asyncio.get_event_loop().run_until_complete(self.__send_resume_entity(node_uuid, entity_uuid, instance_uuid))
         if action == 'migrate' and dest_node is not None and instance_uuid is not None:
-            asyncio.get_event_loop().run_until_complete(self.__sent_migrate_entity(node_uuid, entity_uuid, dest_node,
-                                                                                   instance_uuid))
-            #print('Migration sended')
+            asyncio.get_event_loop().run_until_complete(self.__sent_migrate_entity(node_uuid, entity_uuid, dest_node, instance_uuid))
+
 
 
     def manifest(self, type, manifest):
@@ -863,21 +852,21 @@ class FOSCli(object):
                     print('type not recognized')
             except ValidationError as ve:
                 print('Manifest is not correct')
-                print('%s' % ve.message)
+                print('{}'.format(ve.message))
                 self.exit(-1)
         if type == 'network':
             try:
                 validate(manifest, Schemas.network_schema)
             except ValidationError as ve:
                 print('Manifest is not correct')
-                print('%s' % ve.message)
+                print('{}'.format(ve.message))
                 self.exit(-1)
         if type == 'application':
             try:
                 validate(manifest, Schemas.app_schema)
             except ValidationError as ve:
                 print('Manifest is not correct')
-                print('%s' % ve.message)
+                print('{}'.format(ve.message))
                 self.exit(-1)
 
         print('Manifest seems ok!')

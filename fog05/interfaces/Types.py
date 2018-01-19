@@ -11,7 +11,7 @@ class KeyValue(TopicType):
         return self.key
 
     def __str__(self):
-        return "KeyValue(version = {0}, key = {1}, value = {2}, sid = {3})".format(self.version, self.key, self.value, self.sid)
+        return 'KeyValue(version = {0}, key = {1}, value = {2}, sid = {3})'.format(self.version, self.key, self.value, self.sid)
 
 
 class StoreInfo(TopicType):
@@ -24,7 +24,7 @@ class StoreInfo(TopicType):
         return self.sid
 
     def __str__(self):
-        return "StoreInfo(sid = {0}, root = {1}, home= {2})".format(self.sid, self.sroot, self.shome)
+        return 'StoreInfo(sid = {0}, root = {1}, home= {2})'.format(self.sid, self.sroot, self.shome)
 
 
 class CacheMiss(TopicType):
@@ -36,7 +36,7 @@ class CacheMiss(TopicType):
        return self.key
 
     def __str__(self):
-        return "CacheMiss(source_sid = {0}, key = {1})".format(self.source_sid, self.key)
+        return 'CacheMiss(source_sid = {0}, key = {1})'.format(self.source_sid, self.key)
 
 class CacheHit(TopicType):
     def __init__(self, source_sid, dest_sid, key, value, version):
@@ -50,7 +50,7 @@ class CacheHit(TopicType):
        return self.key
 
     def __str__(self):
-        return "CacheHit(source_sid = {0}, dest_sid = {1}, key = {2}, value = {3}, version = {4})".format(self.source_sid, self.dest_sid, self.key, self.value, self.version)
+        return 'CacheHit(source_sid = {0}, dest_sid = {1}, key = {2}, value = {3}, version = {4})'.format(self.source_sid, self.dest_sid, self.key, self.value, self.version)
 
 class CacheMissMV(TopicType):
     def __init__(self, source_sid, key):
@@ -61,7 +61,7 @@ class CacheMissMV(TopicType):
        return self.key
 
     def __str__(self):
-        return "CacheMissMV(source_sid = {0}, key = {1})".format(self.source_sid, self.key)
+        return 'CacheMissMV(source_sid = {0}, key = {1})'.format(self.source_sid, self.key)
 
 class CacheHitMV(TopicType):
     def __init__(self, source_sid, dest_sid, key, kvave):
@@ -74,4 +74,4 @@ class CacheHitMV(TopicType):
        return self.key
 
     def __str__(self):
-        return "CacheHitMV(source_sid = {0}, dest_sid = {1}, key = {2}, kvave= {3})".format(self.source_sid, self.dest_sid, self.key, self.kvave)
+        return 'CacheHitMV(source_sid = {0}, dest_sid = {1}, key = {2}, kvave= {3})'.format(self.source_sid, self.dest_sid, self.key, self.kvave)

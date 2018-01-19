@@ -17,13 +17,13 @@ class semaeapi(MonitoringPlugin):
         super(semaeapi, self).__init__(version, plugin_uuid)
         self.name = name
         self.agent = agent
-        self.HOME = str("monitoring/%s" % self.uuid)
+        self.HOME = 'monitoring/{}'.format(self.uuid)
         self.UPDATE_FREQUENCY = 'update'
         self.STATUS = 'status'
 
-        uri = str('%s/%s/set/*' % (self.agent.dhome, self.HOME))
+        uri = '{}/{}/set/*'.format(self.agent.dhome, self.HOME)
         self.agent.dstore.observe(uri, self.__react_to_cache_eapi_monitoring)
-        self.agent.logger.info('__init__()', ' SEMAEApi Plugin - Observing %s' % uri)
+        self.agent.logger.info('__init__()', ' SEMAEApi Plugin - Observing {}'.format(uri))
 
         self.available_api = {}
         self.__updating_thread = None
@@ -123,9 +123,9 @@ class semaeapi(MonitoringPlugin):
 
     def __react_to_cache_eapi_monitoring(self, key, value, v):
         self.agent.logger.info('__react_to_cache_eapi_monitoring()',
-                               'SEMAEApi Plugin - React to to URI: %s Value: %s Version: %s' % (key, value, v))
+                               'SEMAEApi Plugin - React to to URI: {} Value: {} Version: {}'.format(key, value, v))
         if value is None and v is None:
-            self.agent.logger.info('__react_to_cache_eapi_monitoring()', 'SEMAEApi Plugin - This is a remove for URI: %s' % key)
+            self.agent.logger.info('__react_to_cache_eapi_monitoring()', 'SEMAEApi Plugin - This is a remove for URI: {}'.format(key))
             self.agent.logger.info('__react_to_cache_eapi_monitoring()',  'Cannot remove a monitoring URI....')
         else:
             name = key.split('/')[-1]

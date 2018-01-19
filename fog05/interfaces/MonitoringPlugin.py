@@ -7,19 +7,19 @@ class MonitoringPlugin(Plugin):
 
     def __init__(self, version, plugin_uuid=None):
         super(MonitoringPlugin, self).__init__(version, plugin_uuid)
-        self.name=""
+        self.name=''
 
     def start_monitoring(self):
-        """
+        '''
         start the runtime
         :return: runtime pid or runtime uuid?
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
     def stop_monitoring(self):
-        """
+        '''
         stop this runtime
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
 

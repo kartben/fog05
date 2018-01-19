@@ -2,37 +2,37 @@ from fog05.interfaces.Plugin import Plugin
 
 
 class NetworkPlugin(Plugin):
-    """
+    '''
     Class: NetworkPlugin
 
     This class is an interface for plugins that control the network resouces, and provide an abstraction layer
     for networking managment functions
-    """
+    '''
 
     def __init__(self, version, plugin_uuid):
         super(NetworkPlugin, self).__init__(version, plugin_uuid)
 
     def createVirtualInterface(self, name, uuid):
-        """
+        '''
         This should create a virtual network interface
 
         :name: String
         :return: tuple (interface_name,interface_uuid) or None in case of failure
 
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
     
     def creareVirtualBridge(self, name, uuid):
-        """
+        '''
         This should create a virtual bridge 
 
         :name: String
         :return: tuple (bridge_name,bridge_uuid) or None in case of failure
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
     def allocateBandwidth(self, intf_uuid, bandwidth):
-        """
+        '''
         This should allocate bandwidth to a certaint virtual interface,
         if the interface not exists throw an exception
 
@@ -40,11 +40,11 @@ class NetworkPlugin(Plugin):
         :bandwidth: tuple (up,down)
         :return: bool
 
-        """
-        raise NotImplementedError("This is and interface!")
+        '''
+        raise NotImplementedError('This is and interface!')
 
     def createVirtualNetwork(self, network_name, uuid, ip_range, has_dhcp, gateway):
-        """
+        '''
         This should create a virtual network, with given caratteristics
 
         range should specified as CIRD subnet
@@ -60,12 +60,12 @@ class NetworkPlugin(Plugin):
         :gateway: String
         :return: tuple (net_name,net_uuid) or None in case of failure
 
-        """
+        '''
 
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def assignInterfaceToNetwork(self, network_uuid, intf_uuid):
-        """
+        '''
         This should assign the interface identified by intf_uuid to the network identified by network_uuid,
         if the interface not exists throw an exception
 
@@ -73,13 +73,13 @@ class NetworkPlugin(Plugin):
         :intf_uuid: String
         :return: bool
 
-        """
+        '''
 
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def deleteVirtualInterface(self, intf_uuid):
 
-        """
+        '''
         This should delete a virtual interface identified by intf_uuid, if the interface is assigned to a network
         maybe can also call removeInterfaceFromNetwork() to avoid any problem,
         if the interface not exists throw an exception
@@ -87,46 +87,46 @@ class NetworkPlugin(Plugin):
         :intf_uuid: String
         :return: bool
 
-        """
+        '''
 
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def deleteVirtualBridge(self, br_uuid):
 
-        """ 
+        ''' 
         Delete a virtual bride, if the bridge is one assigned to a network should throw an exception, if the bridge not exists throw an exception
 
         :br_uuid: String
         :return: bool
-        """
+        '''
 
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def removeInterfaceFromNetwork(self, network_uuid, intf_uuid):
 
-        """
+        '''
         Remove the interface intf_uuid from network network_uuid, if interface not present throw an exception
 
         :network_uuid: String
         :intf_uuid: String
         :return: bool
 
-        """
+        '''
 
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def deleteVirtualNetwork(self, network_uuid):
 
-        """
+        '''
         Delete the virtual network network_uuid, for correct network shutdown should kill the dnsmasq process eventually associated
         for dhcp and remove the bridge, if there are interface associate to this network should throw an exception
 
         :network_uuid: String
         :return: bool
 
-        """
+        '''
 
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def stopNetwork(self):
         raise NotImplemented
