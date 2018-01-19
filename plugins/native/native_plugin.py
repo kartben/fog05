@@ -25,7 +25,7 @@ class Native(RuntimePlugin):
         self.LOG_DIR = "logs"
         self.STORE_DIR = "apps"
 
-        self.operating_system = self.agent.getOSPlugin().name
+        self.operating_system = self.agent.get_os_plugin().name
 
         self.start_runtime()
 
@@ -34,15 +34,15 @@ class Native(RuntimePlugin):
         self.agent.logger.info('startRuntime()', ' Native Plugin - Observing %s' % uri)
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
-        if self.agent.getOSPlugin().dirExists(self.BASE_DIR):
-            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.STORE_DIR)):
-                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.STORE_DIR))
-            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.LOG_DIR)):
-                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
+        if self.agent.get_os_plugin().dir_exists(self.BASE_DIR):
+            if not self.agent.get_os_plugin().dir_exists(os.path.join(self.BASE_DIR, self.STORE_DIR)):
+                self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.STORE_DIR))
+            if not self.agent.get_os_plugin().dir_exists(os.path.join(self.BASE_DIR, self.LOG_DIR)):
+                self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.LOG_DIR))
         else:
-            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR))
-            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.STORE_DIR))
-            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
+            self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR))
+            self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.STORE_DIR))
+            self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.LOG_DIR))
 
         return self.uuid
 
@@ -95,11 +95,11 @@ class Native(RuntimePlugin):
             else:
                 unzip_cmd = ''
 
-            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid))
-            self.agent.getOSPlugin().downloadFile(entity.source_url,
-                                                  os.path.join(self.BASE_DIR, self.STORE_DIR,entity_uuid, zip_name))
+            self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid))
+            self.agent.get_os_plugin().download_file(entity.source_url,
+                                                     os.path.join(self.BASE_DIR, self.STORE_DIR,entity_uuid, zip_name))
             # self.agent.getOSPlugin().executeCommand(wget_cmd, True)
-            self.agent.getOSPlugin().executeCommand(unzip_cmd, True)
+            self.agent.get_os_plugin().execute_command(unzip_cmd, True)
             entity.source = dest
 
 
@@ -128,7 +128,7 @@ class Native(RuntimePlugin):
         else:
             for i in list(entity.instances.keys()):
                 self.__force_entity_instance_termination(entity_uuid, i)
-            self.agent.getOSPlugin().removeDir(os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid))
+            self.agent.get_os_plugin().remove_dir(os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid))
             self.current_entities.pop(entity_uuid, None)
             self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefineEntity()', '[ DONE ] Native Plugin - Undefine BE uuid %s' % entity_uuid)
@@ -164,8 +164,8 @@ class Native(RuntimePlugin):
                 instance = NativeEntityInstance(instance_uuid, name, entity.command, entity.source,
                                              entity.args, out_file, entity_uuid)
                 native_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name)
-                self.agent.getOSPlugin().createFile(instance.outfile)
-                self.agent.getOSPlugin().createDir(native_dir)
+                self.agent.get_os_plugin().create_file(instance.outfile)
+                self.agent.get_os_plugin().create_dir(native_dir)
                 # if entity.source is not None:
                 #     zip_name = entity.source.split('/')[-1]
                 #     self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name))
@@ -222,9 +222,9 @@ class Native(RuntimePlugin):
                                                          str("Instance %s is not in CONFIGURED state" % instance_uuid))
                 else:
 
-                    self.agent.getOSPlugin().removeFile(instance.outfile)
+                    self.agent.get_os_plugin().remove_file(instance.outfile)
                     native_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name)
-                    self.agent.getOSPlugin().removeDir(native_dir)
+                    self.agent.get_os_plugin().remove_dir(native_dir)
 
                     #if entity.source is not None:
                     #    entity_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, instance.name)
@@ -274,12 +274,12 @@ class Native(RuntimePlugin):
                     pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid,instance.name, instance_uuid)
                     run_script = self.__generate_run_script(instance.command, source_dir, pid_file)
                     if self.operating_system == 'linux':
-                        self.agent.getOSPlugin().storeFile(run_script, native_dir, str("%s_run.sh" % instance_uuid))
+                        self.agent.get_os_plugin().store_file(run_script, native_dir, str("%s_run.sh" % instance_uuid))
                         chmod_cmd = str("chmod +x %s" % os.path.join(native_dir, str("%s_run.sh" % instance_uuid)))
-                        self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
+                        self.agent.get_os_plugin().execute_command(chmod_cmd, True)
                         cmd = str("%s" % os.path.join(native_dir, str("%s_run.sh" % instance_uuid)))
                     elif self.operating_system == 'windows':
-                        self.agent.getOSPlugin().storeFile(run_script, native_dir, str("%s_run.ps1" % instance_uuid))
+                        self.agent.get_os_plugin().store_file(run_script, native_dir, str("%s_run.ps1" % instance_uuid))
                         cmd = str("%s" % os.path.join(native_dir, str("%s_run.ps1" % instance_uuid)))
                     else:
                         cmd = ''
@@ -289,7 +289,7 @@ class Native(RuntimePlugin):
                     time.sleep(1)
                     pid_file = str('%s.pid' % instance_uuid)
                     pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid,instance.name, pid_file)
-                    pid = int(self.agent.getOSPlugin().readFile(pid_file))
+                    pid = int(self.agent.get_os_plugin().read_file(pid_file))
                     instance.on_start(pid, process)
                 else:
                     instance.on_start(process.pid, process)
@@ -327,7 +327,7 @@ class Native(RuntimePlugin):
                 p.terminate()
                 if instance.source is not None:
                     pid = instance.pid
-                    self.agent.getOSPlugin().sendSigKill(pid)
+                    self.agent.get_os_plugin().send_sig_kill(pid)
 
                 instance.on_stop()
                 self.current_entities.update({entity_uuid: entity})
@@ -374,10 +374,10 @@ class Native(RuntimePlugin):
 
     def __generate_run_script(self, cmd, directory, outfile):
         if self.operating_system == 'windows':
-            template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates',
+            template_xml = self.agent.get_os_plugin().read_file(os.path.join(self.DIR, 'templates',
                                                                           'run_native_windows.ps1'))
         else:
-            template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'run_native_unix.sh'))
+            template_xml = self.agent.get_os_plugin().read_file(os.path.join(self.DIR, 'templates', 'run_native_unix.sh'))
         na_script = Environment().from_string(template_xml)
         na_script = na_script.render(command=cmd, path=directory, outfile=outfile)
         return na_script

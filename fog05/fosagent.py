@@ -122,10 +122,10 @@ class FosAgent(Agent):
             self.logger.error('__load_os_plugin()', 'Platform {} not compatible!!!!'.format(platform))
             raise RuntimeError('__load_os_plugin()', "Platform not compatible")
 
-    def getOSPlugin(self):
+    def get_os_plugin(self):
         return self.__osPlugin
 
-    def getNetworkPlugin(self, cnetwork_uuid):
+    def get_network_plugin(self, cnetwork_uuid):
         if cnetwork_uuid is None:
             return self.__nwPlugins
         else:
@@ -210,12 +210,12 @@ class FosAgent(Agent):
         node_info.update({'uuid': str(self.uuid)})
         node_info.update({'name': self.__osPlugin.getHostname()})
         node_info.update({'os': self.__osPlugin.name})
-        node_info.update({'cpu': self.__osPlugin.getProcessorInformation()})
-        node_info.update({'ram': self.__osPlugin.getMemoryInformation()})
-        node_info.update({'disks': self.__osPlugin.getDisksInformation()})
-        node_info.update({'network': self.__osPlugin.getNetworkInformations()})
-        node_info.update({'io': self.__osPlugin.getIOInformations()})
-        node_info.update({'accelerator': self.__osPlugin.getAcceleratorsInformations()})
+        node_info.update({'cpu': self.__osPlugin.get_processor_information()})
+        node_info.update({'ram': self.__osPlugin.get_memory_information()})
+        node_info.update({'disks': self.__osPlugin.get_disks_information()})
+        node_info.update({'network': self.__osPlugin.get_network_informations()})
+        node_info.update({'io': self.__osPlugin.get_io_informations()})
+        node_info.update({'accelerator': self.__osPlugin.get_accelerators_informations()})
 
         uri = str('{}/'.format(self.ahome))
         self.astore.put(uri, json.dumps(node_info))

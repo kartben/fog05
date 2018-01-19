@@ -9,8 +9,8 @@ class Plugin(object):
         else:
             self.uuid = plugin_uuid
 
-    def getVersion(self):
+    def get_version(self):
         return self.version
 
-    def reactToCache(self, key, value, version):
+    def react_to_cache(self, key, value, version):
         raise NotImplemented

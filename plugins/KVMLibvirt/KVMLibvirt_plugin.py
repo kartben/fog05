@@ -43,18 +43,18 @@ class KVMLibvirt(RuntimePlugin):
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
         '''check if dirs exists if not exists create'''
-        if self.agent.getOSPlugin().dirExists(self.BASE_DIR):
-            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.DISK_DIR)):
-                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.DISK_DIR))
-            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.IMAGE_DIR)):
-                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.IMAGE_DIR))
-            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.LOG_DIR)):
-                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
+        if self.agent.get_os_plugin().dir_exists(self.BASE_DIR):
+            if not self.agent.get_os_plugin().dir_exists(os.path.join(self.BASE_DIR, self.DISK_DIR)):
+                self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.DISK_DIR))
+            if not self.agent.get_os_plugin().dir_exists(os.path.join(self.BASE_DIR, self.IMAGE_DIR)):
+                self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.IMAGE_DIR))
+            if not self.agent.get_os_plugin().dir_exists(os.path.join(self.BASE_DIR, self.LOG_DIR)):
+                self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.LOG_DIR))
         else:
-            self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
-            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.DISK_DIR))
-            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.IMAGE_DIR))
-            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
+            self.agent.get_os_plugin().create_dir(str("%s") % self.BASE_DIR)
+            self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.DISK_DIR))
+            self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.IMAGE_DIR))
+            self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.LOG_DIR))
 
 
         return self.uuid
@@ -118,7 +118,7 @@ class KVMLibvirt(RuntimePlugin):
             return None
 
         image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image_url.split('/')[-1])
-        self.agent.getOSPlugin().downloadFile(entity.image_url, image_name)
+        self.agent.get_os_plugin().download_file(entity.image_url, image_name)
         entity.image = image_name
 
         entity.set_state(State.DEFINED)
@@ -150,7 +150,7 @@ class KVMLibvirt(RuntimePlugin):
 
             for i in list(entity.instances.keys()):
                 self.__force_entity_instance_termination(entity_uuid, i)
-            self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
+            self.agent.get_os_plugin().remove_file(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
             self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefine_entity()', '[ DONE ] KVM Plugin - Undefine a VM uuid %s ' % entity_uuid)
             return True
@@ -196,14 +196,14 @@ class KVMLibvirt(RuntimePlugin):
                 for i, n in enumerate(instance.networks):
                     if n.get('type') in ['wifi']:
 
-                        nw_ifaces =  self.agent.getOSPlugin().getNetworkInformations()
+                        nw_ifaces =  self.agent.get_os_plugin().get_network_informations()
                         for iface in nw_ifaces:
-                            if self.agent.getOSPlugin().get_intf_type(iface.get('intf_name')) == 'wireless' and iface.get('available') is True:
-                                self.agent.getOSPlugin().set_interface_unaviable(iface.get('intf_name'))
+                            if self.agent.get_os_plugin().get_intf_type(iface.get('intf_name')) == 'wireless' and iface.get('available') is True:
+                                self.agent.get_os_plugin().set_interface_unaviable(iface.get('intf_name'))
                                 n.update({'direct_intf': iface.get('intf_name')})
                         # TODO get available interface from os plugin
                     if n.get('network_uuid') is not None:
-                        nws = self.agent.getNetworkPlugin(None).get(list(self.agent.getNetworkPlugin(None).keys())[0])
+                        nws = self.agent.get_network_plugin(None).get(list(self.agent.get_network_plugin(None).keys())[0])
                         #print(nws.getNetworkInfo(n.get('network_uuid')))
                         br_name = nws.get_network_info(n.get('network_uuid')).get('virtual_device')
                         #print(br_name)
@@ -223,13 +223,13 @@ class KVMLibvirt(RuntimePlugin):
                 rm_temp_cmd = str("rm")
                 if instance.user_file is not None and instance.user_file != '':
                     data_filename = str("userdata_%s" % entity_uuid)
-                    self.agent.getOSPlugin().storeFile(entity.user_file, self.BASE_DIR, data_filename)
+                    self.agent.get_os_plugin().store_file(entity.user_file, self.BASE_DIR, data_filename)
                     data_filename = os.path.join(self.BASE_DIR, data_filename)
                     conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
                     #rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
                 if instance.ssh_key is not None and instance.ssh_key != '':
                     key_filename = str("key_%s.pub" % entity_uuid)
-                    self.agent.getOSPlugin().storeFile(instance.ssh_key, self.BASE_DIR, key_filename)
+                    self.agent.get_os_plugin().store_file(instance.ssh_key, self.BASE_DIR, key_filename)
                     key_filename = os.path.join(self.BASE_DIR, key_filename)
                     conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
                     #rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
@@ -244,14 +244,14 @@ class KVMLibvirt(RuntimePlugin):
 
                 #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
                 #self.agent.getOSPlugin().downloadFile(image_url, os.path.join(self.BASE_DIR, self.IMAGE_DIR, image_name))
-                self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
-                self.agent.getOSPlugin().executeCommand(conf_cmd, True)
-                self.agent.getOSPlugin().executeCommand(dd_cmd, True)
+                self.agent.get_os_plugin().execute_command(qemu_cmd, True)
+                self.agent.get_os_plugin().execute_command(conf_cmd, True)
+                self.agent.get_os_plugin().execute_command(dd_cmd, True)
 
                 if instance.ssh_key is not None and instance.ssh_key != '':
-                    self.agent.getOSPlugin().removeFile(key_filename)
+                    self.agent.get_os_plugin().remove_file(key_filename)
                 if instance.user_file is not None and instance.user_file != '':
-                    self.agent.getOSPlugin().removeFile(data_filename)
+                    self.agent.get_os_plugin().remove_file(data_filename)
 
                     #self.agent.getOSPlugin().executeCommand(rm_temp_cmd)
 
@@ -310,10 +310,10 @@ class KVMLibvirt(RuntimePlugin):
                     #rm_cmd = str("rm -f %s %s /opt/fos/images/%s /opt/fos/logs/%s_log.log" %
                     #           (entity.cdrom, entity.disk, entity.image, entity_uuid))
                     #self.agent.getOSPlugin().executeCommand(rm_cmd)
-                    self.agent.getOSPlugin().removeFile(instance.cdrom)
-                    self.agent.getOSPlugin().removeFile(instance.disk)
+                    self.agent.get_os_plugin().remove_file(instance.cdrom)
+                    self.agent.get_os_plugin().remove_file(instance.disk)
                     #self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, instance.image))
-                    self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.LOG_DIR, instance_uuid))
+                    self.agent.get_os_plugin().remove_file(os.path.join(self.BASE_DIR, self.LOG_DIR, instance_uuid))
 
                     entity.remove_instance(instance)
                     #entity.on_clean()
@@ -559,7 +559,7 @@ class KVMLibvirt(RuntimePlugin):
                                       vm_info.get('base_image'), vm_info.get('user-data'), vm_info.get('ssh-key'))
             entity.state = State.DEFINED
             image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image.split('/')[-1])
-            self.agent.getOSPlugin().downloadFile(entity.image_url, image_name)
+            self.agent.get_os_plugin().download_file(entity.image_url, image_name)
             entity.image = image_name
             self.current_entities.update({entity_uuid: entity})
             self.__update_actual_store(entity_uuid, entity_info)
@@ -581,32 +581,32 @@ class KVMLibvirt(RuntimePlugin):
 
             instance.xml = vm_xml
             qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (instance.disk, instance.disk_size))
-            self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
-            self.agent.getOSPlugin().createFile(instance.cdrom)
-            self.agent.getOSPlugin().createFile(os.path.join(self.BASE_DIR, self.LOG_DIR, str('%s_log.log' % instance_uuid)))
+            self.agent.get_os_plugin().execute_command(qemu_cmd, True)
+            self.agent.get_os_plugin().create_file(instance.cdrom)
+            self.agent.get_os_plugin().create_file(os.path.join(self.BASE_DIR, self.LOG_DIR, str('%s_log.log' % instance_uuid)))
 
             conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
                                                            'create_config_drive.sh'), instance.name, instance_uuid))
             rm_temp_cmd = str("rm")
             if instance.user_file is not None and instance.user_file != '':
                 data_filename = str("userdata_%s" % instance_uuid)
-                self.agent.getOSPlugin().storeFile(instance.user_file, self.BASE_DIR, data_filename)
+                self.agent.get_os_plugin().store_file(instance.user_file, self.BASE_DIR, data_filename)
                 data_filename = os.path.join(self.BASE_DIR, data_filename)
                 conf_cmd = str(conf_cmd + " --user-data %s" % data_filename)
                 # rm_temp_cmd = str(rm_temp_cmd + " %s" % data_filename)
             if instance.ssh_key is not None and instance.ssh_key != '':
                 key_filename = str("key_%s.pub" % instance_uuid)
-                self.agent.getOSPlugin().storeFile(instance.ssh_key, self.BASE_DIR, key_filename)
+                self.agent.get_os_plugin().store_file(instance.ssh_key, self.BASE_DIR, key_filename)
                 key_filename = os.path.join(self.BASE_DIR, key_filename)
                 conf_cmd = str(conf_cmd + " --ssh-key %s" % key_filename)
                 # rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
 
             conf_cmd = str(conf_cmd + " %s" % instance.cdrom)
 
-            self.agent.getOSPlugin().executeCommand(qemu_cmd, True)
+            self.agent.get_os_plugin().execute_command(qemu_cmd, True)
             #self.agent.getOSPlugin().createFile(entity.cdrom)
 
-            self.agent.getOSPlugin().executeCommand(conf_cmd, True)
+            self.agent.get_os_plugin().execute_command(conf_cmd, True)
 
 
             # try:
@@ -691,7 +691,7 @@ class KVMLibvirt(RuntimePlugin):
             dst_ip = dst_ip[0].get("inft_configuration").get("ipv4_address") # TODO: as on search should use ipv6
 
             # ## ADDING TO /etc/hosts otherwise migration can fail
-            self.agent.getOSPlugin().addKnowHost(dst_hostname, dst_ip)
+            self.agent.get_os_plugin().add_know_host(dst_hostname, dst_ip)
             ###
 
             # ## ACTUAL MIGRATIION ##################
@@ -715,7 +715,7 @@ class KVMLibvirt(RuntimePlugin):
             # #######################################
 
             # ## REMOVING AFTER MIGRATION
-            self.agent.getOSPlugin().removeKnowHost(dst_hostname)
+            self.agent.get_os_plugin().remove_know_host(dst_hostname)
             instance.on_stop()
             self.current_entities.update({entity_uuid: entity})
 
@@ -897,7 +897,7 @@ class KVMLibvirt(RuntimePlugin):
 
 
     def __generate_dom_xml(self, instance):
-        template_xml = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'vm.xml'))
+        template_xml = self.agent.get_os_plugin().read_file(os.path.join(self.DIR, 'templates', 'vm.xml'))
         vm_xml = Environment().from_string(template_xml)
         vm_xml = vm_xml.render(name=instance.name, uuid=instance.uuid, memory=instance.ram,
                                cpu=instance.cpu, disk_image=instance.disk,

@@ -40,18 +40,18 @@ class LXD(RuntimePlugin):
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
         '''check if dirs exists if not exists create'''
-        if self.agent.getOSPlugin().dirExists(self.BASE_DIR):
-            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR)):
-                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR))
-            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR)):
-                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR))
-            if not self.agent.getOSPlugin().dirExists(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR)):
-                self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
+        if self.agent.get_os_plugin().dir_exists(self.BASE_DIR):
+            if not self.agent.get_os_plugin().dir_exists(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR)):
+                self.agent.get_os_plugin().create_dir(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR))
+            if not self.agent.get_os_plugin().dir_exists(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR)):
+                self.agent.get_os_plugin().create_dir(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR))
+            if not self.agent.get_os_plugin().dir_exists(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR)):
+                self.agent.get_os_plugin().create_dir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
         else:
-            self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
-            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR))
-            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR))
-            self.agent.getOSPlugin().createDir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
+            self.agent.get_os_plugin().create_dir(str("%s") % self.BASE_DIR)
+            self.agent.get_os_plugin().create_dir(str("%s/%s") % (self.BASE_DIR, self.DISK_DIR))
+            self.agent.get_os_plugin().create_dir(str("%s/%s") % (self.BASE_DIR, self.IMAGE_DIR))
+            self.agent.get_os_plugin().create_dir(str("%s/%s") % (self.BASE_DIR, self.LOG_DIR))
 
 
         return self.uuid
@@ -106,13 +106,13 @@ class LXD(RuntimePlugin):
 
 
         image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image_url.split('/')[-1])
-        self.agent.getOSPlugin().downloadFile(entity.image_url, image_name)
+        self.agent.get_os_plugin().download_file(entity.image_url, image_name)
         entity.image = image_name
         entity.set_state(State.DEFINED)
 
         # TODO check what can go here and what should be in instance configuration
         # i think image should be here and profile generation in instance configuration
-        image_data = self.agent.getOSPlugin().readBinaryFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
+        image_data = self.agent.get_os_plugin().read_binary_file(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
         try:
             img = self.conn.images.create(image_data, public=True, wait=True)
             img.add_alias(entity_uuid, description=entity.name)
@@ -170,7 +170,7 @@ class LXD(RuntimePlugin):
                 pass
 
             self.current_entities.pop(entity_uuid, None)
-            self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
+            self.agent.get_os_plugin().remove_file(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
             self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefineEntity()', '[ DONE ] LXD Plugin - Undefine a Container uuid %s ' %
                                    entity_uuid)
@@ -217,7 +217,7 @@ class LXD(RuntimePlugin):
 
                 #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
 
-                image_data = self.agent.getOSPlugin().readBinaryFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
+                image_data = self.agent.get_os_plugin().read_binary_file(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
                 try:
                     #img = self.conn.images.create(image_data, public=True, wait=True)
                     #img.add_alias(entity_uuid, description=entity.name)
@@ -687,7 +687,7 @@ class LXD(RuntimePlugin):
         template_key2 = "eth%d"
         for i, n in enumerate(instance.networks):
             if n.get('network_uuid') is not None:
-                nws = self.agent.getNetworkPlugin(None).get(list(self.agent.getNetworkPlugin(None).keys())[0])
+                nws = self.agent.get_network_plugin(None).get(list(self.agent.get_network_plugin(None).keys())[0])
                 # print(nws.getNetworkInfo(n.get('network_uuid')))
                 br_name = nws.get_network_info(n.get('network_uuid')).get('virtual_device')
                 # print(br_name)
@@ -698,7 +698,7 @@ class LXD(RuntimePlugin):
                 nw_k = str(template_key2 % i)
                 nw_v = json.loads(str(template_value_bridge % (n.get('intf_name'), n.get('br_name'))))
 
-            elif self.agent.getOSPlugin().get_intf_type(n.get('br_name')) in ['ethernet']:
+            elif self.agent.get_os_plugin().get_intf_type(n.get('br_name')) in ['ethernet']:
                 #if n.get('')
                 #cmd = "sudo ip link add name %s link %s type macvlan"
                 #veth_name = str('veth-%s' % entity.uuid[:5])
@@ -709,11 +709,11 @@ class LXD(RuntimePlugin):
                 #nw_k = str(template_key % n.get('intf_name'))
                 nw_k = str(template_key2 % i)
                 #self.agent.getOSPlugin().set_interface_unaviable(n.get('br_name'))
-            elif self.agent.getOSPlugin().get_intf_type(n.get('br_name')) in ['wireless']:
+            elif self.agent.get_os_plugin().get_intf_type(n.get('br_name')) in ['wireless']:
                 nw_v = json.loads(str(template_value_phy % (n.get('intf_name'), n.get('br_name'))))
                 #nw_k = str(template_key % n.get('intf_name'))
                 nw_k = str(template_key2 % i)
-                self.agent.getOSPlugin().set_interface_unaviable(n.get('br_name'))
+                self.agent.get_os_plugin().set_interface_unaviable(n.get('br_name'))
             else:
                 if n.get('intf_name') is None:
                     n.update({'intf_name': "eth" + str(i)})

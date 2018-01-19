@@ -13,7 +13,7 @@ class OSPlugin(Plugin):
 
     def get_base_path(self):
         raise NotImplemented
-    def executeCommand(self, command, blocking):
+    def execute_command(self, command, blocking):
 
         '''
         Execute a command to cli of underlying os, IDK should return bool or the command output?
@@ -24,7 +24,7 @@ class OSPlugin(Plugin):
         
         raise NotImplementedError('This is and interface!')
 
-    def installPackage(self, packages):
+    def install_package(self, packages):
         '''
         Install all packages passed within the parameter, return a bool
         to know the retult of operation
@@ -36,7 +36,7 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError('This is and interface!')
     
-    def storeFile(self, content, file_path, filename):
+    def store_file(self, content, file_path, filename):
 
         '''
         Store a file in local disk, maybe can convert from windows dir separator to unix dir separator
@@ -50,25 +50,25 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError('This is and interface!')
 
-    def fileExists(self, file_path):
+    def file_exists(self, file_path):
         raise NotImplementedError
 
-    def dirExists(self, path):
+    def dir_exists(self, path):
         raise NotImplemented
 
-    def createDir(self, path):
+    def create_dir(self, path):
         raise NotImplemented
 
-    def createFile(self, path):
+    def create_file(self, path):
         raise NotImplemented
 
-    def removeDir(self, path):
+    def remove_dir(self, path):
         raise NotImplemented
 
-    def removeFile(self, path):
+    def remove_file(self, path):
         raise NotImplemented
 
-    def readFile(self, file_path,root = False):
+    def read_file(self, file_path, root = False):
 
         '''
         Read the content from a file in the local disk, maybe can convert from windows dir separator to unix dir separator
@@ -82,13 +82,13 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError('This is and interface!')
 
-    def readBinaryFile(self, file_path):
+    def read_binary_file(self, file_path):
         raise NotImplemented
 
-    def downloadFile(self, url, file_path):
+    def download_file(self, url, file_path):
         raise NotImplemented
 
-    def getCPUID(self):
+    def get_CPUID(self):
         '''
         Return the underlying hw cpuid
         :return: String
@@ -96,7 +96,7 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError('This is and interface!')
 
-    def getCPULevel(self):
+    def get_CPU_level(self):
         '''
         Return the current cpu usage level
         :return: float
@@ -104,21 +104,21 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError('This is and interface!')
 
-    def getMemoryLevel(self):
+    def get_memory_level(self):
         '''
         Return the current memory usage level
         :return: float
         '''
         raise NotImplementedError('This is and interface!')
 
-    def getStorageLevel(self):
+    def get_storage_level(self):
         '''
         Return the current local storage usage level
         :return: float
         '''
         raise NotImplementedError('This is and interface!')
 
-    def getNetworkLevel(self):
+    def get_network_level(self):
 
         '''
         Return the current network usage level
@@ -126,7 +126,7 @@ class OSPlugin(Plugin):
         '''
         raise NotImplementedError('This is and interface!')
 
-    def removePackage(self, packages):
+    def remove_package(self, packages):
 
         '''
         Remove all packages passed within the parameter, return a bool
@@ -139,7 +139,7 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError('This is and interface!')
 
-    def sendSignal(self, signal, pid):
+    def send_signal(self, signal, pid):
 
         '''
         Send a signal to the process identified by pid
@@ -153,7 +153,7 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError('This is and interface!')
 
-    def getPid(self,process):
+    def get_pid(self, process):
         '''
         Try to get the the pid from the process name
         :process: string
@@ -161,7 +161,7 @@ class OSPlugin(Plugin):
         '''
         raise NotImplementedError('This is and interface!')
 
-    def sendSigInt(self, pid):
+    def send_sig_int(self, pid):
 
         '''
         Send a SigKill (Ctrl+C) to the process identified by pid
@@ -172,7 +172,7 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError('This is and interface!')
 
-    def sendSigKill(self, pid):
+    def send_sig_kill(self, pid):
 
         '''
         Send a SigKill (kill the process) to the process identified by pid
@@ -183,34 +183,34 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError('This is and interface!')
 
-    def getUUID(self):
+    def get_uuid(self):
         return uuid.uuid4()
 
-    def getProcessorInformation(self):
+    def get_processor_information(self):
         raise NotImplemented
 
-    def getMemoryInformation(self):
+    def get_memory_information(self):
         raise NotImplemented
 
-    def getDisksInformation(self):
+    def get_disks_information(self):
         raise NotImplemented
 
-    def getIOInformations(self):
+    def get_io_informations(self):
         raise NotImplemented
 
-    def getAcceleratorsInformations(self):
+    def get_accelerators_informations(self):
         raise NotImplemented
 
-    def getNetworkInformations(self):
+    def get_network_informations(self):
         raise NotImplemented
 
-    def getPositionInformation(self):
+    def get_position_information(self):
         raise NotImplemented
 
-    def addKnowHost(self, hostname, ip):
+    def add_know_host(self, hostname, ip):
         raise NotImplemented
 
-    def removeKnowHost(self, hostname):
+    def remove_know_host(self, hostname):
         raise NotImplemented
 
     def get_intf_type(self, name):

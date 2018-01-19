@@ -47,15 +47,15 @@ class ROS2(RuntimePlugin):
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
         '''check if dirs exists if not exists create'''
-        if self.agent.getOSPlugin().dirExists(self.BASE_DIR):
-            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.NODLETS_DIR)):
-                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.NODLETS_DIR))
-            if not self.agent.getOSPlugin().dirExists(os.path.join(self.BASE_DIR, self.LOG_DIR)):
-                self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
+        if self.agent.get_os_plugin().dir_exists(self.BASE_DIR):
+            if not self.agent.get_os_plugin().dir_exists(os.path.join(self.BASE_DIR, self.NODLETS_DIR)):
+                self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.NODLETS_DIR))
+            if not self.agent.get_os_plugin().dir_exists(os.path.join(self.BASE_DIR, self.LOG_DIR)):
+                self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.LOG_DIR))
         else:
-            self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
-            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.NODLETS_DIR))
-            self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.LOG_DIR))
+            self.agent.get_os_plugin().create_dir(str("%s") % self.BASE_DIR)
+            self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.NODLETS_DIR))
+            self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.LOG_DIR))
 
     def stop_runtime(self):
         self.agent.logger.info('stopRuntime()', ' ROS2 Plugin - Destroy running entities')
@@ -92,14 +92,14 @@ class ROS2(RuntimePlugin):
             return None
 
         nodelet_dir = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid)
-        self.agent.getOSPlugin().createDir(nodelet_dir)
+        self.agent.get_os_plugin().create_dir(nodelet_dir)
         # wget_cmd = str('wget %s -O %s/%s' % (entity.url, nodelet_dir, entity.url.split('/')[-1]))
         # self.agent.getOSPlugin().executeCommand(wget_cmd, True)
-        self.agent.getOSPlugin().downloadFile(
+        self.agent.get_os_plugin().download_file(
             entity.image, os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity.url.split('/')[-1]))
 
         unzip_cmd = str("unzip %s/%s -d %s" % (nodelet_dir, entity.url.split('/')[-1], nodelet_dir))
-        self.agent.getOSPlugin().executeCommand(unzip_cmd, True)
+        self.agent.get_os_plugin().execute_command(unzip_cmd, True)
         '''
         ament_cmd = str("ament build_pkg %s/%s" % (nodelet_dir, entity_uuid))
         self.agent.getOSPlugin().executeCommand(ament_cmd, True)
@@ -108,11 +108,11 @@ class ROS2(RuntimePlugin):
         '''
         path = os.path.join(nodelet_dir, entity.url.split('/')[-1].split('.')[0])
         build_script = self.__generate_build_script(path, nodelet_dir)
-        self.agent.getOSPlugin().storeFile(build_script, nodelet_dir, str("%s_build.sh" % entity_uuid))
+        self.agent.get_os_plugin().store_file(build_script, nodelet_dir, str("%s_build.sh" % entity_uuid))
         chmod_cmd = str("chmod +x %s" % os.path.join(nodelet_dir, str("%s_build.sh" % entity_uuid)))
-        self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
+        self.agent.get_os_plugin().execute_command(chmod_cmd, True)
         build_cmd = os.path.join(nodelet_dir, str("%s_build.sh" % entity_uuid))
-        self.agent.getOSPlugin().executeCommand(build_cmd, True)
+        self.agent.get_os_plugin().execute_command(build_cmd, True)
 
         entity.set_state(State.DEFINED)
         self.current_entities.update({entity_uuid: entity})
@@ -140,7 +140,7 @@ class ROS2(RuntimePlugin):
             for i in list(entity.instances.keys()):
                 self.__force_entity_instance_termination(entity_uuid, i)
             nodelet_dir = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid)
-            self.agent.getOSPlugin().removeDir(nodelet_dir)
+            self.agent.get_os_plugin().remove_dir(nodelet_dir)
             self.current_entities.pop(entity_uuid, None)
             self.__pop_actual_store(entity_uuid)
             self.agent.logger.info('undefineEntity()', 'ROS2 Plugin - Undefine ROS2 Nodelets uuid %s' % entity_uuid)
@@ -178,7 +178,7 @@ class ROS2(RuntimePlugin):
                 instance = ROS2EntityInstance(instance_uuid, name, entity.command, entity.args,
                                               entity.url, out_file, entity_uuid)
 
-                self.agent.getOSPlugin().createFile(instance.outfile)
+                self.agent.get_os_plugin().create_file(instance.outfile)
                 ## download the nodelet file
                 # nodelet_dir = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid)
                 # self.agent.getOSPlugin().createDir(nodelet_dir)
@@ -253,7 +253,7 @@ class ROS2(RuntimePlugin):
                     raise StateTransitionNotAllowedException("Instance is not in CONFIGURED state",
                                                          str("Instance %s is not in CONFIGURED state" % instance_uuid))
                 else:
-                    self.agent.getOSPlugin().removeFile(instance.outfile)
+                    self.agent.get_os_plugin().remove_file(instance.outfile)
                     #nodelet_dir = str("%s/%s/%s" % (self.BASE_DIR, self.NODLETS_DIR, entity_uuid))
                     #self.agent.getOSPlugin().removeDir(nodelet_dir)
                     instance.on_clean()
@@ -299,9 +299,9 @@ class ROS2(RuntimePlugin):
                     path = os.path.join(self.BASE_DIR, self.NODLETS_DIR, entity_uuid, instance_uuid)
                     # ###################### WORKAROUND ##############################
                     run_script = self.__generate_run_script(cmd, path)
-                    self.agent.getOSPlugin().storeFile(run_script, nodelet_dir, str("%s_run.sh" % instance_uuid))
+                    self.agent.get_os_plugin().store_file(run_script, nodelet_dir, str("%s_run.sh" % instance_uuid))
                     chmod_cmd = str("chmod +x %s" % os.path.join(nodelet_dir, str("%s_run.sh" % instance_uuid)))
-                    self.agent.getOSPlugin().executeCommand(chmod_cmd, True)
+                    self.agent.get_os_plugin().execute_command(chmod_cmd, True)
                     run_cmd = os.path.join(nodelet_dir, str("%s_run.sh" % instance_uuid))
                     # ################################################################
 
@@ -344,8 +344,8 @@ class ROS2(RuntimePlugin):
                 else:
                     path = str('%s.pid' % instance_uuid)
                     path = os.path.join(self.BASE_DIR, self.NODLETS_DIR, instance_uuid, path)
-                    pid = int(self.agent.getOSPlugin().readFile(path))
-                    self.agent.getOSPlugin().sendSigKill(pid)
+                    pid = int(self.agent.get_os_plugin().read_file(path))
+                    self.agent.get_os_plugin().send_sig_kill(pid)
                     '''
                     p = entity.process
         
@@ -444,13 +444,13 @@ class ROS2(RuntimePlugin):
                     entity_data.update({'entity_uuid': entity_uuid})
 
     def __generate_build_script(self, path, space):
-        template_sh = self.agent.getOSPlugin().readFile(os.path.join(self.DIR, 'templates', 'build_ros.sh'))
+        template_sh = self.agent.get_os_plugin().read_file(os.path.join(self.DIR, 'templates', 'build_ros.sh'))
         ros2_build = Environment().from_string(template_sh)
         ros2_build = ros2_build.render(node_path=path, space=space)
         return ros2_build
 
     def __generate_run_script(self, cmd, dir):
-        template_sh = self.agent.getOSPlugin().readFile(os.path.join(self.DIR,'templates', 'run_ros.sh'))
+        template_sh = self.agent.get_os_plugin().read_file(os.path.join(self.DIR, 'templates', 'run_ros.sh'))
         ros2_run = Environment().from_string(template_sh)
         ros2_run = ros2_run.render(command=cmd, path=dir)
         return ros2_run
