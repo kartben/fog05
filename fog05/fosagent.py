@@ -18,18 +18,7 @@ class FosAgent(Agent):
               "|_|  \___/ \__, |\____/ |____/ \n"
               "           |___/ \n")
 
-        #if not debug:
-            #self.LOGFILE = str('fosagent_log_{}.log' % int(time.time()))
-            #logging.basicConfig(filename=self.LOGFILE,
-            #                    format='[%(asctime)s] - %(name)s - [%(levelname)s] > %(message)s',
-            #                    level=logging.INFO)
-        #else:
-        #    self.LOGFILE = "stdout"
-        #    logging.basicConfig(format='[%(asctime)s] - %(name)s - [%(levelname)s] > %(message)s',
-        #                        level=logging.INFO)
-        # Enable logging
-
-        self.logger = DLogger(debug_flag=debug) #logging.getLogger(__name__)
+        self.logger = DLogger(debug_flag=debug)
         print("\n\n##### OUTPUT TO LOGFILE #####\n\n")
         self.logger.info('__init__()', 'FosAgent Starting...')
 
@@ -55,13 +44,13 @@ class FosAgent(Agent):
 
             self.base_path = self.__osPlugin.get_base_path()
 
-            # Desidered Store. containing the desidered state
+            # Desired Store. containing the desired state
             self.droot = "dfos://<sys-id>"
             self.dhome = str("{}/{}".format(self.droot, sid))
-            self.logger.info('__init__()', '[ INIT ] Creating Desidered State Store ROOT: {} HOME: {}'.format(self.droot,
+            self.logger.info('__init__()', '[ INIT ] Creating Desired State Store ROOT: {} HOME: {}'.format(self.droot,
                                                                                                           self.dhome))
             self.dstore = DStore(sid, self.droot, self.dhome, 1024)
-            self.logger.info('__init__()', '[ DONE ] Creating Desidered State Store')
+            self.logger.info('__init__()', '[ DONE ] Creating Desired State Store')
 
             # Actual Store, containing the Actual State
             self.aroot = "afos://<sys-id>"
@@ -230,7 +219,7 @@ class FosAgent(Agent):
         print("###########################")
 
     def __react_to_plugins(self, uri, value, v):
-        self.logger.info('__react_to_plugins()', ' Received a plugin action on Desidered Store URI: {} Value: {} Version: {}'.format(uri, value, v))
+        self.logger.info('__react_to_plugins()', ' Received a plugin action on Desired Store URI: {} Value: {} Version: {}'.format(uri, value, v))
         value = json.loads(value)
         value = value.get('plugins')
         for v in value:
@@ -258,7 +247,7 @@ class FosAgent(Agent):
         return r.get(type, None)
 
     def __react_to_onboarding(self, uri, value, v):
-        self.logger.info('__react_to_onboarding()', 'Received a onboard action on Desidered Store with URI:{} Value:{} Version:{}'.format(uri, value, v))
+        self.logger.info('__react_to_onboarding()', 'Received a onboard action on Desired Store with URI:{} Value:{} Version:{}'.format(uri, value, v))
         value = json.loads(value)
         application_uuid = uri.split('/')[-1]
         self.__application_onboarding(application_uuid, value)

@@ -24,10 +24,10 @@ class DStore(Store):
 
         '''
         @GB: As discussed with Erik and Angelo, maybe can be better to have 2 `store` for local information
-        one with desidered state (that can be written by all nodes and readed only by the owner node)
+        one with Desired state (that can be written by all nodes and readed only by the owner node)
         and one with actual state (that can be written only by the owner node and readed by all nodes)
         
-        This means that plugins and agent works to make the actual state match the desidered state,
+        This means that plugins and agent works to make the actual state match the Desired state,
         this is also very useful in the case we want to know if some entity/plugin/whatever state changed.
         
         So this means we should have two or more different put,get, dput, and observer
@@ -36,7 +36,7 @@ class DStore(Store):
         +-------------------------------------------------------------------+
         |                                                  Agent1           |
         |                                                                   |
-        |    Desidered Store                        Actual Store            |
+        |    Desired Store                          Actual Store            |
         |    +-------+                               +-------+              |
         |    |       |                               |       |              |
         |    |       |        +---------------+      |       |              |
@@ -63,7 +63,7 @@ class DStore(Store):
          |    |       |                               |       |              |
          |    |       |                               |       |              |
          |    +-------+                               +-------+              |
-         |    Desidered Store                        Actual Store            |
+         |    Desired Store                          Actual Store            |
          |                                                                   |
          +-------------------------------------------------------------------+
 
@@ -340,27 +340,6 @@ class DStore(Store):
                 if ve > xs_dict.get(k)[2]:
                     xs_dict.update({k: (k, va, ve)})
 
-
-        # self.logger.debug('DStore','resolved getAll = {0}'.format(ys))
-        # xs_keys = [v[0] for v in xs]
-        # i = 0
-        # while i < len(ys):
-        #     y = ys[i]
-        #     self.logger.debug('DStore','merging key: {0}'.format(y))
-        #     if y[0] not in xs_keys:
-        #         xs.append(y)
-        #         self.logger.debug('DStore', 'Key is not present... Appending')
-        #     else:
-        #         self.logger.debug('DStore', 'Key is present look if need update')
-        #
-        #         x = [v for v in xs if xs[0] == y[0]][0]
-        #         x = x[0]
-        #         self.logger.debug('DStore', 'X is {0}'.format(x))
-        #         index = xs.index(x)
-        #         self.logger.debug('DStore', 'X index is'.format(index))
-        #         if y[2] > x[2]:
-        #         self.logger.debug('DStore', 'Key need update')
-        #         xs[index] = y
 
         return list(xs_dict.values())
 
