@@ -32,7 +32,6 @@ class brctl(NetworkPlugin):
             self.agent.getOSPlugin().createDir(str("%s") % self.BASE_DIR)
             self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.DHCP_DIR))
 
-
         '''
         should listen on:
         
@@ -48,7 +47,7 @@ class brctl(NetworkPlugin):
 
 
 
-    def createVirtualInterface(self, name, uuid):
+    def create_virtual_interface(self, name, uuid):
         #sudo ip link add type veth
         #sudo ip link set dev veth1 addr 00:01:02:aa:bb:cc name vnic0
         #sudo ip link add name vnic0 type veth peer name vnic0-vm
@@ -60,14 +59,14 @@ class brctl(NetworkPlugin):
 
         return name, intf_uuid
 
-    def creareVirtualBridge(self, name, uuid):
+    def create_virtual_bridge(self, name, uuid):
         cmd = str('sudo brctl addbr %s' % name)
         self.agent.getOSPlugin().executeCommand(cmd)
         br_uuid = uuid
         self.brmap.update({br_uuid, name})
         return br_uuid, name
 
-    def createVirtualNetwork(self, network_name, net_uuid, ip_range=None, has_dhcp=False, gateway=None, manifest=None):
+    def create_virtual_network(self, network_name, net_uuid, ip_range=None, has_dhcp=False, gateway=None, manifest=None):
 
         net = self.netmap.get(net_uuid, None)
         if net is not None:
@@ -126,10 +125,10 @@ class brctl(NetworkPlugin):
 
         return network_name, net_uuid
 
-    def allocateBandwidth(self, intf_uuid, bandwidth):
+    def allocate_bandwidth(self, intf_uuid, bandwidth):
         raise NotImplemented
 
-    def assignInterfaceToNetwork(self, network_uuid, intf_uuid):
+    def assign_interface_to_network(self, network_uuid, intf_uuid):
         #brctl addif virbr0 vnet0
         intf = self.interfaces_map.get(intf_uuid, None)
         if intf is None:
@@ -143,7 +142,7 @@ class brctl(NetworkPlugin):
 
         return True
 
-    def deleteVirtualInterface(self, intf_uuid):
+    def delete_virtual_interface(self, intf_uuid):
         #ip link delete dev ${interface name}
         intf = self.interfaces_map.get(intf_uuid, None)
         if intf is None:
@@ -153,7 +152,7 @@ class brctl(NetworkPlugin):
         self.interfaces_map.pop(intf_uuid)
         return True
 
-    def deleteVirtualBridge(self, br_uuid):
+    def delete_virtual_bridge(self, br_uuid):
 
         net = self.netmap.get(br_uuid, None)
         if net is not None:
@@ -169,7 +168,7 @@ class brctl(NetworkPlugin):
 
 
 
-    def removeInterfaceFromNetwork(self, network_uuid, intf_uuid):
+    def remove_interface_from_network(self, network_uuid, intf_uuid):
         net = self.netmap.get(network_uuid, None)
         if net is None:
             raise BridgeAssociatedToNetworkException("%s network not exists" % network_uuid)
@@ -182,7 +181,7 @@ class brctl(NetworkPlugin):
         net.get('intf').remove(intf)
         return True
 
-    def deleteVirtualNetwork(self, network_uuid):
+    def delete_virtual_network(self, network_uuid):
         net = self.netmap.get(network_uuid, None)
         if net is None:
             raise BridgeAssociatedToNetworkException("%s network not exists" % network_uuid)
@@ -206,13 +205,13 @@ class brctl(NetworkPlugin):
 
         return True
 
-    def stopNetwork(self):
+    def stop_network(self):
         keys = list(self.netmap.keys())
         for k in keys:
-            self.deleteVirtualNetwork(k)
+            self.delete_virtual_network(k)
         return True
 
-    def getNetworkInfo(self, network_uuid):
+    def get_network_info(self, network_uuid):
         if network_uuid is None:
             return self.netmap
         return self.netmap.get(network_uuid)
@@ -253,7 +252,7 @@ class brctl(NetworkPlugin):
         if value is None and v is None:
             self.agent.logger.info('__react_to_cache()', ' BRCTL Plugin - This is a remove for URI: %s' % key)
             net_uuid = key.split('/')[-1]
-            self.deleteVirtualNetwork(net_uuid)
+            self.delete_virtual_network(net_uuid)
         else:
             uuid = key.split('/')[-1]
             value = json.loads(value)
@@ -275,11 +274,11 @@ class brctl(NetworkPlugin):
         has_dhcp = kwargs.get('has_dhcp')
         gw = kwargs.get('gateway')
         manifest = kwargs
-        self.createVirtualNetwork(name, net_uuid, ip_range, has_dhcp, gw, manifest)
+        self.create_virtual_network(name, net_uuid, ip_range, has_dhcp, gw, manifest)
 
     def __parse_manifest_for_remove(self, **kwargs):
         net_uuid = kwargs.get('uuid')
-        self.deleteVirtualNetwork(net_uuid)
+        self.delete_virtual_network(net_uuid)
 
     def __react(self, action):
         r = {

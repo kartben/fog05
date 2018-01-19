@@ -521,7 +521,7 @@ class FosAgent(Agent):
             return search[0]
 
     def __exit_gracefully(self, signal, frame):
-        self.logger.info('__exit_gracefully()', 'Received signal: {}' % signal)
+        self.logger.info('__exit_gracefully()', 'Received signal: {}'.format(signal))
         self.logger.info('__exit_gracefully()', 'fosAgent exiting...')
         keys = list(self.__rtPlugins.keys())
         # TODO fix try catch

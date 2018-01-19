@@ -689,7 +689,7 @@ class LXD(RuntimePlugin):
             if n.get('network_uuid') is not None:
                 nws = self.agent.getNetworkPlugin(None).get(list(self.agent.getNetworkPlugin(None).keys())[0])
                 # print(nws.getNetworkInfo(n.get('network_uuid')))
-                br_name = nws.getNetworkInfo(n.get('network_uuid')).get('virtual_device')
+                br_name = nws.get_network_info(n.get('network_uuid')).get('virtual_device')
                 # print(br_name)
                 n.update({'br_name': br_name})
                 if n.get('intf_name') is None:
