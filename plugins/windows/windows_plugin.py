@@ -249,7 +249,7 @@ class Windows(OSPlugin):
 
 
 
-    def getHostname(self):
+    def get_hostname(self):
         res = ''
         p = psutil.Popen('hostname', stdout=PIPE)
         for line in p.stdout:
