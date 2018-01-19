@@ -50,7 +50,7 @@ class FosAgent(Agent):
             self.logger.info('__init__()', '[ INIT ] Loading OS Plugin...')
             self.__load_os_plugin()
             self.logger.info('__init__()', '[ DONE ] Loading OS Plugin...')
-            super(FosAgent, self).__init__(self.__osPlugin.getUUID())
+            super(FosAgent, self).__init__(self.__osPlugin.get_uuid())
             sid = str(self.uuid)
 
             self.base_path = self.__osPlugin.get_base_path()
@@ -208,7 +208,7 @@ class FosAgent(Agent):
 
         node_info = {}
         node_info.update({'uuid': str(self.uuid)})
-        node_info.update({'name': self.__osPlugin.getHostname()})
+        node_info.update({'name': self.__osPlugin.get_hostname()})
         node_info.update({'os': self.__osPlugin.name})
         node_info.update({'cpu': self.__osPlugin.get_processor_information()})
         node_info.update({'ram': self.__osPlugin.get_memory_information()})

@@ -237,6 +237,9 @@ class OSPlugin(Plugin):
     def get_intf_type(self, name):
         raise NotImplemented
 
+    def get_hostname(self):
+        raise NotImplemented
+
 class ProcessNotExistingException(Exception):
     def __init__(self, message, errors):
 
