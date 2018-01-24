@@ -81,13 +81,13 @@ class semaeapi(MonitoringPlugin):
 
     def __pop_actual_store(self, uri):
         #e = uri
-        uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, uri))
+        uri = str("{}/{}/{}".format(self.agent.ahome, self.HOME, uri))
         self.agent.astore.remove(uri)
         #uri = str("%s/%s/%s" % (self.agent.dhome, self.HOME, e))
         #self.agent.dstore.remove(uri)
 
     def __update_actual_store(self, uri, value):
-        uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, uri))
+        uri = '{}/{}/{}'.format(self.agent.ahome, self.HOME, uri)
         value = json.dumps(value)
         self.agent.astore.put(uri, value)
 
@@ -138,18 +138,21 @@ class semaeapi(MonitoringPlugin):
                     self.stop_monitoring()
                 else:
                     self.start_monitoring()
+            api = key.split(self.uuid)[1]
+            if api.split('/')[1] in self.available_api.keys():
+                cmd = api[1:].split('/')
+                cmd = ' '.join(cmd)
+                ret = self.__execute_sema_cli(cmd)
+                if 'get eapi information failed' in ret:
+                    status = 'error'
+                else:
+                    status = 'ok'
+                val = {'status': status, 'value': ret}
+                uri = api[1:]
+                self.__update_actual_store(uri, ret)
 
             # TODO set actions...
 
-            #react_func = self.__react(action)
-            #if react_func is not None: # and value is None:
-            #    react_func(**value)
-            #elif react_func is not None:
-            #    value.update({'uuid': uuid})
-            #    if action == 'define':
-            #        react_func(**value)
-            #    else:
-            #        react_func(value)
 
     def __execute_sema_cli(self, cmd):
         cmd_splitted = cmd.split()
