@@ -15,7 +15,7 @@ import ipaddress
 
 class XENLibvirt(RuntimePlugin):
 
-    def __init__(self, name, version, agent, plugin_uuid, hypervisor):
+    def __init__(self, name, version, agent, plugin_uuid, hypervisor, user=None):
         super(XENLibvirt, self).__init__(version, plugin_uuid)
         self.name = name
         self.agent = agent
@@ -30,6 +30,10 @@ class XENLibvirt(RuntimePlugin):
         file_dir = os.path.dirname(__file__)
         self.DIR = os.path.abspath(file_dir)
         self.conn = None
+        self.user = 'fog05'
+        if user != None:
+            self.user = user
+
         self.start_runtime()
 
 
@@ -886,11 +890,11 @@ class XENLibvirt(RuntimePlugin):
 
 
     def __connect_to_hypervisor(self, address):
-        self.conn = libvirt.open('xen+ssh://fog05+{}'.format(address))
+        self.conn = libvirt.open('xen+ssh://{}@{}'.format(self.user, address))
 
 
     def __execture_on_dom0(self, address, cmd):
-        base_cmd = 'ssh fog05@{} {}'.format(address, cmd)
+        base_cmd = 'ssh {}@{} {}'.format(self.user, address, cmd)
         self.agent.get_os_plugin().execute_command(base_cmd, True)
 
 
