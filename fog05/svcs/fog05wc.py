@@ -1,8 +1,10 @@
 import asyncio
 import websockets
+import sys
 
-async def hello():
-    async with websockets.connect('ws://localhost:9669') as websocket:
+
+async def hello(ws):
+    async with websockets.connect('ws://{}:9669'.format(ws)) as websocket:
         while True:
             cmd = input(">>>  ")
             if cmd is '0':
@@ -19,4 +21,5 @@ async def hello():
                     print("{}".format(response))
 
 if __name__ == '__main__':
-    asyncio.get_event_loop().run_until_complete(hello())
+
+    asyncio.get_event_loop().run_until_complete(hello(sys.argv[1]))

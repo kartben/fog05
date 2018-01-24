@@ -232,10 +232,13 @@ class Server (object):
         while True:
             raddr = websocket.remote_address
             print("Connection from: {}".format(raddr))
-            async for message in websocket:
-                # self.logger.error("fog05ws", ">> Processing message {}".format(message))
+            while True:
+                message = await websocket.recv()
                 print(">> Processing message {}".format(message))
                 await self.process(websocket, message)
+            #async for message in websocket:
+                # self.logger.error("fog05ws", ">> Processing message {}".format(message))
+
 
             print(">> Peer closed the connection.")
             websocket.close()

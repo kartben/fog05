@@ -27,15 +27,16 @@ package dependencies:
 - seabios
 - python3-libvirt
 - xen-hypervisor
+- wget
+- qemu-img
+- mkisofs
 ---
 
 python dependencies:
 
 - libvirt-python
 - jinja2 
-- wget
-- qemu-img
-- mkisofs
+
 
 
 ---
