@@ -120,13 +120,13 @@ class FosAgent(Agent):
         else:
             return self.__nwPlugins.get(cnetwork_uuid)
 
-    def __load_runtime_plugin(self, plugin_name, plugin_uuid):
+    def __load_runtime_plugin(self, plugin_name, plugin_uuid, configuration = None):
         self.logger.info('__load_runtime_plugin()', 'Loading a Runtime plugin: {}'.format(plugin_name))
         rt = self.pl.locatePlugin(plugin_name)
         if rt is not None:
             self.logger.info('__load_runtime_plugin()', '[ INIT ] Loading a Runtime plugin: {}'.format(plugin_name))
             rt = self.pl.loadPlugin(rt)
-            rt = rt.run(agent=self, uuid=plugin_uuid)
+            rt = rt.run(agent=self, uuid=plugin_uuid, configuration=configuration)
             self.__rtPlugins.update({rt.uuid: rt})
             val = {'version': rt.version, 'description': str('runtime {}'.format(rt.name)), 'plugin': ''}
             uri = str('{}/plugins/{}/{}'.format(self.ahome, rt.name, rt.uuid))
@@ -143,7 +143,7 @@ class FosAgent(Agent):
             self.logger.warning('__load_runtime_plugin()', '[ WARN ] Runtime: {} plugin not found!'.format(plugin_name))
             return None
 
-    def __load_network_plugin(self, plugin_name, plugin_uuid):
+    def __load_network_plugin(self, plugin_name, plugin_uuid, configuration = None):
         self.logger.info('__load_network_plugin()', 'Loading a Network plugin: {}'.format(plugin_name))
         net = self.pl.locatePlugin(plugin_name)
         if net is not None:
@@ -168,7 +168,7 @@ class FosAgent(Agent):
             self.logger.warning('__load_network_plugin()', '[ WARN ] Network: {} plugin not found!'.format(plugin_name))
             return None
 
-    def __load_monitoring_plugin(self, plugin_name, plugin_uuid):
+    def __load_monitoring_plugin(self, plugin_name, plugin_uuid, configuration = None):
         self.logger.info('__load_monitoring_plugin()', 'Loading a Monitoring plugin: {}'.format(plugin_name))
         mon = self.pl.locatePlugin(plugin_name)
         if mon is not None:
@@ -209,19 +209,11 @@ class FosAgent(Agent):
         uri = str('{}/'.format(self.ahome))
         self.astore.put(uri, json.dumps(node_info))
 
-    def __react_to_cache(self, uri, value, v):
-        print("###########################")
-        print("##### I'M an Observer #####")
-        print("## Key: {}".format(uri))
-        print("## Value: {}".format(value))
-        print("## V: {}".format(v))
-        print("###########################")
-        print("###########################")
-
     def __react_to_plugins(self, uri, value, v):
         self.logger.info('__react_to_plugins()', ' Received a plugin action on Desired Store URI: {} Value: {} Version: {}'.format(uri, value, v))
         value = json.loads(value)
         value = value.get('plugins')
+        conf = value.get('configuration',None)
         for v in value:
             uri = str('{}/plugins'.format(self.ahome))
             all_plugins = json.loads(self.astore.get(uri))
@@ -231,7 +223,10 @@ class FosAgent(Agent):
                 plugin_uuid = v.get('uuid')
                 load_method = self.__load_plugin_method_selection(v.get('type'))
                 if load_method is not None:
-                    load_method(name, plugin_uuid)
+                    if conf is None:
+                        load_method(name, plugin_uuid)
+                    else:
+                        load_method(name, plugin_uuid, conf)
                 else:
                     if len(s) != 0:
                         self.logger.warning('__react_to_plugins()', '[ WARN ] Plugins of type {} are not yet supported...'.format(v.get('type')))
@@ -242,7 +237,7 @@ class FosAgent(Agent):
         r = {
             'runtime': self.__load_runtime_plugin,
             'network': self.__load_network_plugin,
-            'monitoring':self.__load_monitoring_plugin
+            'monitoring': self.__load_monitoring_plugin
         }
         return r.get(type, None)
 

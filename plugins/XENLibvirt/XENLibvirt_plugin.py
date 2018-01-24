@@ -15,11 +15,16 @@ import ipaddress
 
 class XENLibvirt(RuntimePlugin):
 
-    def __init__(self, name, version, agent, plugin_uuid, hypervisor, user=None):
+    def __init__(self, name, version, agent, plugin_uuid, configuration):
         super(XENLibvirt, self).__init__(version, plugin_uuid)
         self.name = name
         self.agent = agent
-        self.hypervisor = hypervisor
+
+        if configuration is None or configuration.get('hypervisor', None) is None:
+            self.agent.logger.error('__init__()', ' XEN Plugin - Need to specify configuration and hypervisor address!!!')
+            return
+
+        self.hypervisor = configuration.get('hypervisor')
         self.agent.logger.info('__init__()', ' Hello from XEN Plugin')
         self.BASE_DIR = os.path.join(self.agent.base_path, 'xen')
         self.DISK_DIR = 'disks'
@@ -31,8 +36,8 @@ class XENLibvirt(RuntimePlugin):
         self.DIR = os.path.abspath(file_dir)
         self.conn = None
         self.user = 'fog05'
-        if user != None:
-            self.user = user
+        if configuration.get('user', None) is not None:
+            self.user = configuration.get('user')
 
         self.start_runtime()
 

@@ -21,6 +21,10 @@
     },
     "url":{
       "type":"string"
+    },
+    "configuration":{
+      "type":"object",
+      "description":"addition configuration for the plugin"
     }
   }
 }
