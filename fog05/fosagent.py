@@ -213,7 +213,6 @@ class FosAgent(Agent):
         self.logger.info('__react_to_plugins()', ' Received a plugin action on Desired Store URI: {} Value: {} Version: {}'.format(uri, value, v))
         value = json.loads(value)
         value = value.get('plugins')
-        conf = value.get('configuration',None)
         for v in value:
             uri = str('{}/plugins'.format(self.ahome))
             all_plugins = json.loads(self.astore.get(uri))
@@ -221,6 +220,7 @@ class FosAgent(Agent):
             if v.get('status') == 'add' and len(s) == 0:
                 name = v.get('name')
                 plugin_uuid = v.get('uuid')
+                conf = v.get('configuration', None)
                 load_method = self.__load_plugin_method_selection(v.get('type'))
                 if load_method is not None:
                     if conf is None:
@@ -546,9 +546,9 @@ class FosAgent(Agent):
         self.dstore.observe(uri, self.__react_to_onboarding)
         self.logger.info('run()', 'fosAgent Observing for onboarding on: {}'.format(uri))
 
-        uri = str('{}/*/'.format(self.dhome))
-        self.dstore.observe(uri, self.__react_to_cache)
-        self.logger.info('run()','fosAgent Observing home on: {}'.format(uri))
+        #uri = str('{}/*/'.format(self.dhome))
+        #self.dstore.observe(uri, self.__react_to_cache)
+        #self.logger.info('run()','fosAgent Observing home on: {}'.format(uri))
 
         uri = str('{}/plugins'.format(self.dhome))
         self.dstore.observe(uri, self.__react_to_plugins)

@@ -354,7 +354,7 @@ class FOSCli(object):
             time.sleep(100)
 
     async def __search_plugin_by_name(self, name, node_uuid):
-        uri = str('afos://<sys-id>/{}/plugins' % node_uuid)
+        uri = 'afos://<sys-id>/{}/plugins'.format(node_uuid)
         all_plugins = await self.store.actual.get(uri)
         # cmd = 'get {0} {1}'.format(self.asid, uri)
         # with self.websocket as ws:
@@ -435,7 +435,7 @@ class FOSCli(object):
                 self.exit(-1)
         except ValidationError as ve:
             print('Manifest is not correct')
-            print('{}' % ve.message)
+            print('{}',format(ve.message))
             self.exit(-1)
 
         entity_uuid = manifest.get('uuid')
@@ -606,7 +606,7 @@ class FOSCli(object):
     async def __send_add_plugin(self, node_uuid, manifest):
         plugins = {"plugins": [manifest]}
         plugins = json.dumps(plugins).replace(' ','')
-        uri = str('dfos://<sys-id>/{}/plugins' % node_uuid)
+        uri = 'dfos://<sys-id>/{}/plugins'.format(node_uuid)
         res = await self.store.desired.dput(uri, plugins)
         if res:
             print("Plugin {} added to {}".format(manifest.get('uuid'),node_uuid))

@@ -8,7 +8,7 @@ VERSION = 1
 
 def run(*args, **kwargs):
     sys.path.append(os.path.join(sys.path[0], 'plugins', 'XENLibvirt'))
-    from XENLibvirt_plugin import XENibvirt
+    from XENLibvirt_plugin import XENLibvirt
     xen = XENLibvirt('XENLibvirt', VERSION, kwargs.get('agent'), kwargs.get('uuid'),kwargs.get('configuration'))
     return xen
 
