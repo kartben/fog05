@@ -1,0 +1,18 @@
+{
+  "name": "cirros_example_xen",
+  "version": 1,
+  "type":"xen",
+  "uuid": "35ba3fda-3f8e-4cf4-816a-88cacfbd7249",
+  "entity_data":{
+    "name": "cirros034-kvm",
+    "uuid": "35ba3fda-3f8e-4cf4-816a-88cacfbd7249",
+    "cpu": 1,
+    "memory": 512,
+    "disk_size": 1,
+    "base_image":"http://192.168.1.142/virt-cirros-0.3.4-x86_64-disk.img",
+    "networks": [{"mac": "d2:e3:ed:ee:be:ef", "br_name": "xenbr0"}],
+    "user-data": "",
+    "ssh-key": ""
+  }
+}
+

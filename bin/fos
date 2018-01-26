@@ -365,7 +365,7 @@ class FOSCli(object):
             print('Cannot get plugin')
             return None
         all_plugins = json.loads(all_plugins).get('plugins')
-        search = [x for x in all_plugins if name in x.get('name')]
+        search = [x for x in all_plugins if name.upper() in x.get('name').upper()]
         if len(search) == 0:
             return None
         else:
@@ -393,19 +393,27 @@ class FOSCli(object):
 
     async def __get_entity_handler_by_type(self,node_uuid, t):
         handler = None
-        if t == 'vm':
-            handler = await self.__search_plugin_by_name('KVM', node_uuid)
-        elif t == 'container':
-            handler = await self.__search_plugin_by_name('LXD', node_uuid)
-        elif t == 'native':
-            handler = await self.__search_plugin_by_name('native', node_uuid)
-        elif t == 'ros2':
-            handler = await self.__search_plugin_by_name('ros2', node_uuid)
-        elif t == 'usvc':
-            print('microservice not yet')
-        else:
-            print('type not recognized')
+
+        handler = await self.__search_plugin_by_name(t, node_uuid)
+        if handler is None:
+            print('type not yet supported')
         return handler
+
+        # if t == 'kvm':
+        #     handler = await self.__search_plugin_by_name('KVM', node_uuid)
+        # elif t == 'xen':
+        #     handler = await self.__search_plugin_by_name('xen', node_uuid)
+        # elif t == 'container':
+        #     handler = await self.__search_plugin_by_name('LXD', node_uuid)
+        # elif t == 'native':
+        #     handler = await self.__search_plugin_by_name('native', node_uuid)
+        # elif t == 'ros2':
+        #     handler = await self.__search_plugin_by_name('ros2', node_uuid)
+        # elif t == 'usvc':
+        #     print('microservice not yet')
+        # else:
+        #     print('type not recognized')
+        # return handler
 
     async  def __send_define_entity(self, node_uuid, manifest):
         manifest.update({'status': 'define'})
@@ -413,11 +421,11 @@ class FOSCli(object):
         t = manifest.get('type')
 
         try:
-            if t == 'vm':
-                handler = await self.__search_plugin_by_name('KVM', node_uuid)
+            if t in ['kvm', 'xen']:
+                handler = await self.__search_plugin_by_name(t, node_uuid)
                 validate(manifest.get('entity_data'), Schemas.vm_schema)
-            elif t == 'container':
-                handler = await self.__search_plugin_by_name('LXD', node_uuid)
+            elif t in ['container', 'lxd']:
+                handler = await self.__search_plugin_by_name(t, node_uuid)
                 validate(manifest.get('entity_data'), Schemas.container_schema)
             elif t == 'native':
                 handler = await self.__search_plugin_by_name('native', node_uuid)

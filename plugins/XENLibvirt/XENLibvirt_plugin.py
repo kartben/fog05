@@ -221,7 +221,7 @@ class XENLibvirt(RuntimePlugin):
                 #wget_cmd = 'wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
                 #image_url = instance.image
 
-                conf_cmd = '{} --hostname %s --uuid {}'.format(os.path.join(self.DIR, 'templates', 'create_config_drive.sh'), entity.name, instance_uuid)
+                conf_cmd = '{} --hostname {} --uuid {}'.format(os.path.join(self.BASE_DIR, 'create_config_drive.sh'), entity.name, instance_uuid)
                 rm_temp_cmd = 'rm'
 
                 if instance.user_file is not None and instance.user_file != '':
@@ -247,6 +247,10 @@ class XENLibvirt(RuntimePlugin):
 
                 #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
                 #self.agent.getOSPlugin().downloadFile(image_url, os.path.join(self.BASE_DIR, self.IMAGE_DIR, image_name))
+                # there is the need of coping the script that allow the creation of the config drive
+                scp_cmd = 'scp {} {}@{}:{}'.format(os.path.join(self.DIR, 'templates', 'create_config_drive.sh'), self.user, self.hypervisor, self.BASE_DIR)
+
+                self.agent.get_os_plugin().execute_command(scp_cmd, True)
                 self.__execture_on_dom0(self.hypervisor, qemu_cmd)
                 self.__execture_on_dom0(self.hypervisor, conf_cmd)
                 self.__execture_on_dom0(self.hypervisor, dd_cmd)

@@ -63,7 +63,6 @@
             {% endif %}
             <source network='default' bridge='{{ net.br_name }}'/>
             <target dev='{{ net.intf_name }}'/>
-            <model type='virtio'/>
             <alias name='net{{loop.index}}'/>
             <!-- <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/> -->
         </interface>
@@ -71,11 +70,11 @@
 
         {% endfor %}
         <serial type='file'>
-            <source path='/opt/fos/kvm/logs/{{ uuid }}_log.log'/>
+            <source path='/opt/fos/xen/logs/{{ uuid }}_log.log'/>
             <target port='0'/>
         </serial>
         <console type='file'>
-            <source path='/opt/fos/kvm/logs/{{ uuid }}_log.log'/>
+            <source path='/opt/fos/xen/logs/{{ uuid }}_log.log'/>
             <target type='serial' port='0'/>
         </console>
 
