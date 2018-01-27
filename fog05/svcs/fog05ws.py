@@ -190,7 +190,7 @@ class Server (object):
 
                 # -- GetAll
                 elif cid == 'aget':
-                    vs = self.getAll(store, args)
+                    vs = self.resolveAll(store, args)
                     result = "{} {} {} {}".format('values', sid, args[0], ','.join(vs))
                     prefix = ''
 
@@ -245,7 +245,7 @@ if __name__=='__main__':
             print('\nUSAGE:\n\tpython3 fog05ws [port=9669]\n')
             exit(0)
         else:
-            port = int(sys.argv)
+            port = int(sys.argv[2])
 
     s = Server(port)
     s.start()
