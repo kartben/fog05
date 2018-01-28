@@ -84,6 +84,16 @@ class DStore(Store):
         or can do a busy wait by doing some get (beacuse in this case get and observer are linked only 
         to the actual state)
         
+        
+        
+        
+        After some discussion we add some meta-reources, than help the discoverty of informations inside the stores of the others nodes
+        these meta-resources end with !
+        
+        <a|d>fos://<sys-id>/<node_id or *>/keys!  the value is the list of all keys in that store
+        
+        <a|d>fos://<sys-id>/<node_id or *>/discovered_stores! returns the list of all discovered stores for that specific node
+        
         '''
 
     def keys(self):
