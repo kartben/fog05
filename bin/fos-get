@@ -22,11 +22,11 @@ class FOSStore(object):
         self.dhome = str('{}/{}'.format(droot, home))  # str('dfos://<sys-id>/%s' % self.uuid)
 
         self.actual = DStore(home, self.aroot, self.ahome, 1024)
-        self.desidered = DStore(home, self.droot, self.dhome, 1024)
+        self.desired = DStore(home, self.droot, self.dhome, 1024)
 
     def close(self):
         self.actual.close()
-        self.desidered.close()
+        self.desired.close()
 
 
 class FOSGetCli(object):
@@ -50,12 +50,12 @@ class FOSGetCli(object):
         if len(self.store.actual.discovered_stores) == 0:
             print("Waiting...")
             time.sleep(0.5)
-        if len(self.store.desidered.discovered_stores) == 0:
+        if len(self.store.desired.discovered_stores) == 0:
             print("Waiting...")
             time.sleep(0.5)
 
-        pprint.pprint(self.store.desidered.discovered_stores)
-        pprint.pprint(self.store.actual.discovered_stores)
+        #pprint.pprint(self.store.desidered.discovered_stores)
+        #pprint.pprint(self.store.actual.discovered_stores)
 
     def __read_file(self, file_path):
         with open(file_path, 'r') as f:
@@ -70,9 +70,18 @@ class FOSGetCli(object):
                     uri = uri+'/'
                 elif uri.endswith('/**'):
                     uri.rstrip('*')
-                pprint.pprint(self.store.actual.resolveAll(uri))
+
+                v = self.store.actual.resolveAll(uri)
+                if v is not None:
+                    pprint.pprint(v)
+                else:
+                    print("No value!")
             else:
-                pprint.pprint(json.loads(self.store.actual.get(uri)))
+                v = self.store.actual.resolveAll(uri)
+                if v is not None:
+                    pprint.pprint(v)
+                else:
+                    print("No value!")
 
         elif uri.startswith('d'):
             if '*' in uri:
@@ -80,9 +89,17 @@ class FOSGetCli(object):
                     uri + '/'
                 elif uri.endswith('/**'):
                     uri.rstrip('*')
-                pprint.pprint(self.store.actual.resolveAll(uri))
+                v = self.store.desidered.resolveAll(uri)
+                if v is not None:
+                    pprint.pprint(v)
+                else:
+                    print("No value!")
             else:
-                pprint.pprint(json.loads(self.store.actual.get(uri)))
+                v = self.store.desidered.resolveAll(uri)
+                if v is not None:
+                    pprint.pprint(v)
+                else:
+                    print("No value!")
 
 
     def main(self):
