@@ -22,6 +22,12 @@ class DStore(Store):
         self.__controller.start()
         self.logger = self.__controller.logger
 
+        self.__metaresources = {}
+
+        self.register_metaresource('keys', self.__get_keys_under)
+        self.register_metaresource('stores', self.__get_stores)
+
+
         '''
         @GB: As discussed with Erik and Angelo, maybe can be better to have 2 `store` for local information
         one with Desired state (that can be written by all nodes and readed only by the owner node)
@@ -308,6 +314,14 @@ class DStore(Store):
             self.notify_observers(uri, None, None)
 
     def get(self, uri):
+
+        if uri.endswith('!'):
+            k = uri.split('/')[-1]
+            if k in self.__metaresources.keys():
+                return self.__metaresources.get(k)(uri.rsplit(k, 1))
+            else:
+                return None
+
         v = self.get_value(uri)
         if v == None:
             self.__controller.onMiss()
@@ -324,6 +338,14 @@ class DStore(Store):
             return v[0]
 
     def getAll(self, uri):
+
+        if uri.endswith('!'):
+            k = uri.split('/')[-1]
+            if k in self.__metaresources.keys():
+                return self.__metaresources.get(k)(uri.rsplit(k, 1))
+            else:
+                return None
+
         xs = []
         for k,v in self.__store.items():
             if fnmatch.fnmatch(k, uri):
@@ -416,5 +438,31 @@ class DStore(Store):
     def on_store_disappeared(self, sid):
         raise NotImplemented
 
+    def register_metaresource(self, resource, action):
+        r = '{}!'.format(resource)
+        self.__metaresources.update({r: action})
+
+
+    def __get_stores(self, uri):
+        return self.discovered_stores
+
+    def __get_keys_under(self, uri):
+        keys = self.keys()
+        ks=[]
+
+        if '*' in uri:
+            pass
+            # do search with fnmatch
+        else:
+            for k in keys:
+                if k.startwith(uri):
+                    ks.append(k)
+        return ks
+
+
+
+
     def close(self):
         self.__controller.stop()
+
+

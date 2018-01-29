@@ -132,6 +132,9 @@ class Store(object):
         '''
         raise NotImplementedError
 
+    def register_metaresource(self, resource, action):
+        raise NotImplementedError
+
     def miss_handler(self,action):
         raise NotImplementedError
 
