@@ -64,42 +64,24 @@ class FOSGetCli(object):
 
     def get(self, uri):
 
+        v = None
+
+        if not uri.endswith('/**'):
+            uri = uri + '/'
+        elif uri.endswith('/**'):
+            uri.rstrip('*')
+
         if uri.startswith('a'):
-            if '*' in uri:
-                if uri.endswith('/*'):
-                    uri = uri+'/'
-                elif uri.endswith('/**'):
-                    uri.rstrip('*')
-
-                v = self.store.actual.resolveAll(uri)
-                if v is not None:
-                    pprint.pprint(v)
-                else:
-                    print("No value!")
-            else:
-                v = self.store.actual.resolveAll(uri)
-                if v is not None:
-                    pprint.pprint(v)
-                else:
-                    print("No value!")
-
+            v = self.store.actual.resolveAll(uri)
         elif uri.startswith('d'):
-            if '*' in uri:
-                if uri.endswith('/*'):
-                    uri + '/'
-                elif uri.endswith('/**'):
-                    uri.rstrip('*')
-                v = self.store.desidered.resolveAll(uri)
-                if v is not None:
-                    pprint.pprint(v)
-                else:
-                    print("No value!")
-            else:
-                v = self.store.desidered.resolveAll(uri)
-                if v is not None:
-                    pprint.pprint(v)
-                else:
-                    print("No value!")
+            v = self.store.desidered.resolveAll(uri)
+
+        if v is not None or len(v) == 0:
+            pprint.pprint(v)
+        else:
+            print("No value!")
+
+
 
 
     def main(self):
