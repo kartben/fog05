@@ -266,6 +266,13 @@ class DController (Controller, Observer):
         """
         # @TODO: This should be in the config...
 
+        if uri.endswith('!'):
+            k = uri.split('/')[-1]
+            if k in self.__store.__metaresources.keys():
+                return self.__store.__metaresources.get(k)(uri.rsplit(k, 1))
+            else:
+                return None
+
         delta = 0.250
         if timeout is None:
             timeout = delta
@@ -329,6 +336,14 @@ class DController (Controller, Observer):
             :param uri: the URI to be resolved
             :return: the value, if something is found
         """
+
+        if uri.endswith('!'):
+            k = uri.split('/')[-1]
+            if k in self.__store.__metaresources.keys():
+                return self.__store.__metaresources.get(k)(uri.rsplit(k, 1))
+            else:
+                return None
+
         # @TODO: This should be in the config...
         delta = 0.250
         if timeout is None:
