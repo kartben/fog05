@@ -52,7 +52,7 @@ class Linux(OSPlugin):
     def get_base_path(self):
         return '/opt/fos'
 
-    def executeCommand(self, command, blocking=False):
+    def execute_command(self, command, blocking=False):
         self.agent.logger.info('executeCommand()', str(' OS Plugin executing command %s' % command))
         cmd_splitted = command.split()
         p = psutil.Popen(cmd_splitted, stdout=PIPE)
@@ -62,50 +62,50 @@ class Linux(OSPlugin):
         for line in p.stdout:
             self.agent.logger.debug('executeCommand()', str(line))
 
-    def addKnowHost(self, hostname, ip):
+    def add_know_host(self, hostname, ip):
         self.agent.logger.info('addKnowHost()', ' OS Plugin add to hosts file')
         add_cmd = str("sudo %s -a %s %s" % (os.path.join(self.DIR, 'scripts', 'manage_hosts.sh'), hostname, ip))
-        self.executeCommand(add_cmd, True)
+        self.execute_command(add_cmd, True)
 
-    def removeKnowHost(self, hostname):
+    def remove_know_host(self, hostname):
         self.agent.logger.info('removeKnowHost()', ' OS Plugin remove from hosts file')
         del_cmd = str("sudo %s -d %s" % (os.path.join(self.DIR, 'scripts', 'manage_hosts.sh'), hostname))
-        self.executeCommand(del_cmd, True)
+        self.execute_command(del_cmd, True)
 
-    def dirExists(self, path):
+    def dir_exists(self, path):
         return os.path.isdir(path)
 
-    def createDir(self, path):
-        if not self.dirExists(path):
+    def create_dir(self, path):
+        if not self.dir_exists(path):
             os.makedirs(path)
 
-    def createFile(self, path):
-        if not self.fileExists(path):
+    def create_file(self, path):
+        if not self.file_exists(path):
             with open(path, 'a'):
                 os.utime(path, None)
 
-    def removeDir(self, path):
-        if self.dirExists(path):
+    def remove_dir(self, path):
+        if self.dir_exists(path):
             shutil.rmtree(path)
 
-    def removeFile(self, path):
+    def remove_file(self, path):
         try:
             return os.remove(path)
         except FileNotFoundError as e:
             self.agent.logger.error('removeFile()', "OS Plugin File Not Found %s so don't need to remove" % e.strerror)
             return
 
-    def fileExists(self, file_path):
+    def file_exists(self, file_path):
         return os.path.isfile(file_path)
 
-    def storeFile(self, content, file_path, filename):
+    def store_file(self, content, file_path, filename):
         full_path = os.path.join(file_path, filename)
         f = open(full_path, 'w')
         f.write(content)
         f.flush()
         f.close()
 
-    def readFile(self, file_path, root=False):
+    def read_file(self, file_path, root=False):
         data = ""
         if root:
             file_path = str("sudo cat %s" % file_path)
@@ -118,23 +118,23 @@ class Linux(OSPlugin):
                 data = f.read()
         return data
 
-    def readBinaryFile(self, file_path):
+    def read_binary_file(self, file_path):
         data = None
         with open(file_path, 'rb') as f:
             data = f.read()
         return data
 
-    def downloadFile(self, url, file_path):
+    def download_file(self, url, file_path):
         wget_cmd = str('wget %s -O %s' % (url, file_path))
-        self.executeCommand(wget_cmd, True)
+        self.execute_command(wget_cmd, True)
 
-    def getCPULevel(self):
+    def get_CPU_level(self):
         return psutil.cpu_percent(interval=1)
 
-    def getMemoryLevel(self):
+    def get_memory_level(self):
         return psutil.virtual_memory().percent
 
-    def getStorageLevel(self):
+    def get_storage_level(self):
         return psutil.disk_usage('/').percent
 
     def checkIfPidExists(self, pid):
@@ -145,7 +145,7 @@ class Linux(OSPlugin):
         else:
             return True
 
-    def sendSignal(self, signal, pid):
+    def send_signal(self, signal, pid):
         if self.checkIfPidExists(pid) is False:
             self.agent.logger.error('sendSignal()', 'OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
@@ -153,7 +153,7 @@ class Linux(OSPlugin):
             psutil.Process(pid).send_signal(signal)
         return True
 
-    def sendSigInt(self, pid):
+    def send_sig_int(self, pid):
         if self.checkIfPidExists(pid) is False:
             self.agent.logger.error('sendSigInt()', 'OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
@@ -161,7 +161,7 @@ class Linux(OSPlugin):
             psutil.Process(pid).send_signal(2)
         return True
 
-    def sendSigKill(self, pid):
+    def send_sig_kill(self, pid):
         if self.checkIfPidExists(pid) is False:
             self.agent.logger.error('sendSigInt()', 'OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
@@ -169,19 +169,19 @@ class Linux(OSPlugin):
             psutil.Process(pid).send_signal(9)
         return True
 
-    def getNetworkLevel(self):
+    def get_network_level(self):
         raise NotImplementedError
 
-    def installPackage(self, packages):
+    def install_package(self, packages):
         self.pm.installPackage(packages)
 
-    def removePackage(self, packages):
+    def remove_package(self, packages):
         self.pm.removePackage(packages)
 
-    def getPid(self, process):
+    def get_pid(self, process):
         raise NotImplementedError
 
-    def getProcessorInformation(self):
+    def get_processor_information(self):
         cpu = []
         for i in range(0, psutil.cpu_count()):
             model = self.__get_processor_name()
@@ -199,11 +199,11 @@ class Linux(OSPlugin):
             cpu.append({'model': model, 'frequency': frequency, 'arch': arch})
         return cpu
 
-    def getMemoryInformation(self):
+    def get_memory_information(self):
         # conversion to MB
         return {'size': psutil.virtual_memory()[0] / 1024 / 1024}
 
-    def getDisksInformation(self):
+    def get_disks_information(self):
         disks = []
         for d in psutil.disk_partitions():
             dev = d[0]
@@ -213,16 +213,16 @@ class Linux(OSPlugin):
             disks.append({'local_address': dev, 'dimension': dim, 'mount_point': mount, 'filesystem': fs})
         return disks
 
-    def getIOInformations(self):
+    def get_io_informations(self):
         return self.io_devices
 
-    def getAcceleratorsInformations(self):
+    def get_accelerators_informations(self):
         return self.accelerator_devices
 
-    def getNetworkInformations(self):
+    def get_network_informations(self):
         return self.nw_devices
 
-    def getUUID(self):
+    def get_uuid(self):
         # $ blkid / dev / sda1
         # /dev/sda1: LABEL = "/"  UUID = "ee7cf0a0-1922-401b-a1ae-6ec9261484c0" SEC_TYPE = "ext2" TYPE = "ext3"
         # generate uuid from this or from cpuid or mb uuid from /sys/class/dmi/id/product_uuid
@@ -251,7 +251,7 @@ class Linux(OSPlugin):
 
 
 
-    def getHostname(self):
+    def get_hostname(self):
         res = ''
         p = psutil.Popen('hostname', stdout=PIPE)
         for line in p.stdout:
@@ -259,7 +259,7 @@ class Linux(OSPlugin):
             res = str(res + "%s" % line)
         return res.strip()
 
-    def getPositionInformation(self):
+    def get_position_information(self):
         raise NotImplemented
 
     def get_intf_type(self, name):

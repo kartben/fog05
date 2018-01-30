@@ -1,10 +1,10 @@
 {
-  "name": "cirros_example",
+  "name": "cirros_example_kvm",
   "version": 1,
-  "type":"vm",
+  "type":"kvm",
   "uuid": "9fa75e6a-d9c3-11e7-b769-5f3db30f0c2e",
   "entity_data":{
-    "name": "cirros034",
+    "name": "cirros034-kvm",
     "uuid": "9fa75e6a-d9c3-11e7-b769-5f3db30f0c2e",
     "cpu": 1,
     "memory": 512,

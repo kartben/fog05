@@ -101,12 +101,22 @@ Add a network to a node
 Simple lifecycle of an entity:
 
     $ fos entity -u <node_uuid> --define -m <entity manifest>
-    $ fos entity -u <node uuid> -eu <entity uuid> --configure
-    $ fos entity -u <node uuid> -eu <entity uuid> --run
-    $ fos entity -u <node uuid> -eu <entity uuid> --stop
-    $ fos entity -u <node uuid> -eu <entity uuid> --clean
+    $ fos entity -u <node uuid> -eu <entity uuid> --configure -iu <instance_uuid>
+    $ fos entity -u <node uuid> -eu <entity uuid> --run -iu <instance_uuid>
+    $ fos entity -u <node uuid> -eu <entity uuid> --stop -iu <instance_uuid>
+    $ fos entity -u <node uuid> -eu <entity uuid> --clean -iu <instance_uuid>
     $ fos entity -u <node uuid> -eu <entity uuid> --undefine
     
 Migration of an entity
 
-    fos entity -u <current node uuid> -eu <entity uuid> -du <destination node uuid> --migrate
+    fos entity -u <current node uuid> -eu <entity uuid> -du <destination node uuid>  -iu <instance_uuid> --migrate
+    
+### CLI utils
+
+With fos-get you can explore the distributed store
+
+    fos-get -u <URI>
+
+There is also available a logger to see the evolution of the distributed store and all information coming from nodes.
+
+    f05log <store root>

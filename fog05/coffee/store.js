@@ -528,5 +528,3 @@
   root.fog05.Store = Store;
 
 }).call(this);
-
-//# sourceMappingURL=store.js.map

@@ -1,0 +1,11 @@
+{
+      "name": "XENLibvirt",
+      "version": 1,
+      "uuid": "8937da95-1451-4ba0-bfca-46ae412ed766",
+      "type": "runtime",
+      "configuration":
+        {
+          "hypervisor":"192.168.1.119",
+          "user":"ubuntu"
+        }
+}

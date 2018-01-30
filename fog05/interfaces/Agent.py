@@ -6,27 +6,30 @@ class Agent(object):
     def __load_os_plugin(self):
         raise NotImplementedError
 
-    def __load_runtime_plugin(self, plugin_name):
+    def __load_runtime_plugin(self, plugin_name, plugin_uuid):
         raise NotImplementedError
 
-    def refreshPlugins(self):
+    def refresh_plugins(self):
         raise NotImplementedError
 
-    def __load_network_plugin(self, plugin_name):
+    def __load_network_plugin(self, plugin_name, plugin_uuid):
         raise NotImplementedError
 
-    def getOSPlugin(self):
+    def __load_monitoring_plugin(self, plugin_name, plugin_uuid):
         raise NotImplementedError
 
-    def getRuntimePlugin(self, runtime_uuid):
+    def get_os_plugin(self):
         raise NotImplementedError
 
-    def getNetworkPlugin(self, cnetwork_uuid):
+    def get_runtime_plugin(self, runtime_uuid):
         raise NotImplementedError
 
-    def listRuntimePlugins(self):
+    def get_network_plugin(self, cnetwork_uuid):
+        raise NotImplementedError
+
+    def list_runtime_plugins(self):
         raise NotImplementedError
     
-    def listNetworkPlugins(self):
+    def list_network_plugins(self):
         raise NotImplementedError
 

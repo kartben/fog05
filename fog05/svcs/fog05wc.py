@@ -2,6 +2,7 @@ import asyncio
 import websockets
 import sys
 
+
 default_host = 'localhost'
 default_port = 9669
 async def repl(host, port):

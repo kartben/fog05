@@ -29,16 +29,16 @@ class DLogger:
             self.logger.addHandler(handler)
 
         def info(self, caller, message):
-            self.logger.info(str('< %s > %s') % (caller, message))
+            self.logger.info('< {} > {}'.format(caller, message))
 
         def warning(self, caller, message):
-            self.logger.warning(str('< %s > %s') % (caller, message))
+            self.logger.warning('< {} > {}'.format(caller, message))
 
         def error(self, caller, message):
-            self.logger.error(str('< %s > %s') % (caller, message))
+            self.logger.error('< {} > {}'.format(caller, message))
 
         def debug(self, caller, message):
-            self.logger.debug(str('< %s > %s') % (caller, message))
+            self.logger.debug('< {} > {}'.format(caller, message))
 
     instance = None
     enabled = True

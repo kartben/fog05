@@ -6,8 +6,8 @@ class Entity(object):
 
     def __init__(self):
         self.state=State.UNDEFINED
-        self.uuid=""
-        self.name=""
+        self.uuid=''
+        self.name=''
         self.instances={}
 
 
@@ -18,28 +18,28 @@ class Entity(object):
         self.state = state
 
     def on_configured(self, configuration):
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def on_clean(self):
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def on_start(self):
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def on_stop(self):
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def on_pause(self):
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def on_resume(self):
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def before_migrate(self):
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def after_migrate(self):
-        raise NotImplementedError("This is and interface!")
+        raise NotImplementedError('This is and interface!')
 
     def has_instance(self, instance_uuid):
         return instance_uuid in self.instances.keys()

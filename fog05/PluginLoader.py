@@ -17,10 +17,10 @@ class PluginLoader(object):
         possible_plugins = os.listdir(self.PluginFolder)
         for p in possible_plugins:
             location = os.path.join(self.PluginFolder, p)
-            if not os.path.isdir(location) or not self.MainModule + ".py" in os.listdir(location):
+            if not os.path.isdir(location) or not '{}.py'.format(self.MainModule) in os.listdir(location):
                 continue
 
-            info = os.path.join(location,self.MainModule + ".py") ##importlib.abc.find_module(self.MainModule,
+            info = os.path.join(location, '{}.py'.format(self.MainModule)) ##importlib.abc.find_module(self.MainModule,
             # [location])
             # #.find_module(
             # self.MainModule,

@@ -2,7 +2,7 @@
   "name": "ros2example",
   "version": 1,
   "uuid": "cc94fc46-d9c5-11e7-93e2-37e7365df772",
-  "type":"native",
+  "type":"ros2",
   "entity_data":{
     "name": "publisher",
     "command": "publisher_member_function",

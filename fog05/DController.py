@@ -258,7 +258,7 @@ class DController (Controller, Observer):
     def resolveAll(self, uri, timeout = None):
         self.logger.debug('DController','>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
 
-        self.logger.debug('DController',">> Trying to resolve %s" % uri)
+        self.logger.debug('DController',">> Trying to resolve {}".format(uri))
         """
             Tries to resolve this URI (with wildcards) across the distributed caches
             :param uri: the URI to be resolved
@@ -323,7 +323,7 @@ class DController (Controller, Observer):
     def resolve(self, uri, timeout = None):
         self.logger.debug('DController','>>>> Handling {0} Miss for store {1}'.format(uri, self.__store.store_id))
 
-        self.logger.debug('DController',">> Trying to resolve %s" % uri)
+        self.logger.debug('DController',">> Trying to resolve {}".format(uri))
         """
             Tries to resolve this URI on across the distributed caches
             :param uri: the URI to be resolved

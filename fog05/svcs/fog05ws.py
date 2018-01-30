@@ -99,6 +99,16 @@ class Server (object):
 
         return xs
 
+    def resolveAll(self, store, args):
+        xs = []
+        if len(args) > 0:
+            vs = store.resolveAll(args[0])
+            xs = []
+            for (key, val, ver) in vs:
+                xs.append('{}@{}'.format(key, val))
+
+        return xs
+
     def remove(self, store, args):
         if len(args) > 0:
             store.remove(args[0])
@@ -152,6 +162,8 @@ class Server (object):
                 if s is not None:
                     self.storeMap[sid] = s
                     prefix = 'OK'
+            else:
+                prefix = 'OK'
 
         elif cid == 'close':
             if self.close(sid):
@@ -190,14 +202,19 @@ class Server (object):
 
                 # -- GetAll
                 elif cid == 'aget':
+                    vs = self.getAll(store, args)
+                    result = "{} {} {} {}".format('values', sid, args[0], '|'.join(vs))
+                    prefix = ''
+
+                elif cid == 'aresolve':
                     vs = self.resolveAll(store, args)
-                    result = "{} {} {} {}".format('values', sid, args[0], ','.join(vs))
+                    result = "{} {} {} {}".format('values', sid, args[0], '|'.join(vs))
                     prefix = ''
 
                 # -- Keys
                 elif cid == 'gkeys':
                     ks = store.keys()
-                    result = "{} {} {}".format('keys', sid, ','.join(ks))
+                    result = "{} {} {}".format('keys', sid, '|'.join(ks))
                     prefix = ''
 
                 # -- Observe
@@ -217,10 +234,13 @@ class Server (object):
         while True:
             raddr = websocket.remote_address
             print("Connection from: {}".format(raddr))
-            async for message in websocket:
-                # self.logger.error("fog05ws", ">> Processing message {}".format(message))
+            while True:
+                message = await websocket.recv()
                 print(">> Processing message {}".format(message))
                 await self.process(websocket, message)
+            #async for message in websocket:
+                # self.logger.error("fog05ws", ">> Processing message {}".format(message))
+
 
             print(">> Peer closed the connection.")
             websocket.close()

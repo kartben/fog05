@@ -1,0 +1,8 @@
+create 1 fos://root fos://root/home 1024
+put 1 fos://root/home/a 1
+get 1 fos://root/home/b 2
+get 1 fos://root/home/c 3
+put 1 fos://root/home/d 4
+get 1 fos://root/home/a 
+0
+
