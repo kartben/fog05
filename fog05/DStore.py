@@ -315,10 +315,10 @@ class DStore(Store):
 
     def get(self, uri):
 
-        if uri.endswith('!'):
-            k = uri.split('/')[-1]
-            if k in self.__metaresources.keys():
-                return self.__metaresources.get(k)(uri.rsplit(k, 1))
+        u = uri.split('/')[-1]
+        if u.endswith('~') and u.startswith('~'):
+            if u in self.__metaresources.keys():
+                return self.__metaresources.get(u)(uri.rsplit(u, 1))
             else:
                 return None
 
@@ -338,15 +338,14 @@ class DStore(Store):
             return v[0]
 
     def getAll(self, uri):
-
-        if uri.endswith('!'):
-            k = uri.split('/')[-1]
-            if k in self.__metaresources.keys():
-                return self.__metaresources.get(k)(uri.rsplit(k, 1))
+        xs = []
+        u = uri.split('/')[-1]
+        if u.endswith('~') and u.startswith('~'):
+            if u in self.__metaresources.keys():
+                return [(uri, self.__metaresources.get(u)(uri.rsplit(u, 1)),0)]
             else:
                 return None
 
-        xs = []
         for k,v in self.__store.items():
             if fnmatch.fnmatch(k, uri):
                 xs.append((k, v[0], v[1]))
@@ -366,7 +365,7 @@ class DStore(Store):
         #xy_dict = {k: (k, va, ve) for (k, va, ve) in ys}
 
         for (k, va, ve) in ys:
-            if k not in xs:
+            if k not in xs_dict:
                 xs_dict.update({k: (k, va, ve)})
             else:
                 if ve > xs_dict.get(k)[2]:
@@ -439,9 +438,22 @@ class DStore(Store):
         raise NotImplemented
 
     def register_metaresource(self, resource, action):
-        r = '{}!'.format(resource)
+        #
+        # reserved = gen - delims / sub - delims
+        #
+        # gen - delims = ":" / "/" / "?" / "#" / "[" / "]" / "@"
+        #
+        # sub - delims = "!" / "$" / "&" / "'" / "(" / ")"
+        #                   / "*" / "+" / "," / ";" / "="
+        #
+        #
+        # TODO: use ~name~ ?
+
+        r = '~{}~'.format(resource)
         self.__metaresources.update({r: action})
 
+    def get_metaresources(self):
+        return self.__metaresources
 
     def __get_stores(self, uri):
         return self.discovered_stores
@@ -455,7 +467,7 @@ class DStore(Store):
             # do search with fnmatch
         else:
             for k in keys:
-                if k.startwith(uri):
+                if k.startswith(uri):
                     ks.append(k)
         return ks
 

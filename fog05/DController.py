@@ -119,9 +119,17 @@ class DController (Controller, Observer):
     def handle_miss(self, r):
         self.logger.debug('DController.handle_miss','Handling Miss for store {0}'.format(self.__store.store_id))
         samples = r.take(all_samples())
+        v = None
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
-                v = self.__store.get_value(d.key)
+
+                u = d.key.split('/')[-1]
+                if u.endswith('~') and u.startswith('~'):
+                    if u in self.__store.get_metaresources.keys():
+                        v = (self.__store.get_metaresources.get(u)(''.join(d.key.rsplit(u, 1))), 0)
+                else:
+                    v = self.__store.get_value(d.key)
+
                 if v is not None:
                     self.logger.debug('DController.handle_miss', 'Serving Miss for {0}'.format(d.key))
                     h = CacheHit(self.__store.store_id, d.source_sid, d.key, v[0], v[1])
@@ -132,11 +140,21 @@ class DController (Controller, Observer):
 
 
     def handle_miss_mv(self, r):
-        self.logger.debug('DController','>>>> Handling Miss MV for store {0}'.format(self.__store.store_id))
+        self.logger.info('DController','>>>> Handling Miss MV for store {0}'.format(self.__store.store_id))
         samples = r.take(all_samples())
+        xs = []
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
-                xs = self.__store.getAll(d.key)
+
+                u = d.key.split('/')[-1]
+                if u.endswith('~') and u.startswith('~'):
+                    if u in self.__store.get_metaresources().keys():
+                        va = self.__store.get_metaresources().get(u)(''.join(d.key.rsplit(u, 1)))
+                        xs = [(d.key, va, 0)]
+                else:
+                    xs = self.__store.getAll(d.key)
+
+
                 self.logger.debug('DController','>>>> Serving Miss MV for key {0}'.format(d.key))
                 h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
                 self.hitmv_writer.write(h)
@@ -256,23 +274,15 @@ class DController (Controller, Observer):
         # self.logger.debug('DController',"onConflict Not yet...")
 
     def resolveAll(self, uri, timeout = None):
-        self.logger.debug('DController','>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
+        self.logger.info('DController','>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
 
-        self.logger.debug('DController',">> Trying to resolve {}".format(uri))
+        self.logger.info('DController',">> Trying to resolve {}".format(uri))
         """
             Tries to resolve this URI (with wildcards) across the distributed caches
             :param uri: the URI to be resolved
             :return: the [value], if something is found
         """
         # @TODO: This should be in the config...
-
-        if uri.endswith('!'):
-            k = uri.split('/')[-1]
-            if k in self.__store.__metaresources.keys():
-                return self.__store.__metaresources.get(k)(uri.rsplit(k, 1))
-            else:
-                return None
-
         delta = 0.250
         if timeout is None:
             timeout = delta
@@ -336,13 +346,6 @@ class DController (Controller, Observer):
             :param uri: the URI to be resolved
             :return: the value, if something is found
         """
-
-        if uri.endswith('!'):
-            k = uri.split('/')[-1]
-            if k in self.__store.__metaresources.keys():
-                return self.__store.__metaresources.get(k)(uri.rsplit(k, 1))
-            else:
-                return None
 
         # @TODO: This should be in the config...
         delta = 0.250

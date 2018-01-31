@@ -66,7 +66,7 @@ class FOSGetCli(object):
 
         v = None
 
-        if not uri.endswith('/**'):
+        if not uri.endswith('/**') and not uri.endswith('/') and not uri.endswith('~'):
             uri = uri + '/'
         elif uri.endswith('/**'):
             uri.rstrip('*')
