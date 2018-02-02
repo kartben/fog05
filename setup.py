@@ -9,7 +9,7 @@ setup(
     packages=['fog05', 'fog05/interfaces','fog05/svcs'],
     install_requires=['networkx', 'jsonschema', 'python-daemon','websockets'],
     #install_requires=['networkx', 'jsonschema', 'python-daemon', 'pydds'],
-    scripts=['bin/fos', 'bin/fos-get','bin/fos.bat', 'bin/fos-get.bat','bin/dstoresvc','bin/f05log.bat',
-             'bin/f05log'],
+    scripts=['bin/fos', 'bin/fos-get','bin/fos.bat', 'bin/fos-get.bat','bin/f05ws','bin/f05log.bat',
+             'bin/f05log','bin/f05ws.bat','bin/f05wc','bin/f05wc.bat'],
     include_package_data=True
 )
