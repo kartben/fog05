@@ -124,3 +124,21 @@ With fos-get you can explore the distributed store
 There is also available a logger to see the evolution of the distributed store and all information coming from nodes.
 
     f05log <store root>
+    
+### fog05 WebSocket Store server
+
+The store server providing websocket api can be started by:
+
+    $ f05ws    
+    
+    
+### fog05 Web Client
+
+The web client can be operated interactively by starting it as:
+
+    $ f05wc
+
+Otherwise you can submit commamnds using a file as in:
+
+    $ cat ./examples/scripts/cmd.fosw | f05wc
+    $ printf get 1 fos://root/home/cn0 | python3 f05wc
