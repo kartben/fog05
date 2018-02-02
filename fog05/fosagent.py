@@ -519,7 +519,7 @@ class FosAgent(Agent):
         keys = list(self.__nwPlugins.keys())
         for k in keys:
             try:
-                self.__nwPlugins.get(k).stopNetwork()
+                self.__nwPlugins.get(k).stop_network()
             except Exception:
                 self.logger.error('__exit_gracefully()', '{}'.format(e))
                 traceback.print_exc()

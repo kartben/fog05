@@ -190,6 +190,11 @@ class DStore(Store):
                 self.__observers.get(key)(uri, value, v)
 
     def put(self, uri, value):
+
+        if not self.__check_writing_rights(uri):
+            self.logger.debug('DStore', 'No writing right for URI {0}'.format(type(uri)))
+            return None
+
         v = self.get_version(uri)
         if v == None:
             v = 0
@@ -204,6 +209,10 @@ class DStore(Store):
 
 
     def pput(self, uri, value):
+        if not self.__check_writing_rights(uri):
+            self.logger.debug('DStore', 'No writing right for URI {0}'.format(type(uri)))
+            return None
+
         v = self.next_version(uri)
         self.__unchecked_store_value(uri, value, v)
         self.__controller.onPput(uri, value, v)
@@ -214,6 +223,10 @@ class DStore(Store):
         pass
 
     def dput(self, uri, values = None):
+
+        if not self.__check_writing_rights(uri):
+            self.logger.debug('DStore', 'No writing right for URI {0}'.format(type(uri)))
+            return None
 
         self.logger.debug('DStore','>>> dput >>> URI: {0} VALUE: {1}'.format(uri, values))
         uri_values = ''
@@ -291,6 +304,10 @@ class DStore(Store):
         self.__observers.update({uri: action})
 
     def remove(self, uri):
+        if not self.__check_writing_rights(uri):
+            self.logger.debug('DStore', 'No writing right for URI {0}'.format(type(uri)))
+            return None
+
         self.__controller.onRemove(uri)
         if uri in list(self.__local_cache.keys()):
             self.__local_cache.pop(uri)
@@ -303,15 +320,19 @@ class DStore(Store):
         self.notify_observers(uri, None, None)
 
     def remote_remove(self, uri):
-            if uri in list(self.__local_cache.keys()):
-                self.__local_cache.pop(uri)
-            elif uri in list(self.__store.keys()):
-                self.__store.pop(uri)
-            else:
-                pass
-                self.logger.debug('DStore',"REMOVE KEY {0} NOT PRESENT".format(uri))
+        if not self.__check_writing_rights(uri):
+            self.logger.debug('DStore', 'No writing right for URI {0}'.format(type(uri)))
+            return None
 
-            self.notify_observers(uri, None, None)
+        if uri in list(self.__local_cache.keys()):
+            self.__local_cache.pop(uri)
+        elif uri in list(self.__store.keys()):
+            self.__store.pop(uri)
+        else:
+            pass
+            self.logger.debug('DStore',"REMOVE KEY {0} NOT PRESENT".format(uri))
+
+        self.notify_observers(uri, None, None)
 
     def get(self, uri):
 
@@ -471,8 +492,14 @@ class DStore(Store):
                     ks.append(k)
         return ks
 
-
-
+    def __check_writing_rights(self, uri):
+        #TODO add system_id to store values
+        if uri.startswith('afos://{}/{}'.format('<sys-id>', self.store_id)):
+            return True
+        elif uri.startswith('dfos://'):
+            return True
+        else:
+            return False
 
     def close(self):
         self.__controller.stop()
