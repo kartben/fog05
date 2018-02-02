@@ -10,7 +10,7 @@ if __name__ == '__main__':
     port = 9669
     if len(sys.argv) > 1:
         if sys.argv[1] == '--help' or sys.argv[1] == '-h' or sys.argv[1] == 'help':
-            print('\nUSAGE:\n\tpython3 fog05ws [port=9669]\n')
+            print('\nUSAGE:\n\tf05ws [port=9669]\n')
             exit(0)
         else:
             port = int(sys.argv)
@@ -20,7 +20,6 @@ if __name__ == '__main__':
     with open(path, 'w') as f:
         f.write(str(pid))
         f.close()
-
 
     s = Server(port)
     s.start()
