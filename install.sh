@@ -83,11 +83,13 @@ cp builtin-types/libdython.so $OSPL_HOME/lib
 
 python3 setup.py install
 
-cd $WD/fog
+#cd $WD/fog
+#
+#git clone https://github.com/atolab/fog05
+#
+#cd fog05
 
-git clone https://github.com/atolab/fog05
-
-cd fog05
+cd $WD
 
 pip3 install python-daemon psutil netifaces
 

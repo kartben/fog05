@@ -27,6 +27,10 @@ config dependencies:
 
 ## Installation
 
+Installation script tested on ubuntu 16.04
+
+    sudo ./install.sh
+
 Run `python3 setup.py install`
 
 
