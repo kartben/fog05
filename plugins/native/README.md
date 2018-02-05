@@ -5,6 +5,7 @@ This plugin allow fog05 to manage native applications
 supported operation:
 - deploy
 - destroy
+- {{ pid_file }} parameter in starting native applications
 
 todo:
 
