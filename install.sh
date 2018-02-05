@@ -65,7 +65,7 @@ wget https://www.dropbox.com/s/7u5vzxjg1ea50us/license.lic -O $WD/fog/license.li
 
 wget https://www.dropbox.com/s/ql9ngtr3zoayp3k/ospl.xml
 
-cp ospl.xml $WD/fog/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.8.2b1/HDE/x86_64.linux/etc/conf
+cp ospl.xml $WD/fog/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.8.2b1/HDE/x86_64.linux/etc/config/ospl.xml
 
 echo "source $WD/fog/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.8.2b1/HDE/x86_64.linux/release.com" >> ~/.profile
 
@@ -81,7 +81,7 @@ cd pydds
 
 cp builtin-types/libdython.so $OSPL_HOME/lib
 
-python3 setup.py install
+python3 setup.py install --record pydds_files.txt
 
 #cd $WD/fog
 #
@@ -93,6 +93,6 @@ cd $WD
 
 pip3 install python-daemon psutil netifaces
 
-python3 setup.py install
+python3 setup.py install --record fog05_files.txt
 
 
