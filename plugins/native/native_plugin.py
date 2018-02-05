@@ -351,14 +351,16 @@ class Native(RuntimePlugin):
             else:
                 p = instance.process
                 p.terminate()
-                if instance.source is not None:
+                if instance.source is None:
                     #pid = int(self.agent.get_os_plugin().read_file(os.path.join(self.BASE_DIR,entity_uuid)))
                     pid = instance.pid
+                    self.agent.logger.info('stopEntity()', 'Native Plugin - PID {}'.format(pid))
                     self.agent.get_os_plugin().send_sig_int(pid)
-                    f_name = '{}_{}.sh'.format(entity_uuid, instance_uuid)
+                    f_name = '{}_{}.pid'.format(entity_uuid, instance_uuid)
                     f_path = self.BASE_DIR
                     pid_file = os.path.join(f_path,f_name)
                     pid = int(self.agent.get_os_plugin().read_file(pid_file))
+                    self.agent.logger.info('stopEntity()', 'Native Plugin - PID {}'.format(pid))
                     self.agent.get_os_plugin().send_sig_int(pid)
 
                 instance.on_stop()
