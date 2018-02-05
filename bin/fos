@@ -34,11 +34,12 @@ class WSStore(object):
         self.host = host
         #self.websocket = websockets.connect('ws://{}:9669'.format(host))
 
-    async def create(self):
+    @asyncio.coroutine
+    def create(self):
         cmd = 'create {} {} {} 1024'.format(self.sid, self.root, self.home)
-        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
+        ws = yield from websockets.connect('ws://{}:9669'.format(self.host))
+        yield from ws.send(cmd)
+        response = yield from ws.recv()
         response = response.split(' ')
         if response[0] == 'OK':
             return True
@@ -48,12 +49,14 @@ class WSStore(object):
             print("Wrong response from the server {}".format(''.join(response)))
             return False
 
-    async def put(self, uri, val):
+    @asyncio.coroutine
+    def put(self, uri, val):
         cmd = 'put {} {} {}'.format(self.sid, uri, val)
-        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
+        ws = yield from websockets.connect('ws://{}:9669'.format(self.host))
+        yield from ws.send(cmd)
+        response = yield from ws.recv()
         response = response.split(' ')
+
         if response[0] == 'OK':
             return True
         elif response[0] == 'NOK':
@@ -62,14 +65,16 @@ class WSStore(object):
             print("Wrong response from the server {}".format(''.join(response)))
             return False
 
-    async def dput(self, uri, value=None):
+    @asyncio.coroutine
+    def dput(self, uri, value=None):
         cmd = 'dput {} {}'.format(self.sid, uri)
         if value is not None:
             cmd = str('{} {}'.format(cmd, value))
-        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
+        ws = yield from websockets.connect('ws://{}:9669'.format(self.host))
+        yield from ws.send(cmd)
+        response = yield from ws.recv()
         response = response.split(' ')
+
         if response[0] == 'OK':
             return True
         elif response[0] == 'NOK':
@@ -78,12 +83,14 @@ class WSStore(object):
             print("Wrong response from the server {}".format(''.join(response)))
             return False
 
-    async def get(self, uri):
+    @asyncio.coroutine
+    def get(self, uri):
         cmd = 'get {} {}'.format(self.sid, uri)
 
-        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
+        ws = yield from websockets.connect('ws://{}:9669'.format(self.host))
+        yield from ws.send(cmd)
+        response = yield from ws.recv()
+
         infos = response.split(uri)[-1]
         if infos in ['', ' ']:
             return None
@@ -93,12 +100,13 @@ class WSStore(object):
         else:
             return None
 
-    async def getAll(self, uri):
+    @asyncio.coroutine
+    def getAll(self, uri):
         cmd = 'aget {0} {1}'.format(self.sid, uri)
         values=[]
-        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
+        ws = yield from websockets.connect('ws://{}:9669'.format(self.host))
+        yield from ws.send(cmd)
+        response = yield from ws.recv()
         infos = response.split(uri)[-1].replace(' ', '')
         if infos is not None and infos != '':
             nodes_list = infos.split('|')
@@ -113,12 +121,13 @@ class WSStore(object):
 
         return tuple(values)
 
-    async def resolveAll(self, uri):
+    @asyncio.coroutine
+    def resolveAll(self, uri):
         cmd = 'aresolve {0} {1}'.format(self.sid, uri)
         values=[]
-        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
+        ws = yield from websockets.connect('ws://{}:9669'.format(self.host))
+        yield from ws.send(cmd)
+        response = yield from ws.recv()
         infos = response.split(uri)[-1].replace(' ', '')
         if infos is not None and infos != '':
             nodes_list = infos.split('|')
@@ -133,11 +142,12 @@ class WSStore(object):
 
         return tuple(values)
 
-    async def remove(self, uri):
+    @asyncio.coroutine
+    def remove(self, uri):
         cmd = 'remove {} {}'.format(self.sid, uri)
-        async with websockets.connect('ws://{}:9669'.format(self.host)) as ws:
-            await ws.send(cmd)
-            response = await ws.recv()
+        ws = yield from websockets.connect('ws://{}:9669'.format(self.host))
+        yield from ws.send(cmd)
+        response = yield from ws.recv()
         response = response.split(' ')
         if response[0] == 'OK':
             return True
@@ -246,9 +256,10 @@ class FOSCli(object):
             self.store.close()
         exit(exit_code)
 
-    async def __get_all_node_plugin(self,node_uuid):
+    @asyncio.coroutine
+    def __get_all_node_plugin(self,node_uuid):
         uri = str('afos://<sys-id>/{}/plugins'.format(node_uuid))
-        response = await self.store.actual.get(uri)
+        response = yield from self.store.actual.get(uri)
         # cmd = 'get {} {}'.format(self.asid, uri)
         # async with self.websocket as ws:
         #     await ws.send(cmd)
@@ -259,10 +270,11 @@ class FOSCli(object):
         else:
             return None
 
-    async def __send_add_network(self, node_uuid, manifest):
+    @asyncio.coroutine
+    def __send_add_network(self, node_uuid, manifest):
 
         manifest.update({'status':'add'})
-        all_plugins = await self.__get_all_node_plugin(node_uuid)
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
         if all_plugins is None:
             print('Error on receive plugin from node')
             return
@@ -275,7 +287,7 @@ class FOSCli(object):
         json_data = json.dumps(manifest).replace(' ','')
         uri = str('dfos://<sys-id>/{}/network/{}/networks/{}'.format(node_uuid, brctl.get('uuid'), manifest.get('uuid')))
 
-        res = await self.store.desired.put(uri, json_data)
+        res = yield from self.store.desired.put(uri, json_data)
         if res:
             print("Network {} added to {}".format(manifest.get('uuid'), node_uuid))
         else:
@@ -300,9 +312,10 @@ class FOSCli(object):
         #elif r:
         #    print('network added')
 
-    async def __send_remove_network(self, node_uuid, net_id):
+    @asyncio.coroutine
+    def __send_remove_network(self, node_uuid, net_id):
 
-        all_plugins = await self.__get_all_node_plugin(node_uuid)
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
         if all_plugins is None:
             print('Error on receive plugin from node')
             return
@@ -317,7 +330,7 @@ class FOSCli(object):
             brctl = search[0]
 
         uri = str('dfos://<sys-id>/{}/network/{}/networks/{}'.format(node_uuid, brctl.get('uuid'), net_id))
-        res = await self.store.desired.remove(uri)
+        res = yield from self.store.desired.remove(uri)
         if res:
             print("Network {} removed from {}".format(net_id, node_uuid))
         else:
@@ -353,9 +366,10 @@ class FOSCli(object):
         while True:
             time.sleep(100)
 
-    async def __search_plugin_by_name(self, name, node_uuid):
+    @asyncio.coroutine
+    def __search_plugin_by_name(self, name, node_uuid):
         uri = 'afos://<sys-id>/{}/plugins'.format(node_uuid)
-        all_plugins = await self.store.actual.get(uri)
+        all_plugins = yield from self.store.actual.get(uri)
         # cmd = 'get {0} {1}'.format(self.asid, uri)
         # with self.websocket as ws:
         #     await ws.send(cmd)
@@ -371,9 +385,10 @@ class FOSCli(object):
         else:
             return search[0]
 
-    async def __get_entity_handler_by_uuid(self, node_uuid, entity_uuid):
+    @asyncio.coroutine
+    def __get_entity_handler_by_uuid(self, node_uuid, entity_uuid):
         uri = str('afos://<sys-id>/{}/runtime/*/entity/{}'.format(node_uuid, entity_uuid))
-        all = await self.store.actual.resolveAll(uri)
+        all = yield from self.store.actual.resolveAll(uri)
         for i in all:
             k = i[0]
             if fnmatch.fnmatch(k, uri):
@@ -388,13 +403,11 @@ class FOSCli(object):
 
                 return uuid
 
-
-
-
-    async def __get_entity_handler_by_type(self,node_uuid, t):
+    @asyncio.coroutine
+    def __get_entity_handler_by_type(self,node_uuid, t):
         handler = None
 
-        handler = await self.__search_plugin_by_name(t, node_uuid)
+        handler = yield from self.__search_plugin_by_name(t, node_uuid)
         if handler is None:
             print('type not yet supported')
         return handler
@@ -415,23 +428,24 @@ class FOSCli(object):
         #     print('type not recognized')
         # return handler
 
-    async  def __send_define_entity(self, node_uuid, manifest):
+    @asyncio.coroutine
+    def __send_define_entity(self, node_uuid, manifest):
         manifest.update({'status': 'define'})
         handler = None
         t = manifest.get('type')
 
         try:
             if t in ['kvm', 'xen']:
-                handler = await self.__search_plugin_by_name(t, node_uuid)
+                handler = yield from self.__search_plugin_by_name(t, node_uuid)
                 validate(manifest.get('entity_data'), Schemas.vm_schema)
             elif t in ['container', 'lxd']:
-                handler = await self.__search_plugin_by_name(t, node_uuid)
+                handler = yield from self.__search_plugin_by_name(t, node_uuid)
                 validate(manifest.get('entity_data'), Schemas.container_schema)
             elif t == 'native':
-                handler = await self.__search_plugin_by_name('native', node_uuid)
+                handler = yield from self.__search_plugin_by_name('native', node_uuid)
                 validate(manifest.get('entity_data'), Schemas.native_schema)
             elif t == 'ros2':
-                handler = await self.__search_plugin_by_name('ros2', node_uuid)
+                handler = yield from self.__search_plugin_by_name('ros2', node_uuid)
                 validate(manifest.get('entity_data'), Schemas.ros2_schema)
             elif t == 'usvc':
                 print('microservice not yet')
@@ -451,12 +465,12 @@ class FOSCli(object):
         json_data = json.dumps(entity_definition).replace(' ','')
         uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}'.format(node_uuid, handler.get('uuid'), entity_uuid))
 
-        res = await self.store.desired.put(uri, json_data)
+        res = yield from self.store.desired.put(uri, json_data)
         if res:
             while True:
                 time.sleep(1)
                 uri = str('afos://<sys-id>/{}/runtime/{}/entity/{}'.format(node_uuid, handler.get('uuid'), entity_uuid))
-                data = await self.store.actual.get(uri)
+                data = yield from self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
                     entity_info = json.loads(data)
@@ -467,28 +481,28 @@ class FOSCli(object):
 
             print("Error on define entity")
 
-
-
-    async def __send_undefine_entity(self, node_uuid, entity_uuid):
-        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+    @asyncio.coroutine
+    def __send_undefine_entity(self, node_uuid, entity_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}'.format(node_uuid, handler, entity_uuid))
 
-        res = await self.store.desired.remove(uri)
+        res = yield from self.store.desired.remove(uri)
         if res:
             print("Entity {} removed from {}".format(entity_uuid, node_uuid))
         else:
             print("Error on entity remove")
 
-    async def __send_configure_entity(self, node_uuid, entity_uuid, instance_uuid):
-        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+    @asyncio.coroutine
+    def __send_configure_entity(self, node_uuid, entity_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}#status=configure'.format(node_uuid, handler,
                                                                                           entity_uuid, instance_uuid))
-        res = await self.store.desired.dput(uri)
+        res = yield from self.store.desired.dput(uri)
         if res:
             while True:
                 time.sleep(1)
                 uri = str('afos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid, instance_uuid))
-                data = await self.store.actual.get(uri)
+                data = yield from self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
                     entity_info = json.loads(data)
@@ -498,30 +512,30 @@ class FOSCli(object):
         else:
             print("Error on configure entity instance")
 
-    async def __send_clean_entity(self, node_uuid, entity_uuid, instance_uuid):
-        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+    @asyncio.coroutine
+    def __send_clean_entity(self, node_uuid, entity_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid,
                                                                            instance_uuid))
-        res = await self.store.desired.remove(uri)
+        res = yield from self.store.desired.remove(uri)
         if res:
             print("Instance {} for entity {} cleaned in node {}".format(instance_uuid, entity_uuid, node_uuid))
         else:
             print("Error on clean entity instance")
 
-
-
-    async def __send_run_entity(self, node_uuid, entity_uuid, instance_uuid):
-        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+    @asyncio.coroutine
+    def __send_run_entity(self, node_uuid, entity_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}#status=run'.format(node_uuid, handler,
                                                                                       entity_uuid, instance_uuid))
 
-        res = await self.store.desired.dput(uri)
+        res = yield from self.store.desired.dput(uri)
         if res:
             while True:
                 time.sleep(1)
                 uri = str('afos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid,
                                                                                  instance_uuid))
-                data = await self.store.actual.get(uri)
+                data = yield from self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
                     entity_info = json.loads(data)
@@ -531,19 +545,17 @@ class FOSCli(object):
         else:
             print("Error on running entity instance")
 
-
-
-
-    async def __send_stop_entity(self, node_uuid, entity_uuid, instance_uuid):
-        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+    @asyncio.coroutine
+    def __send_stop_entity(self, node_uuid, entity_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}#status=stop'.format(node_uuid, handler,
                                                                                        entity_uuid, instance_uuid))
-        res = await self.store.desired.dput(uri)
+        res = yield from self.store.desired.dput(uri)
         if res:
             while True:
                 uri = str('afos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid,
                                                                                  instance_uuid))
-                data = await self.store.actual.get(uri)
+                data = yield from self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
                     entity_info = json.loads(data)
@@ -553,12 +565,13 @@ class FOSCli(object):
         else:
             print("Error on stopping entity instance")
 
-    async def __sent_migrate_entity(self, node_uuid, entity_uuid, destination_uuid, instance_uuid):
-        handler = await self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+    @asyncio.coroutine
+    def __sent_migrate_entity(self, node_uuid, entity_uuid, destination_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
         uri = str('afos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid,
                                                                          instance_uuid))
 
-        entity_info = await self.store.actual.get(uri)
+        entity_info = yield from self.store.actual.get(uri)
         if entity_info is None:
             print("Error on getting instance info")
             self.exit(-1)
@@ -574,25 +587,25 @@ class FOSCli(object):
         entity_info_dst.update({"status": "landing"})
         entity_info_dst.update({"dst": destination_uuid})
 
-        destination_handler = await self.__get_entity_handler_by_type(destination_uuid, entity_info_dst.get('type'))
+        destination_handler = yield from self.__get_entity_handler_by_type(destination_uuid, entity_info_dst.get('type'))
         if destination_handler is None:
             print("Error Destination node can't handle this type of entity {0}".format(entity_info_dst.get('type')))
             self.exit(-1)
 
         uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(destination_uuid, destination_handler.get(
             'uuid'), entity_uuid, instance_uuid))
-        res = await self.store.desired.put(uri, json.dumps(entity_info_dst).replace(' ',''))
+        res = yield from self.store.desired.put(uri, json.dumps(entity_info_dst).replace(' ',''))
         if res:
             uri = str('dfos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}'.format(node_uuid, handler, entity_uuid,
                                                                              instance_uuid))
-            res_dest = await self.store.desired.dput(uri, json.dumps(entity_info_src).replace(' ',''))
+            res_dest = yield from self.store.desired.dput(uri, json.dumps(entity_info_src).replace(' ',''))
             if res_dest:
                 while True:
                     time.sleep(1)
                     uri = str("afos://<sys-id>/{}/runtime/{}/entity/{}/instance/{}".format(destination_uuid,
                                                                                        destination_handler.get('uuid'),
                                                                                        entity_uuid, instance_uuid))
-                    data = await self.store.actual.get(uri)
+                    data = yield from self.store.actual.get(uri)
                     entity_info = None
                     if data is not None:
                         entity_info = json.loads(data)
@@ -604,26 +617,29 @@ class FOSCli(object):
         else:
             print("Error on source node")
 
-    async def __send_pause_entity(self, node_uuid, entity_uuid, instance_uuid):
+    @asyncio.coroutine
+    def __send_pause_entity(self, node_uuid, entity_uuid, instance_uuid):
         pass
 
-    async def __send_resume_entity(self, node_uuid, entity_uuid, instance_uuid):
+    @asyncio.coroutine
+    def __send_resume_entity(self, node_uuid, entity_uuid, instance_uuid):
         pass
 
-
-    async def __send_add_plugin(self, node_uuid, manifest):
+    @asyncio.coroutine
+    def __send_add_plugin(self, node_uuid, manifest):
         plugins = {"plugins": [manifest]}
         plugins = json.dumps(plugins).replace(' ','')
         uri = 'dfos://<sys-id>/{}/plugins'.format(node_uuid)
-        res = await self.store.desired.dput(uri, plugins)
+        res = yield from self.store.desired.dput(uri, plugins)
         if res:
             print("Plugin {} added to {}".format(manifest.get('uuid'),node_uuid))
         else:
             print("Error on adding plugin")
 
-    async def __get_plugins(self,node_uuid):
+    @asyncio.coroutine
+    def __get_plugins(self,node_uuid):
         uri = str('afos://<sys-id>/{}/plugins'.format(node_uuid))
-        plugins = await self.store.actual.get(uri)
+        plugins = yield from self.store.actual.get(uri)
         if plugins is not None and plugins != '' :
             plugins = json.loads(plugins).get('plugins')
             print('+-----------------------PLUGINS-------------------------+')
@@ -635,9 +651,10 @@ class FOSCli(object):
         else:
             print("No node or plugins found")
 
-    async def __get_nodes(self):
+    @asyncio.coroutine
+    def __get_nodes(self):
         uri = str('afos://<sys-id>/*/')
-        infos = await self.store.actual.resolveAll(uri)
+        infos = yield from self.store.actual.resolveAll(uri)
         if infos is not None and infos != '' and len(infos)>0:
             print('+-------------------------------------------------------+')
             for e in infos:
@@ -647,9 +664,10 @@ class FOSCli(object):
         else:
             print('No node found!!')
 
-    async def __get_networks(self):
+    @asyncio.coroutine
+    def __get_networks(self):
         uri = str('afos://<sys-id>/*/network/*/networks/*/')
-        nw_list = await self.store.actual.resolveAll(uri)
+        nw_list = yield from self.store.actual.resolveAll(uri)
         if nw_list is not None and len(nw_list)>0:
             for e in nw_list:
                 net_info = json.loads(e[1])
@@ -667,10 +685,10 @@ class FOSCli(object):
         else:
             print("No network found")
 
-
-    async def __get_node_details(self, node_uuid, info):
+    @asyncio.coroutine
+    def __get_node_details(self, node_uuid, info):
         uri = str('afos://<sys-id>/{}/'.format(node_uuid))
-        infos = await self.store.actual.get(uri)
+        infos = yield from self.store.actual.get(uri)
         if infos is not None and infos != '':
             node = json.loads(infos)
             print('+-------------------------------------------------------+')
@@ -724,10 +742,10 @@ class FOSCli(object):
                     print('| ################################################### ')
                 print('+-------------------------------------------------------+')
 
-
-    async def __get_entities(self):
+    @asyncio.coroutine
+    def __get_entities(self):
         uri = str('afos://<sys-id>/*/runtime/*/entity/*')
-        entities = await self.store.actual.resolveAll(uri)
+        entities = yield from self.store.actual.resolveAll(uri)
         for entity in entities:
             entity_uri = entity[0]
             entity_info = json.loads(entity[1])
@@ -1005,7 +1023,7 @@ class FOSCli(object):
                 if kwargs['migrate'] is True: action = 'migrate'
 
                 self.entity(kwargs['list'], action, kwargs['uuid'], kwargs['manifest'], kwargs['euuid'],
-                            kwargs['iuuid'],kwargs['duuid'])
+                            kwargs['iuuid'], kwargs['duuid'])
 
                 self.exit(0)
             else:

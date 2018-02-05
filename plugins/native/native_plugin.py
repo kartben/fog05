@@ -101,6 +101,8 @@ class Native(RuntimePlugin):
             # self.agent.getOSPlugin().executeCommand(wget_cmd, True)
             self.agent.get_os_plugin().execute_command(unzip_cmd, True)
             entity.source = dest
+        else:
+            entity.source = None
 
 
         entity.set_state(State.DEFINED)
@@ -166,6 +168,8 @@ class Native(RuntimePlugin):
                 native_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name)
                 self.agent.get_os_plugin().create_file(instance.outfile)
                 self.agent.get_os_plugin().create_dir(native_dir)
+
+
                 # if entity.source is not None:
                 #     zip_name = entity.source.split('/')[-1]
                 #     self.agent.getOSPlugin().createDir(os.path.join(self.BASE_DIR, self.STORE_DIR, entity.name))
@@ -283,15 +287,37 @@ class Native(RuntimePlugin):
                         cmd = str("%s" % os.path.join(native_dir, str("%s_run.ps1" % instance_uuid)))
                     else:
                         cmd = ''
-                process = self.__execute_command(cmd, instance.outfile)
 
                 if instance.source is not None:
+                    process = self.__execute_command(cmd, instance.outfile)
+
                     time.sleep(1)
                     pid_file = str('%s.pid' % instance_uuid)
                     pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid,instance.name, pid_file)
                     pid = int(self.agent.get_os_plugin().read_file(pid_file))
                     instance.on_start(pid, process)
                 else:
+                    #try to inject the pid file if script use {{pid_file}}
+                    '''
+                    
+                    This make possible to add on the launch file of you native application that fog05 can inject the pid output file
+                    in this way is possible to fog05 to correct send signal to your application, in the case the {{pid_file}} is not defined the script
+                    will not be modified
+                    
+                    '''
+                    if instance.command.endswith('.sh'):
+                        command = self.agent.get_os_plugin().read_file(instance.command)
+                        na_script = Environment().from_string(command)
+                        na_script = na_script.render(pid_file='{}_{}.pid'.format(os.path.join(self.BASE_DIR,entity_uuid), instance_uuid))
+
+                        f_name = '{}_{}.sh'.format(entity_uuid,instance_uuid)
+                        f_path = self.BASE_DIR
+                        self.agent.get_os_plugin().store_file(na_script,f_path,f_name)
+                        cmd = '{} {}'.format('{}_{}.sh'.format(os.path.join(self.BASE_DIR,entity_uuid),instance_uuid),  ''.join(entity.args))
+                        f_path = os.path.join(f_path,f_name)
+                        self.agent.get_os_plugin().execute_command('chmod +x {}'.format(f_path))
+
+                    process = self.__execute_command(cmd, instance.outfile)
                     instance.on_start(process.pid, process)
 
                 self.current_entities.update({entity_uuid: entity})
@@ -326,8 +352,14 @@ class Native(RuntimePlugin):
                 p = instance.process
                 p.terminate()
                 if instance.source is not None:
+                    #pid = int(self.agent.get_os_plugin().read_file(os.path.join(self.BASE_DIR,entity_uuid)))
                     pid = instance.pid
-                    self.agent.get_os_plugin().send_sig_kill(pid)
+                    self.agent.get_os_plugin().send_sig_int(pid)
+                    f_name = '{}_{}.sh'.format(entity_uuid, instance_uuid)
+                    f_path = self.BASE_DIR
+                    pid_file = os.path.join(f_path,f_name)
+                    pid = int(self.agent.get_os_plugin().read_file(pid_file))
+                    self.agent.get_os_plugin().send_sig_int(pid)
 
                 instance.on_stop()
                 self.current_entities.update({entity_uuid: entity})
@@ -369,7 +401,7 @@ class Native(RuntimePlugin):
     def __execute_command(self, command, out_file):
         f = open(out_file, 'w')
         cmd_splitted = command.split()
-        p = psutil.Popen(cmd_splitted, stdout=f)
+        p = psutil.Popen(cmd_splitted, stdout=f, stderr=f)
         return p
 
     def __generate_run_script(self, cmd, directory, outfile):

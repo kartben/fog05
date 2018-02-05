@@ -1,0 +1,13 @@
+{
+  "name": "neuron_follower",
+  "version": 1,
+  "type":"native",
+  "uuid": "73d6fc08-d9c5-11e7-a8a0-c755946c40c0",
+  "entity_data": {
+    "name": "neuron_follower",
+    "command": "",
+    "args": [],
+    "uuid": "73d6fc08-d9c5-11e7-a8a0-c755946c40c0"
+  }
+}
+
