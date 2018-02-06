@@ -19,7 +19,9 @@ from fog05.DStore import *
 #    put     sid uri val                -> OK | NOK
 #    dput     sid uri [val]             -> OK | NOK
 #    get     sid uri                    -> value sid key value
-#    aget     sid uri                    -> value sid key key1@value1,key2@value2,...,keyn@valuen
+#    aget     sid uri                    -> values sid key key1@value1,key2@value2,...,keyn@valuen
+#    resolve  sid uri                    -> value sid key value
+#    aresolve sid uri                    -> values sid key key1@value1,key2@value2,...,keyn@valuen
 #    remove  sid uri                    -> OK | NOK
 #
 #    observe sid uri cookie             -> stream notify sid cookie key value
@@ -99,6 +101,14 @@ class Server (object):
 
         return xs
 
+    def resolve(self, store, args):
+        v = ''
+        if len(args) > 0:
+            v = store.resolve(args[0])
+            if v is None:
+                v = ''
+            return v
+
     def resolveAll(self, store, args):
         xs = []
         if len(args) > 0:
@@ -162,6 +172,8 @@ class Server (object):
                 if s is not None:
                     self.storeMap[sid] = s
                     prefix = 'OK'
+                else:
+                    prefix = 'NOK'
             else:
                 prefix = 'OK'
 
@@ -205,6 +217,12 @@ class Server (object):
                     vs = self.getAll(store, args)
                     result = "{} {} {} {}".format('values', sid, args[0], '|'.join(vs))
                     prefix = ''
+
+                elif cid == 'resolve':
+                    v = self.resolve(store, args)
+                    result = "{} {} {} {}".format('value', sid, args[0], v)
+                    prefix = ''
+
 
                 elif cid == 'aresolve':
                     vs = self.resolveAll(store, args)
