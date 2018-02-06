@@ -137,7 +137,7 @@ class Linux(OSPlugin):
     def get_storage_level(self):
         return psutil.disk_usage('/').percent
 
-    def checkIfPidExists(self, pid):
+    def check_if_pid_exists(self, pid):
         try:
             os.kill(pid, 0)
         except OSError:
@@ -146,7 +146,7 @@ class Linux(OSPlugin):
             return True
 
     def send_signal(self, signal, pid):
-        if self.checkIfPidExists(pid) is False:
+        if self.check_if_pid_exists(pid) is False:
             self.agent.logger.error('sendSignal()', 'OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
@@ -154,7 +154,7 @@ class Linux(OSPlugin):
         return True
 
     def send_sig_int(self, pid):
-        if self.checkIfPidExists(pid) is False:
+        if self.check_if_pid_exists(pid) is False:
             self.agent.logger.error('sendSigInt()', 'OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
@@ -162,7 +162,7 @@ class Linux(OSPlugin):
         return True
 
     def send_sig_kill(self, pid):
-        if self.checkIfPidExists(pid) is False:
+        if self.check_if_pid_exists(pid) is False:
             self.agent.logger.error('sendSigInt()', 'OS Plugin Process not exists %d' % pid)
             raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
