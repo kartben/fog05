@@ -1,0 +1,65 @@
+
+body {
+    margin: 0;
+}
+
+.header {
+    background-color: #fcb316;
+    border-bottom: solid 4px #0d3969;
+    display: flex;
+    
+    font-family: 'Ubuntu', sans-serif;
+}
+
+.footer{
+    background-color: #fcb316;
+    border-top: solid 4px #0d3969;    
+}
+.footer h1{
+    
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.content {
+    flex: auto;
+}
+
+.page-connect {
+    display: none;
+}
+
+.page-connect.active{
+   display: block;
+}
+
+.page-principal {
+    display: none;
+    font-weight: bold;
+}
+
+.page-principal.active {
+    display: block;
+}
+
+.nav {
+}
+
+.section{
+    width: 50%;
+    margin: auto;
+    
+    font-size: 15px;
+}
+
+.well {
+    background-color:#CCC;
+    padding: 20px;
+}

@@ -498,6 +498,8 @@ class DStore(Store):
             return True
         elif uri.startswith('dfos://'):
             return True
+        elif not uri.startswith('dfos://') and not uri.startswith('afos://'):
+            return True
         else:
             return False
 

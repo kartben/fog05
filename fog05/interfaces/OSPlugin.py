@@ -139,6 +139,9 @@ class OSPlugin(Plugin):
 
         raise NotImplementedError('This is and interface!')
 
+    def check_if_pid_exists(self, pid):
+        raise NotImplementedError('This is and interface!')
+
     def send_signal(self, signal, pid):
 
         '''

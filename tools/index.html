@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Fog05WebUI</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+    <link href="https://fonts.googleapis.com/css?family=Ubuntu" rel="stylesheet">
+    <!-- 3nd CSS -->
+
+</head>
+
+<body>
+
+<!-- Start All -->
+<div class="container-fluid page">
+    <!-- Start Header -->
+    <header class="row header">
+        <div class="col-md-5">
+            <img src="../pics/logo.png" alt="ADLINKs logo" />
+        </div>
+    </header>
+    <!-- End header -->
+
+    <div class="content">
+        <!-- START PAGE-CONNECT -->
+        <div class="page-connect active">
+            <!-- Start content -->
+            <div class="container">
+                <!-- Start FORM -->
+                <form class="well" method="#" onsubmit="wsconnect(); return false;" action="">
+                    <legend class="legend">Connect</legend>
+                    <fieldset>
+						<div class="form-group">
+                            <label for="connect">Server</label>
+                            <input type="text" class="form-control" id="connect" value="ws://10.100.1.247:9669"  required />
+                        </div>
+
+                        <div class="form-group">
+							<div class="row">
+								<div class="col-md-6">
+									<label for="root">Root</label>
+									<input type="text" class="form-control" id="root" value="fos://sys1" required />
+								</div>
+								<div class="col-md-6">
+									<label for="root">Store id</label>
+									<input type="text" class="form-control" id="storeid" value="101" required />
+								</div>
+                            </div>
+                        </div>
+                        <input class="btn btn-default" role="button" type="submit" value="Connect"/>
+                    </fieldset>
+                </form>
+                <!-- End Form -->
+            </div>
+            <!-- End content -->
+        </div>
+        <!-- END PAGE-CONNECT -->
+
+
+        <!-- START PAGE-PRINCIPAL -->
+        <div class="page-principal">
+            <div class="row content">
+                <!-- Start nav-->
+                <nav class="col-md-6 nav">
+                    <div id="jstree"></div>
+                </nav>
+                <!-- End nav-->
+
+                <!-- Start section -->
+                <section class="container col-md-6 section" id="main" style="display:none">
+						</br>
+                        Key &nbsp;&nbsp; : <span id="nameNodeTree"></span></br>
+						Value : <span id="valueNodeTree"></span></br>
+                </section>
+                <!-- End section -->
+            </div>
+        </div>
+        <!-- END PAGE-PRINCIPAL -->
+    </div>
+
+
+    <!-- Start footer -->
+    <footer class="row footer">
+
+        <!-- START PAGE-CONNECT -->
+        <div class="page-connect active">
+            <div class="col-lg-12">
+                <h1>Fog05WebUI</h1>
+            </div>
+        </div>
+        <!-- END PAGE-CONNECT -->
+
+        <!-- START PAGE-PRINCIPAL -->
+        <div class="page-principal">
+            <!-- Start FORM -->
+            <form id="go" method="#" action="" onsubmit="pushKeyValue(); return false;">
+                <fieldset>
+
+                    <!-- Start KEY / VALUE -->
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="keyForm">Key</label>
+                            <input type="text" class="form-control" id="keyForm" value="" required />
+                            <label for="valueForm">Value</label>
+                            <input type="text" class="form-control" id="valueForm" value="" required />
+                        </div>
+                    </div>
+                    <!-- End KEY / VALUE-->
+
+                    <!-- Start radio-->
+                    <div class="col-md-4">
+                        <div class="form-group"><br>
+                            <div class="radio">
+                                <label for="valueRadio">
+                                    <input type="radio" name="check" value="value" id="valueRadio" checked required />
+                                    Value
+                                </label> <br/>
+                            </div>
+                            <div class="radio">
+                                <label for="urlRadio">
+                                    <input type="radio" name="check" value="url" id="urlRadio" required />
+                                    URL (not yet available)
+                                </label> <br/>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- End CheckBox -->
+
+                    <!-- Start Select Button -->
+                    <div class="col-md-4">
+                        <div class="form-group"><br>
+                            <select class="form-control" id="select">
+                                <option value="put">put</option>
+                                <option value="dput (not yet available)">dput</option>
+                            </select>
+                            <br/>
+                            <input class="btn btn-default" role="button" type="submit" value="Push"/>
+                        </div>
+                    </div>
+                    <!-- end Select Button -->
+                </fieldset>
+            </form>
+
+        </div>
+        <!-- END PAGE-PRINCIPAL -->
+
+    </footer>
+    <!-- End footer -->
+
+</div>
+<!-- End all -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+<script src="../fog05/coffee/coffez.js"></script>
+<script src="../fog05/coffee/store.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
