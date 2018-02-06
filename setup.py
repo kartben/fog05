@@ -5,6 +5,7 @@ from setuptools import setup, find_packages
 setup(
     name='fog05',
     version='0.1.1',
+    python_requires='>=3',
     author='ATO',
     packages=['fog05', 'fog05/interfaces','fog05/svcs'],
     install_requires=['networkx', 'jsonschema', 'python-daemon','websockets'],
