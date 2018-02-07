@@ -880,7 +880,7 @@ class KVMLibvirt(RuntimePlugin):
         self.flavors.update({manifest.get('uuid'): manifest})
 
     def __remove_flavor(self, flavor_uuid):
-        self.images.pop(flavor_uuid)
+        self.flavors.pop(flavor_uuid)
         uri = '{}/{}'.format(self.HOME_FLAVOR, flavor_uuid)
         self.__pop_actual_store(uri)
 
