@@ -11,6 +11,10 @@
     "uuid":{
       "type":"string"
     },
+    "flavor_id":{
+      "type":"string",
+      "description":"flavor uuid where find infomation about cpu, memory and disk size"
+    },
     "cpu":{
       "type":"integer"
     },
@@ -22,7 +26,7 @@
     },
     "base_image":{
       "type":"string",
-      "description":"url or local path of image"
+      "description":"url, local path of image, or uuid of image"
     },
     "user-data":{
       "type" : "string",
