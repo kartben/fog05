@@ -92,7 +92,8 @@ class KVMLibvirt(RuntimePlugin):
         generating xml from templates/vm.xml with jinja2
 
 
-        the base image should donwloaded now!!
+        TODO: check if base_image is an uuid in that case check if the base image was already defined
+        TODO: check if flavor_id is defined in the manifest, if not is an error, and use it to populate information on ram, cpu, disk size
 
         """
         self.agent.logger.info('define_entity()', ' KVM Plugin - Defining a VM')

@@ -1,5 +1,4 @@
-import sys
-import os
+import uuid
 from fog05.interfaces.Plugin import Plugin
 
 
@@ -200,6 +199,13 @@ class RuntimePlugin(Plugin):
 
         '''
         raise NotImplementedError('This is and interface!')
+
+    def is_uuid(self, uuid_string):
+        try:
+            val = uuid.UUID(uuid_string, version=4)
+        except ValueError:
+            return False
+        return True
 
 class EntityNotExistingException(Exception):
     def __init__(self, message, errors):
