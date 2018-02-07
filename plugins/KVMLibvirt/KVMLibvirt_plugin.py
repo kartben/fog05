@@ -82,6 +82,11 @@ class KVMLibvirt(RuntimePlugin):
             if entity.get_state() == State.DEFINED:
                 self.undefine_entity(k)
 
+        for k in list(self.images.keys()):
+            self.__remove_image(k)
+        for k in list(self.flavors.keys()):
+            self.__remove_flavor(k)
+
         self.conn.close()
         self.agent.logger.info('stopRuntime()', '[ DONE ] KVM Plugin - Bye Bye')
 
@@ -100,35 +105,105 @@ class KVMLibvirt(RuntimePlugin):
         """
         self.agent.logger.info('define_entity()', ' KVM Plugin - Defining a VM')
 
-        if len(args) > 0:
-            entity_uuid = args[4]
-            disk_path = str('%s.qcow2' % entity_uuid) #TODO disk extension depend on base image format
-            cdrom_path = str('%s_config.iso' % entity_uuid)
-            disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
-            cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
-            entity = KVMLibvirtEntity(entity_uuid, args[0], args[2], args[1], disk_path, args[3], cdrom_path, [],
-                                   args[5], args[6], args[7])
-        elif len(kwargs) > 0:
+        entity = None
+        img = None
+        flavor = None
+
+        #TODO should remove this because always use **kwargs
+        #if len(args) > 0:
+        #    self.agent.logger.info('define_entity()', ' KVM Plugin - Called with *args')
+        #    entity_uuid = args[4]
+        #    disk_path = str('%s.qcow2' % entity_uuid) #TODO disk extension depend on base image format
+        #    cdrom_path = str('%s_config.iso' % entity_uuid)
+        #    disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
+        #    cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
+        #    entity = KVMLibvirtEntity(entity_uuid, args[0], args[2], args[1], disk_path, args[3], cdrom_path, [],
+        #                           args[5], args[6], args[7])
+
+        if len(kwargs) > 0:
+            self.agent.logger.info('define_entity()', ' KVM Plugin - Called with **kwargs')
             entity_uuid = kwargs.get('entity_uuid')
-            disk_path = str('%s.qcow2' % entity_uuid) #TODO disk extension depend on base image format
-            cdrom_path = str('%s_config.iso' % entity_uuid)
-            disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
-            cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
-            entity = KVMLibvirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
-                                      kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
-                                      kwargs.get('base_image'), kwargs.get('user-data'), kwargs.get('ssh-key'))
+            base_image = kwargs.get('base_image')
+            name = kwargs.get('name')
+
+
+            if self.is_uuid(base_image):
+                img = self.images.get(base_image, None)
+                if img is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find image {}'.format(base_image))
+                    #TODO should write the error in the store
+                    return
+            else:
+                self.agent.logger.warning('define_entity()', '[ WARN ] KVM Plugin - No image id specified defining from manifest information new image id uuid:{}'.format(entity_uuid))
+                #image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, base_image.split('/')[-1])
+                #self.agent.get_os_plugin().download_file(base_image, image_name)
+                img_info = {}
+                img_info.update({"uuid": entity_uuid})
+                img_info.update({"name": '{}_img'.format(name)})
+                img_info.update({"base_image": base_image})
+                #img_info.update({"path": image_name})
+                img_info.update({"format": base_image.split('.')[-1]})
+                self.__add_image(img_info)
+                img = self.images.get(entity_uuid, None)
+                if img is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find image {}'.format(entity_uuid))
+                    # TODO should write the error in the store
+                    return
+
+            if kwargs.get('flavor_id', None) is None:
+                self.agent.logger.warning('define_entity()', '[ WARN ] KVM Plugin - No flavor specified defining from manifest information new flavor uuid:{}'.format(entity_uuid))
+                cpu = kwargs.get('cpu')
+                mem = kwargs.get('memory')
+                disk_size = kwargs.get('disk_size')
+                flavor_info = {}
+                flavor_info.update({'name': '{}_flavor'.format(name)})
+                flavor_info.update({'uuid': entity_uuid})
+                flavor_info.update({'cpu': cpu})
+                flavor_info.update({'memory': mem})
+                flavor_info.update({'disk_size': disk_size})
+                self.__add_flavor(flavor_info)
+                flavor = self.flavors.get(entity_uuid, None)
+                if flavor is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find flavor {}'.format(entity_uuid))
+                    # TODO should write the error in the store
+                    return
+            else:
+                flavor = self.flavors.get(kwargs.get('flavor_id'), None)
+                if flavor is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find flavor {}'.format(kwargs.get('flavor_id')))
+                    # TODO should write the error in the store
+                    return
+
+            entity = KVMLibvirtEntity(entity_uuid, name, img.get('uuid'), flavor.get('uuid'))
+            entity.set_user_file(kwargs.get('user-data'))
+            entity.set_ssh_key(kwargs.get('ssh-key'))
+            entity.set_networks(kwargs.get('networks'))
+            #entity = KVMLibvirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
+            #                          kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
+            #                          kwargs.get('base_image'), kwargs.get('user-data'), kwargs.get('ssh-key'))
         else:
-            return None
+            self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Wrong parameters args:{} kwargs:{}'.format(args, kwargs))
+            # TODO should write the error in the store
+            return
 
-        image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image_url.split('/')[-1])
-        self.agent.get_os_plugin().download_file(entity.image_url, image_name)
-        entity.image = image_name
+        #image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image_url.split('/')[-1])
+        #self.agent.get_os_plugin().download_file(entity.image_url, image_name)
+        #entity.image = image_name
 
-        entity.set_state(State.DEFINED)
+        entity.on_defined()
         self.current_entities.update({entity_uuid: entity})
         uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME_ENTITY, entity_uuid))
         vm_info = json.loads(self.agent.dstore.get(uri))
         vm_info.update({"status": "defined"})
+        data = vm_info.get('entity_data')
+        data.update({"flavor_id": flavor.get('uuid')})
+
+        data.pop('cpu')
+        data.pop('memory')
+        data.pop('disk_size')
+
+        data.update({"base_image": img.get('uuid')})
+        vm_info.update({'entity_data': data})
         self.__update_actual_store_entity(entity_uuid, vm_info)
         self.agent.logger.info('define_entity()', '[ DONE ] KVM Plugin - VM Defined uuid: %s' % entity_uuid)
         return entity_uuid
@@ -153,7 +228,8 @@ class KVMLibvirt(RuntimePlugin):
 
             for i in list(entity.instances.keys()):
                 self.__force_entity_instance_termination(entity_uuid, i)
-            self.agent.get_os_plugin().remove_file(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
+            #self.agent.get_os_plugin().remove_file(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
+
             self.__pop_actual_store_entity(entity_uuid)
             self.agent.logger.info('undefine_entity()', '[ DONE ] KVM Plugin - Undefine a VM uuid %s ' % entity_uuid)
             return True
@@ -187,19 +263,33 @@ class KVMLibvirt(RuntimePlugin):
             else:
 
                 id = len(entity.instances)
-                name = '{0}{1}'.format(entity.name, id)
-                disk_path = str('%s.qcow2' % instance_uuid)
-                cdrom_path = str('%s_config.iso' % instance_uuid)
+                name = '{}{}'.format(entity.name, id)
+                flavor = self.flavors.get(entity.flavor_id, None)
+                img = self.images.get(entity.image_id, None)
+                if flavor is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find flavor {}'.format(entity.flavor_id))
+                    # TODO should write the error in the store
+                    return
+
+                if img is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find image {}'.format(entity.image_id))
+                    # TODO should write the error in the store
+                    return
+
+                disk_path = '{}.{}'.format(instance_uuid, img.get('format'))
+                cdrom_path = '{}_config.iso'.format(instance_uuid)
                 disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
                 cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
-                #uuid, name, cpu, ram, disk, disk_size, cdrom, networks, image, user_file, ssh_key, entity_uuid)
-                instance = KVMLibvirtEntityInstance(instance_uuid, name, entity.cpu, entity.ram, disk_path,
-                                      entity.disk_size, cdrom_path, entity.networks, entity.image, entity.user_file,
-                                      entity.ssh_key, entity_uuid)
+
+                #uuid, name, disk, cdrom, networks, user_file, ssh_key, entity_uuid, flavor_id, image_id):
+                instance = KVMLibvirtEntityInstance(instance_uuid, name, disk_path, cdrom_path, entity.networks, entity.user_file,
+                                      entity.ssh_key, entity_uuid, flavor.get('uuid'), img.get('uuid'))
+
+                ### vm networking TODO: add support for SR-IOV
                 for i, n in enumerate(instance.networks):
                     if n.get('type') in ['wifi']:
 
-                        nw_ifaces =  self.agent.get_os_plugin().get_network_informations()
+                        nw_ifaces = self.agent.get_os_plugin().get_network_informations()
                         for iface in nw_ifaces:
                             if self.agent.get_os_plugin().get_intf_type(iface.get('intf_name')) == 'wireless' and iface.get('available') is True:
                                 self.agent.get_os_plugin().set_interface_unaviable(iface.get('intf_name'))
@@ -213,13 +303,12 @@ class KVMLibvirt(RuntimePlugin):
                         n.update({'br_name': br_name})
                     if n.get('intf_name') is None:
                         n.update({'intf_name': 'veth{0}'.format(i)})
+                ######
 
-                vm_xml = self.__generate_dom_xml(instance)
-                #image_name = instance.image.split('/')[-1]
+                vm_xml = self.__generate_dom_xml(instance, flavor, img)
 
-                #wget_cmd = str('wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
-                #image_url = instance.image
 
+                ### creating cloud-init initial drive TODO: check all the possibilities provided by OSM
                 conf_cmd = str("%s --hostname %s --uuid %s" % (os.path.join(self.DIR, 'templates',
                                                                      'create_config_drive.sh'), entity.name, entity_uuid))
 
@@ -238,15 +327,12 @@ class KVMLibvirt(RuntimePlugin):
                     #rm_temp_cmd = str(rm_temp_cmd + " %s" % key_filename)
 
                 conf_cmd = str(conf_cmd + " %s" % instance.cdrom)
+                #############
 
-                qemu_cmd = str("qemu-img create -f qcow2 %s %dG" % (instance.disk, instance.disk_size))
+                qemu_cmd = 'qemu-img create -f {} {} {}G'.format(img.get('format'), instance.disk, flavor.get('disk_size'))
 
-                dd_cmd = str("dd if=%s of=%s" % (instance.image, instance.disk))
+                dd_cmd = 'dd if={} of={}'.format(img.get('path'), instance.disk)
 
-                #instance.image = image_name
-
-                #self.agent.getOSPlugin().executeCommand(wget_cmd, True)
-                #self.agent.getOSPlugin().downloadFile(image_url, os.path.join(self.BASE_DIR, self.IMAGE_DIR, image_name))
                 self.agent.get_os_plugin().execute_command(qemu_cmd, True)
                 self.agent.get_os_plugin().execute_command(conf_cmd, True)
                 self.agent.get_os_plugin().execute_command(dd_cmd, True)
@@ -268,15 +354,18 @@ class KVMLibvirt(RuntimePlugin):
                 entity.add_instance(instance)
                 self.current_entities.update({entity_uuid: entity})
 
-                uri = str('%s/%s/%s' % (self.agent.ahome, self.HOME_ENTITY, entity_uuid))
+                uri = '{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, entity_uuid)
                 vm_info = json.loads(self.agent.astore.get(uri))
                 vm_info.update({"status": "configured"})
                 vm_info.update({"name": instance.name})
+                data = vm_info.get('entity_data')
+                data.update({"flavor_id": flavor.get('uuid')})
+                data.update({"base_image": img.get('uuid')})
+                vm_info.update({'entity_data': data})
 
-                self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
-                #self.__update_actual_store(entity_uuid, vm_info)
+                self.__update_actual_store_instance(entity_uuid, instance_uuid, vm_info)
 
-                self.agent.logger.info('configure_entity()', '[ DONE ] KVM Plugin - Configure a VM uuid %s ' % entity_uuid)
+                self.agent.logger.info('configure_entity()', '[ DONE ] KVM Plugin - Configure a VM uuid {}'.format(instance_uuid))
                 return True
 
     def clean_entity(self, entity_uuid, instance_uuid=None):
@@ -498,7 +587,7 @@ class KVMLibvirt(RuntimePlugin):
                     self.agent.logger.info('resume_entity()', '[ DONE ] KVM Plugin - Resume a VM uuid %s ' % instance_uuid)
                     return True
 
-
+    #TODO fix migration with flavors and images
     def migrate_entity(self, entity_uuid, dst=False, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
@@ -776,6 +865,11 @@ class KVMLibvirt(RuntimePlugin):
         self.images.update({manifest.get('uuid'): manifest})
 
     def __remove_image(self, image_uuid):
+        image = self.images.get(image_uuid, None)
+        if image is None:
+            self.agent.logger.info('__remove_image()', ' KVM Plugin - Image not found!!')
+            return
+        self.agent.get_os_plugin().remove_file(image.get('path'))
         self.images.pop(image_uuid)
         uri = '{}/{}'.format(self.HOME_IMAGE, image_uuid)
         self.__pop_actual_store(uri)
@@ -945,13 +1039,12 @@ class KVMLibvirt(RuntimePlugin):
                 #if instance.get_state() == State.DEFINED:
                 #    self.undefine_entity(k)
 
-
-    def __generate_dom_xml(self, instance):
+    def __generate_dom_xml(self, instance, flavor, image):
         template_xml = self.agent.get_os_plugin().read_file(os.path.join(self.DIR, 'templates', 'vm.xml'))
         vm_xml = Environment().from_string(template_xml)
-        vm_xml = vm_xml.render(name=instance.name, uuid=instance.uuid, memory=instance.ram,
-                               cpu=instance.cpu, disk_image=instance.disk,
-                               iso_image=instance.cdrom, networks=instance.networks)
+        vm_xml = vm_xml.render(name=instance.name, uuid=instance.uuid, memory=flavor.get('memory'),
+                               cpu=flavor.get('cpu'), disk_image=instance.disk,
+                               iso_image=instance.cdrom, networks=instance.networks, format=image.get('format'))
         return vm_xml
 
     def __update_actual_store(self, uri, value):
