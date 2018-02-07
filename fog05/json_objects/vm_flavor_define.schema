@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "title": "VM Definition",
+  "description": "VM flavor definition schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "flavor name"
+    },
+    "uuid": {
+      "type": "string",
+      "description": "flavor uuid"
+    },
+    "cpu":{
+      "type":"integer"
+    },
+    "memory":{
+      "type":"integer"
+    },
+    "disk_size":{
+      "type":"integer"
+    }
+  }
+}
