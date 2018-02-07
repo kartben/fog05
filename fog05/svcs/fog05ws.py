@@ -40,8 +40,9 @@ class Dispatcher (object):
 
 
 class Server (object):
-    def __init__(self, port):
+    def __init__(self, port, auth):
         self.port = port
+        self.auth = auth
         self.svc = None
 
         self.logger_impl = logging.getLogger('websockets')
@@ -251,16 +252,16 @@ class Server (object):
     async def dispatch(self, websocket, path):
         while True:
             raddr = websocket.remote_address
-            print("Connection from: {}".format(raddr))
-            while True:
-                message = await websocket.recv()
-                print(">> Processing message {}".format(message))
-                await self.process(websocket, message)
-            #async for message in websocket:
-                # self.logger.error("fog05ws", ">> Processing message {}".format(message))
+            print("Connection from {} with path {}".format(raddr,path))
+            client_auth = path.split('/')[1]
+            if client_auth== self.auth:
+                while True:
+                    message = await websocket.recv()
+                    print(">> Processing message {}".format(message))
+                    await self.process(websocket, message)
 
-
-            print(">> Peer closed the connection.")
+            else:
+                print(">> Closing connection because of invalid authentication.")
             websocket.close()
             break
 
@@ -278,12 +279,21 @@ class Server (object):
 
 if __name__=='__main__':
     port = 9669
+    auth = '/'
     if len(sys.argv) > 1:
         if sys.argv[1] == '--help' or sys.argv[1] == '-h' or sys.argv[1] == 'help':
-            print('\nUSAGE:\n\tpython3 fog05ws [port=9669]\n')
+            print('\nUSAGE:\n\tpython3 fog05ws -p port -a auth\n')
             exit(0)
         else:
-            port = int(sys.argv[2])
+            idx = 1
+            len = len(sys.argv)
+            while idx < len:
+                if sys.argv[idx] == '-p':
+                    port = sys.argv[idx + 1]
+                    idx = idx + 2
+                elif sys.argv[idx] == '-a':
+                    auth = sys.argv[idx + 1]
+                    idx = idx + 2
 
-    s = Server(port)
+    s = Server(port, auth)
     s.start()
