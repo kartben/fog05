@@ -42,15 +42,21 @@ class KVMLibvirt(RuntimePlugin):
 
         self.start_runtime()
 
-
-
     def start_runtime(self):
         self.agent.logger.info('startRuntime()', ' KVM Plugin - Connecting to KVM')
         self.conn = libvirt.open("qemu:///system")
         self.agent.logger.info('startRuntime()', '[ DONE ] KVM Plugin - Connecting to KVM')
         uri = str('%s/%s/*' % (self.agent.dhome, self.HOME_ENTITY))
-        self.agent.logger.info('startRuntime()',' KVM Plugin - Observing %s' % uri)
-        self.agent.dstore.observe(uri, self.__react_to_cache)
+        self.agent.logger.info('startRuntime()',' KVM Plugin - Observing {} for entity'.format(uri))
+        self.agent.dstore.observe(uri, self.__react_to_cache_entity)
+
+        uri = '{}/{}/*'.format(self.agent.dhome, self.HOME_FLAVOR)
+        self.agent.logger.info('startRuntime()', ' KVM Plugin - Observing {} for flavor'.format(uri))
+        self.agent.dstore.observe(uri, self.__react_to_cache_flavor)
+
+        uri = '{}/{}/*'.format(self.agent.dhome, self.HOME_IMAGE)
+        self.agent.logger.info('startRuntime()', ' KVM Plugin - Observing {} for image'.format(uri))
+        self.agent.dstore.observe(uri, self.__react_to_cache_image)
 
         '''check if dirs exists if not exists create'''
         if self.agent.get_os_plugin().dir_exists(self.BASE_DIR):
@@ -65,8 +71,6 @@ class KVMLibvirt(RuntimePlugin):
             self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.DISK_DIR))
             self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.IMAGE_DIR))
             self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.LOG_DIR))
-
-
         return self.uuid
 
     def stop_runtime(self):
@@ -75,18 +79,6 @@ class KVMLibvirt(RuntimePlugin):
             entity = self.current_entities.get(k)
             for i in list(entity.instances.keys()):
                 self.__force_entity_instance_termination(k, i)
-            # if entity.get_state() == State.PAUSED:
-            #     self.resume_entity(k)
-            #     self.stop_entity(k)
-            #     self.clean_entity(k)
-            #     self.undefine_entity(k)
-            # if entity.get_state() == State.RUNNING:
-            #     self.stop_entity(k)
-            #     self.clean_entity(k)
-            #     self.undefine_entity(k)
-            # if entity.get_state() == State.CONFIGURED:
-            #     self.clean_entity(k)
-            #     self.undefine_entity(k)
             if entity.get_state() == State.DEFINED:
                 self.undefine_entity(k)
 
@@ -110,7 +102,7 @@ class KVMLibvirt(RuntimePlugin):
 
         if len(args) > 0:
             entity_uuid = args[4]
-            disk_path = str('%s.qcow2' % entity_uuid)
+            disk_path = str('%s.qcow2' % entity_uuid) #TODO disk extension depend on base image format
             cdrom_path = str('%s_config.iso' % entity_uuid)
             disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
             cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
@@ -118,7 +110,7 @@ class KVMLibvirt(RuntimePlugin):
                                    args[5], args[6], args[7])
         elif len(kwargs) > 0:
             entity_uuid = kwargs.get('entity_uuid')
-            disk_path = str('%s.qcow2' % entity_uuid)
+            disk_path = str('%s.qcow2' % entity_uuid) #TODO disk extension depend on base image format
             cdrom_path = str('%s_config.iso' % entity_uuid)
             disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
             cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
@@ -798,11 +790,33 @@ class KVMLibvirt(RuntimePlugin):
         uri = '{}/{}'.format(self.HOME_FLAVOR, flavor_uuid)
         self.__pop_actual_store(uri)
 
-    def __react_to_cache(self, uri, value, v):
-        self.agent.logger.info('__react_to_cache()', ' KVM Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
+    def __react_to_cache_image(self, uri, value, v):
+        self.agent.logger.info('__react_to_cache_image()', ' KVM Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
+        if uri.split('/')[-2] == 'image':
+            image_uuid = uri.split('/')[-1]
+            if value is None and v is None:
+                self.agent.logger.info('__react_to_cache_image()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+                self.__remove_image(image_uuid)
+            else:
+                value = json.loads(value)
+                self.__add_image(value)
+
+    def __react_to_cache_flavor(self, uri, value, v):
+        self.agent.logger.info('__react_to_cache_flavor()', ' KVM Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
+        if uri.split('/')[-2] == 'flavor':
+            flavor_uuid = uri.split('/')[-1]
+            if value is None and v is None:
+                self.agent.logger.info('__react_to_cache_flavor()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+                self.__remove_flavor(flavor_uuid)
+            else:
+                value = json.loads(value)
+                self.__add_flavor(value)
+
+    def __react_to_cache_entity(self, uri, value, v):
+        self.agent.logger.info('__react_to_cache_entity()', ' KVM Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
         if uri.split('/')[-2] == 'entity':
             if value is None and v is None:
-                self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+                self.agent.logger.info('__react_to_cache_entity()', ' KVM Plugin - This is a remove for URI: %s' % uri)
                 entity_uuid = uri.split('/')[-1]
                 self.undefine_entity(entity_uuid)
             else:
@@ -825,7 +839,7 @@ class KVMLibvirt(RuntimePlugin):
                     #             react_func(entity_data)
         elif uri.split('/')[-2] == 'instance':
             if value is None and v is None:
-                self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+                self.agent.logger.info('__react_to_cache_entity()', ' KVM Plugin - This is a remove for URI: %s' % uri)
                 instance_uuid = uri.split('/')[-1]
                 entity_uuid = uri.split('/')[-3]
                 self.__force_entity_instance_termination(entity_uuid,instance_uuid)
@@ -845,22 +859,6 @@ class KVMLibvirt(RuntimePlugin):
                         react_func(entity_data, dst=True, instance_uuid=instance_uuid)
                     else:
                         react_func(entity_data, instance_uuid=instance_uuid)
-        elif uri.split('/')[-2] == 'image':
-            image_uuid = uri.split('/')[-1]
-            if value is None and v is None:
-                self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
-                self.__remove_image(image_uuid)
-            else:
-                value = json.loads(value)
-                self.__add_image(value)
-        elif uri.split('/')[-2] == 'flavor':
-            flavor_uuid = uri.split('/')[-1]
-            if value is None and v is None:
-                self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
-                self.__remove_flavor(flavor_uuid)
-            else:
-                value = json.loads(value)
-                self.__add_flavor(value)
 
 
     def __random_mac_generator(self):

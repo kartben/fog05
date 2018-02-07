@@ -16,6 +16,10 @@
       "type": "string",
       "description": "url of image"
     },
+    "format":{
+      "type":"string",
+      "description":"image format (eg. qcow2, raw, iso, vdi...)"
+    },
     "path":{
       "type":"string",
       "description":"path on local node, added when image is downloaded"
