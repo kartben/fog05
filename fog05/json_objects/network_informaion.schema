@@ -23,13 +23,27 @@
     "uuid":{
       "type":"string"
     },
+    "network_type":{
+      "type":"string",
+      "description":"bridge (vxlan overlay), e-lan, e-line"
+    },
     "ip_range":{
+      "type":"string"
+    },
+    "ip_type":{
       "type":"string"
     },
     "has_dhcp":{
       "type":"string"
     },
+    "dhcp_range":{
+      "type":"string",
+      "description":"dhcp address range X.X.X.X|X.X.Y.Y"
+    },
     "gateway":{
+      "type":"string"
+    },
+    "dns":{
       "type":"string"
     },
     "vxlan_id":{

@@ -60,6 +60,9 @@ class NetworkPlugin(Plugin):
         :gateway: String
         :return: tuple (net_name,net_uuid) or None in case of failure
 
+
+        #TODO on fog05 -> support dhcp as used on OSM
+
         '''
 
         raise NotImplementedError('This is and interface!')

@@ -260,11 +260,6 @@ class FOSCli(object):
     def __get_all_node_plugin(self,node_uuid):
         uri = str('afos://<sys-id>/{}/plugins'.format(node_uuid))
         response = yield from self.store.actual.get(uri)
-        # cmd = 'get {} {}'.format(self.asid, uri)
-        # async with self.websocket as ws:
-        #     await ws.send(cmd)
-        #     response = await ws.recv()
-        #     response = response.split(uri)[-1].replace(' ', '')
         if response is not None and response != '':
             return json.loads(response).get('plugins')
         else:
@@ -293,24 +288,6 @@ class FOSCli(object):
         else:
             print("Error on adding network")
 
-        # cmd = 'put {0} {1} {2}'.format(self.sid, uri, json_data)
-        # async with self.websocket as ws:
-        #     await ws.send(cmd)
-        #     response = await ws.recv()
-        # print('{0} NETWORK {1} ADD'.format(response,manifest.get('uuid')))
-        #
-        # response = response.split(' ')
-        # if response[0] == 'OK':
-        #     print('Network UUID is {}' % manifest.get('uuid'))
-        # elif response[0] == 'NOK':
-        #     print("Error on adding network")
-        # else:
-        #     print("Wrong response for dStore server")
-        #r = self.store.desidered.put(uri, json_data)
-        #if r is None:
-        #    print('Resolved failed')
-        #elif r:
-        #    print('network added')
 
     @asyncio.coroutine
     def __send_remove_network(self, node_uuid, net_id):

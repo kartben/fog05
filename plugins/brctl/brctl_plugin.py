@@ -68,6 +68,8 @@ class brctl(NetworkPlugin):
 
     def create_virtual_network(self, network_name, net_uuid, ip_range=None, has_dhcp=False, gateway=None, manifest=None):
 
+        self.agent.logger.info('create_virtual_network()', 'Parameters network_name:{} net_uudi:{} ip_range:{} has_dhcp:{} gateway:{} manifest:{}'.format(network_name, net_uuid, ip_range, has_dhcp, gateway, manifest))
+
         net = self.netmap.get(net_uuid, None)
         if net is not None:
             raise NetworkAlreadyExistsException('{} network already exists'.format(net_uuid))
@@ -81,6 +83,12 @@ class brctl(NetworkPlugin):
         info.update({'has_dhcp': has_dhcp})
         info.update({'ip_range': ip_range})
         info.update({'gateway': gateway})
+
+        #TODO these information should be loaded from manifest
+        info.update({'dns': ''})
+        info.update({'dhcp_range': ''})
+        info.update({'ip_type': ''})
+        info.update({'network_type': 'vxlan'})
         #brcmd = 'sudo brctl addbr {}-net', network_name)
         #net_uuid = uuid
         #
