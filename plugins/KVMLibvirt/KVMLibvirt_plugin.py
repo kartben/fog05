@@ -25,11 +25,21 @@ class KVMLibvirt(RuntimePlugin):
         self.DISK_DIR = "disks"
         self.IMAGE_DIR = "images"
         self.LOG_DIR = "logs"
-        self.HOME = str("runtime/%s/entity" % self.uuid)
+        self.HOME_ENTITY = 'runtime/{}/entity'.format(self.uuid)
+        self.HOME_IMAGE = 'runtime/{}/image'.format(self.uuid)
+        self.HOME_FLAVOR = 'runtime/{}/flavor'.format(self.uuid)
         self.INSTANCE = "instance"
         file_dir = os.path.dirname(__file__)
         self.DIR = os.path.abspath(file_dir)
         self.conn = None
+
+        ### IMAGES and FLAVORS ###
+
+        self.images = {}
+        self.flavors = {}
+
+        ##########################
+
         self.start_runtime()
 
 
@@ -38,7 +48,7 @@ class KVMLibvirt(RuntimePlugin):
         self.agent.logger.info('startRuntime()', ' KVM Plugin - Connecting to KVM')
         self.conn = libvirt.open("qemu:///system")
         self.agent.logger.info('startRuntime()', '[ DONE ] KVM Plugin - Connecting to KVM')
-        uri = str('%s/%s/*' % (self.agent.dhome, self.HOME))
+        uri = str('%s/%s/*' % (self.agent.dhome, self.HOME_ENTITY))
         self.agent.logger.info('startRuntime()',' KVM Plugin - Observing %s' % uri)
         self.agent.dstore.observe(uri, self.__react_to_cache)
 
@@ -124,10 +134,10 @@ class KVMLibvirt(RuntimePlugin):
 
         entity.set_state(State.DEFINED)
         self.current_entities.update({entity_uuid: entity})
-        uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+        uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME_ENTITY, entity_uuid))
         vm_info = json.loads(self.agent.dstore.get(uri))
         vm_info.update({"status": "defined"})
-        self.__update_actual_store(entity_uuid, vm_info)
+        self.__update_actual_store_entity(entity_uuid, vm_info)
         self.agent.logger.info('define_entity()', '[ DONE ] KVM Plugin - VM Defined uuid: %s' % entity_uuid)
         return entity_uuid
 
@@ -152,7 +162,7 @@ class KVMLibvirt(RuntimePlugin):
             for i in list(entity.instances.keys()):
                 self.__force_entity_instance_termination(entity_uuid, i)
             self.agent.get_os_plugin().remove_file(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
-            self.__pop_actual_store(entity_uuid)
+            self.__pop_actual_store_entity(entity_uuid)
             self.agent.logger.info('undefine_entity()', '[ DONE ] KVM Plugin - Undefine a VM uuid %s ' % entity_uuid)
             return True
 
@@ -266,7 +276,7 @@ class KVMLibvirt(RuntimePlugin):
                 entity.add_instance(instance)
                 self.current_entities.update({entity_uuid: entity})
 
-                uri = str('%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid))
+                uri = str('%s/%s/%s' % (self.agent.ahome, self.HOME_ENTITY, entity_uuid))
                 vm_info = json.loads(self.agent.astore.get(uri))
                 vm_info.update({"status": "configured"})
                 vm_info.update({"name": instance.name})
@@ -371,7 +381,7 @@ class KVMLibvirt(RuntimePlugin):
                     #     self.__wait_boot(log_filename)
 
                     self.agent.logger.info('run_entity()', ' KVM Plugin - VM %s Started!' % instance)
-                    uri = str('%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid,self.INSTANCE,
+                    uri = str('%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE,
                                                   instance_uuid))
                     vm_info = json.loads(self.agent.astore.get(uri))
                     vm_info.update({"status": "run"})
@@ -416,7 +426,7 @@ class KVMLibvirt(RuntimePlugin):
                     instance.on_stop()
                     self.current_entities.update({entity_uuid: entity})
 
-                    uri = str('%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+                    uri = str('%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid))
                     vm_info = json.loads(self.agent.astore.get(uri))
                     vm_info.update({"status": "stop"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
@@ -453,7 +463,7 @@ class KVMLibvirt(RuntimePlugin):
                     instance.on_pause()
                     self.current_entities.update({entity_uuid: entity})
                     uri = str(
-                        '%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+                        '%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid))
                     vm_info = json.loads(self.agent.astore.get(uri))
                     vm_info.update({"status": "pause"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
@@ -489,7 +499,7 @@ class KVMLibvirt(RuntimePlugin):
                     instance_uuid.on_resume()
                     self.current_entities.update({entity_uuid: entity})
                     uri = str(
-                        '%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+                        '%s/%s/%s/%s/%s' % (self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid))
                     vm_info = json.loads(self.agent.dstore.get(uri))
                     vm_info.update({"status": "run"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
@@ -550,7 +560,7 @@ class KVMLibvirt(RuntimePlugin):
         if dst is True:
             self.agent.logger.info('before_migrate_entity_actions()', ' KVM Plugin - Before Migration Destination: '
                                                                      'Create Domain and destination files')
-            uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+            uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid))
             entity_info = json.loads(self.agent.dstore.get(uri))
             vm_info = entity_info.get("entity_data")
 
@@ -563,7 +573,7 @@ class KVMLibvirt(RuntimePlugin):
             self.agent.get_os_plugin().download_file(entity.image_url, image_name)
             entity.image = image_name
             self.current_entities.update({entity_uuid: entity})
-            self.__update_actual_store(entity_uuid, entity_info)
+            self.__update_actual_store_entity(entity_uuid, entity_info)
 
 
             id = len(entity.instances)
@@ -630,7 +640,7 @@ class KVMLibvirt(RuntimePlugin):
                                                                      'information about destination node')
             entity = self.current_entities.get(entity_uuid, None)
             instance = entity.get_instance(instance_uuid)
-            uri = str("%s/%s/%s/%s/%s" % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+            uri = str("%s/%s/%s/%s/%s" % (self.agent.dhome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid))
             instance_info = json.loads(self.agent.dstore.get(uri))
             fognode_uuid = instance_info.get("dst")
 
@@ -747,7 +757,7 @@ class KVMLibvirt(RuntimePlugin):
 
                 self.current_entities.update({entity_uuid: entity})
 
-                uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid,self.INSTANCE,instance_uuid))
+                uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid))
                 vm_info = json.loads(self.agent.dstore.get(uri))
                 vm_info.pop('dst')
                 vm_info.update({"status": "run"})
@@ -763,6 +773,30 @@ class KVMLibvirt(RuntimePlugin):
                 self.agent.logger.info('after_migrate_entity_actions()', ' KVM Plugin - After Migration Source: Updating state, destroy vm')
                 self.__force_entity_instance_termination(entity_uuid,instance_uuid)
                 return True
+
+    def __add_image(self, manifest):
+        url = manifest.get('base_image')
+        image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, url.split('/')[-1])
+        self.agent.get_os_plugin().download_file(url, image_name)
+        manifest.update({'path':image_name})
+        uri = '{}/{}'.format(self.HOME_IMAGE,manifest.get('uuid'))
+        self.__update_actual_store(uri, manifest)
+        self.images.update({manifest.get('uuid'): manifest})
+
+    def __remove_image(self, image_uuid):
+        self.images.pop(image_uuid)
+        uri = '{}/{}'.format(self.HOME_IMAGE, image_uuid)
+        self.__pop_actual_store(uri)
+
+    def __add_flavor(self, manifest):
+        uri = '{}/{}'.format(self.HOME_FLAVOR, manifest.get('uuid'))
+        self.__update_actual_store(uri, manifest)
+        self.flavors.update({manifest.get('uuid'): manifest})
+
+    def __remove_flavor(self, flavor_uuid):
+        self.images.pop(flavor_uuid)
+        uri = '{}/{}'.format(self.HOME_FLAVOR, flavor_uuid)
+        self.__pop_actual_store(uri)
 
     def __react_to_cache(self, uri, value, v):
         self.agent.logger.info('__react_to_cache()', ' KVM Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
@@ -811,6 +845,23 @@ class KVMLibvirt(RuntimePlugin):
                         react_func(entity_data, dst=True, instance_uuid=instance_uuid)
                     else:
                         react_func(entity_data, instance_uuid=instance_uuid)
+        elif uri.split('/')[-2] == 'image':
+            image_uuid = uri.split('/')[-1]
+            if value is None and v is None:
+                self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+                self.__remove_image(image_uuid)
+            else:
+                value = json.loads(value)
+                self.__add_image(value)
+        elif uri.split('/')[-2] == 'flavor':
+            flavor_uuid = uri.split('/')[-1]
+            if value is None and v is None:
+                self.agent.logger.info('__react_to_cache()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+                self.__remove_flavor(flavor_uuid)
+            else:
+                value = json.loads(value)
+                self.__add_flavor(value)
+
 
     def __random_mac_generator(self):
         mac = [0x00, 0x16, 0x3e,
@@ -906,25 +957,34 @@ class KVMLibvirt(RuntimePlugin):
         return vm_xml
 
     def __update_actual_store(self, uri, value):
-        uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, uri))
+        uri = '{}/{}'.format(self.agent.ahome, uri)
+        value = json.dumps(value)
+        self.agent.astore.put(uri, value)
+
+    def __pop_actual_store(self, uri):
+        uri = '{}/{}'.format(self.agent.ahome, uri)
+        self.agent.astore.remove(uri)
+
+    def __update_actual_store_entity(self, uri, value):
+        uri = '{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, uri)
         value = json.dumps(value)
         self.agent.astore.put(uri, value)
 
     def __update_actual_store_instance(self, entity_uuid, instance_uuid, value):
-        uri = str("%s/%s/%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+        uri = str("%s/%s/%s/%s/%s" % (self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid))
         value = json.dumps(value)
         self.agent.astore.put(uri, value)
 
-    def __pop_actual_store(self, entity_uuid):
+    def __pop_actual_store_entity(self, entity_uuid):
         #e = uri
-        uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid))
+        uri = str("%s/%s/%s" % (self.agent.ahome, self.HOME_ENTITY, entity_uuid))
         self.agent.astore.remove(uri)
         #uri = str("%s/%s/%s" % (self.agent.dhome, self.HOME, e))
         #self.agent.dstore.remove(uri)
 
     def __pop_actual_store_instance(self, entity_uuid, instance_uuid):
         # e = uri
-        uri = str("%s/%s/%s/%s/%s" % (self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
+        uri = str("%s/%s/%s/%s/%s" % (self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid))
         self.agent.astore.remove(uri)
 
     def __netmask_to_cidr(self, netmask):

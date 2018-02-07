@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-06/schema#",
   "title": "VM Definition",
-  "description": "VM image definition schema",
+  "description": "VM image schema",
   "type": "object",
   "properties": {
     "name": {
@@ -15,6 +15,10 @@
     "base_image": {
       "type": "string",
       "description": "url of image"
+    },
+    "path":{
+      "type":"string",
+      "description":"path on local node, added when image is downloaded"
     }
   }
 }

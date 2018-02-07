@@ -21,6 +21,9 @@ class KVMLibvirtEntityInstance(EntityInstance):
         self.image = image
         self.user_file = user_file
         self.ssh_key = ssh_key
+        self.image_uuid = ''
+        self.flavor_id = ''
+
 
     def on_configured(self, configuration):
         self.xml = configuration
