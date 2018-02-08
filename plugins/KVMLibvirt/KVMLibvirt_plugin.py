@@ -12,6 +12,7 @@ import time
 import re
 import libvirt
 import ipaddress
+import threading
 
 class KVMLibvirt(RuntimePlugin):
 
@@ -195,13 +196,13 @@ class KVMLibvirt(RuntimePlugin):
         vm_info = json.loads(self.agent.dstore.get(uri))
         vm_info.update({"status": "defined"})
         data = vm_info.get('entity_data')
+
         data.update({"flavor_id": flavor.get('uuid')})
-
-        data.pop('cpu')
-        data.pop('memory')
-        data.pop('disk_size')
-
+        data.pop('cpu', None)
+        data.pop('memory', None)
+        data.pop('disk_size', None)
         data.update({"base_image": img.get('uuid')})
+
         vm_info.update({'entity_data': data})
         self.__update_actual_store_entity(entity_uuid, vm_info)
         self.agent.logger.info('define_entity()', '[ DONE ] KVM Plugin - VM Defined uuid: %s' % entity_uuid)
@@ -632,13 +633,11 @@ class KVMLibvirt(RuntimePlugin):
                     dom = self.__lookup_by_uuid(instance_uuid)
                     if dom is None:
                         self.agent.logger.info('migrate_entity()', ' KVM Plugin - Domain not already in this host')
-                        time.sleep(5)
                     else:
                         if dom.isActive() == 1:
                             break
                         else:
                             self.agent.logger.info('migrate_entity()', ' KVM Plugin - Domain in this host but not running')
-                            time.sleep(5)
 
 
                 self.after_migrate_entity_actions(entity_uuid, True, instance_uuid)
@@ -821,8 +820,9 @@ class KVMLibvirt(RuntimePlugin):
             instance = entity.get_instance(instance_uuid)
 
             # reading entity info
-            uri_entity = '{}/{}/{}'.format(self.agent.dhome, self.HOME_ENTITY, entity_uuid)
-            entity_info = json.loads(self.agent.dstore.get(uri_entity))
+            uri_entity = '{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, entity_uuid)
+            entity_info = json.loads(self.agent.astore.get(uri_entity))
+            entity_info.update({'status': 'define'})
 
 
             # reading instance info
@@ -867,6 +867,7 @@ class KVMLibvirt(RuntimePlugin):
                     break
 
             uri_img = '{}/{}/runtime/{}/image/{}'.format(self.agent.droot, destination_node_uuid, kvm_uuid, img_info.get('uuid'))
+            print('img uri dest: {}'.format(uri_img))
             self.agent.dstore.put(uri_img, json.dumps(img_info))
             # wait to be defined image
             while True:
@@ -876,13 +877,14 @@ class KVMLibvirt(RuntimePlugin):
                     break
 
             # send entity definition
-            uri_entity = '{}/{}/runtime/{}/entity/{}'.format(self.agent.dhome, destination_node_uuid, kvm_uuid, entity_uuid)
+            uri_entity = '{}/{}/runtime/{}/entity/{}'.format(self.agent.droot, destination_node_uuid, kvm_uuid, entity_uuid)
+            print('entity uri dest: {}'.format(uri_entity))
             self.agent.dstore.put(uri_entity, json.dumps(entity_info))
             while True:
                 uri_entity = '{}/{}/runtime/{}/entity/{}'.format(self.agent.aroot, destination_node_uuid, kvm_uuid, entity_uuid)
                 jdata = self.agent.astore.get(uri_entity)
                 if jdata is not None:
-                    entity_info = json.loads()
+                    entity_info = json.loads(jdata)
                     if entity_info is not None and entity_info.get('status') == 'defined':
                         break
 
@@ -1041,7 +1043,8 @@ class KVMLibvirt(RuntimePlugin):
                 elif react_func is not None:
                     entity_data.update({'entity_uuid': entity_uuid})
                     if action == 'landing':
-                        react_func(entity_data, dst=True, instance_uuid=instance_uuid)
+                        threading.Thread(target=react_func, args=[entity_data, True, instance_uuid]).start()
+                        #react_func(entity_data, dst=True, instance_uuid=instance_uuid)
                     else:
                         react_func(entity_data, instance_uuid=instance_uuid)
 
