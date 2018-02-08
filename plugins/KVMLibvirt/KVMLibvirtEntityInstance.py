@@ -6,8 +6,9 @@ from fog05.interfaces.EntityInstance import EntityInstance
 from jinja2 import Environment
 import json
 
+
 class KVMLibvirtEntityInstance(EntityInstance):
-    #TODO sto modificando il costruttore per ricavare i parametri dal flavor_id
+
     def __init__(self, uuid, name, disk, cdrom, networks, user_file, ssh_key, entity_uuid, flavor_id, image_id):
 
         super(KVMLibvirtEntityInstance, self).__init__(uuid, entity_uuid)
@@ -36,3 +37,13 @@ class KVMLibvirtEntityInstance(EntityInstance):
 
     def on_resume(self):
         self.state = State.RUNNING
+
+    def on_clean(self):
+        pass
+
+    def before_migrate(self):
+        pass
+
+    def after_migrate(self):
+        pass
+

@@ -8,37 +8,27 @@ import json
 
 class XENLibvirtEntity(Entity):
 
-    def __init__(self, uuid, name, cpu, ram, disk, disk_size, cdrom, networks, image, user_file, ssh_key):
+    def __init__(self, uuid, name, image_id, flavor_id):  # , cpu, ram, disk_size, networks, image, user_file, ssh_key):
 
         super(XENLibvirtEntity, self).__init__()
         self.uuid = uuid
         self.name = name
-        self.cpu = cpu
-        self.ram = ram
-        self.disk = disk
-        self.disk_size = disk_size
-        self.cdrom = cdrom
-        self.networks = networks
-        self.image_url = image
+        self.image_id = image_id
+        self.flavor_id = flavor_id
+
+        self.user_file = None
+        self.ssh_key = None
+        self.networks = []
+
+    def set_user_file(self, user_file):
         self.user_file = user_file
+
+    def set_ssh_key(self, ssh_key):
         self.ssh_key = ssh_key
-        self.image = ''
 
-    def on_configured(self, configuration):
-        self.xml = configuration
-        self.state = State.CONFIGURED
+    def set_networks(self, networks):
+        self.networks = networks
 
-    def on_clean(self):
+    def on_defined(self):
         self.state = State.DEFINED
 
-    def on_start(self):
-        self.state = State.RUNNING
-    
-    def on_stop(self):
-        self.state = State.CONFIGURED
-
-    def on_pause(self):
-        self.state = State.PAUSED
-
-    def on_resume(self):
-        self.state = State.RUNNING

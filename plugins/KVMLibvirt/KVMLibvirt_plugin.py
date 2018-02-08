@@ -33,13 +33,8 @@ class KVMLibvirt(RuntimePlugin):
         file_dir = os.path.dirname(__file__)
         self.DIR = os.path.abspath(file_dir)
         self.conn = None
-
-        ### IMAGES and FLAVORS ###
-
         self.images = {}
         self.flavors = {}
-
-        ##########################
 
         self.start_runtime()
 
@@ -88,7 +83,10 @@ class KVMLibvirt(RuntimePlugin):
         for k in list(self.flavors.keys()):
             self.__remove_flavor(k)
 
-        self.conn.close()
+        try:
+            self.conn.close()
+        except libvirt.libvirtError as err:
+            pass
         self.agent.logger.info('stopRuntime()', '[ DONE ] KVM Plugin - Bye Bye')
 
     def get_entities(self):
@@ -399,22 +397,14 @@ class KVMLibvirt(RuntimePlugin):
                         dom.undefine()
                     else:
                         self.agent.logger.error('clean_entity()', 'KVM Plugin - Domain not found!!')
-                    #rm_cmd = str("rm -f %s %s /opt/fos/images/%s /opt/fos/logs/%s_log.log" %
-                    #           (entity.cdrom, entity.disk, entity.image, entity_uuid))
-                    #self.agent.getOSPlugin().executeCommand(rm_cmd)
+
                     self.agent.get_os_plugin().remove_file(instance.cdrom)
                     self.agent.get_os_plugin().remove_file(instance.disk)
-                    #self.agent.getOSPlugin().removeFile(os.path.join(self.BASE_DIR, self.IMAGE_DIR, instance.image))
                     self.agent.get_os_plugin().remove_file(os.path.join(self.BASE_DIR, self.LOG_DIR, instance_uuid))
 
                     entity.remove_instance(instance)
-                    #entity.on_clean()
-                    self.current_entities.update({entity_uuid: entity})
 
-                    #uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-                    #vm_info = json.loads(self.agent.dstore.get(uri))
-                    #vm_info.update({"status": "cleaned"})
-                    #self.__update_actual_store(entity_uuid, vm_info)
+                    self.current_entities.update({entity_uuid: entity})
                     self.__pop_actual_store_instance(entity_uuid, instance_uuid)
                     self.agent.logger.info('clean_entity()', '[ DONE ] KVM Plugin - Clean a VM uuid %s ' % entity_uuid)
 
@@ -467,13 +457,6 @@ class KVMLibvirt(RuntimePlugin):
                     vm_info = json.loads(self.agent.astore.get(uri))
                     vm_info.update({"status": "run"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
-                    '''
-                    vm_info = .... load vm info from desidered store, update and save to actual store
-                    json_data = json.dumps(vm_info)
-                    uri = str('fos://<sys-id>/%s/runtime/%s/entity/%s' % (self.agent.uuid, self.uuid, entity_uuid))
-                    self.agent.store.put(uri, json_data)
-                    
-                    '''
                     self.current_entities.update({entity_uuid: entity})
                     self.agent.logger.info('run_entity()', '[ DONE ] KVM Plugin - Starting a VM uuid %s ' % entity_uuid)
                     return True

@@ -8,10 +8,9 @@ from XENLibvirtEntityInstance import XENLibvirtEntityInstance
 from jinja2 import Environment
 import json
 import random
-import time
-import re
+
 import libvirt
-import ipaddress
+
 
 class XENLibvirt(RuntimePlugin):
 
@@ -30,11 +29,21 @@ class XENLibvirt(RuntimePlugin):
         self.DISK_DIR = 'disks'
         self.IMAGE_DIR = 'images'
         self.LOG_DIR = 'logs'
-        self.HOME = 'runtime/{}/entity'.format(self.uuid)
+        self.HOME_ENTITY = 'runtime/{}/entity'.format(self.uuid)
+        self.HOME_IMAGE = 'runtime/{}/image'.format(self.uuid)
+        self.HOME_FLAVOR = 'runtime/{}/flavor'.format(self.uuid)
         self.INSTANCE = 'instance'
         file_dir = os.path.dirname(__file__)
         self.DIR = os.path.abspath(file_dir)
         self.conn = None
+
+        ### IMAGES and FLAVORS ###
+
+        self.images = {}
+        self.flavors = {}
+
+        ##########################
+
         self.user = 'fog05'
         if configuration.get('user', None) is not None:
             self.user = configuration.get('user')
@@ -47,32 +56,26 @@ class XENLibvirt(RuntimePlugin):
         self.agent.logger.info('startRuntime()', ' XEN Plugin - Connecting to XEN')
         self.__connect_to_hypervisor(self.hypervisor)
         self.agent.logger.info('startRuntime()', '[ DONE ] XEN Plugin - Connecting to XEN')
-        uri = '{}/{}/*'.format(self.agent.dhome, self.HOME)
+        uri = '{}/{}/*'.format(self.agent.dhome, self.HOME_ENTITY)
         self.agent.logger.info('startRuntime()',' XEN Plugin - Observing %s' % uri)
-        self.agent.dstore.observe(uri, self.__react_to_cache)
+        self.agent.dstore.observe(uri, self.__react_to_cache_entity)
 
+        uri = '{}/{}/*'.format(self.agent.dhome, self.HOME_FLAVOR)
+        self.agent.logger.info('startRuntime()', ' KVM Plugin - Observing {} for flavor'.format(uri))
+        self.agent.dstore.observe(uri, self.__react_to_cache_flavor)
+
+        uri = '{}/{}/*'.format(self.agent.dhome, self.HOME_IMAGE)
+        self.agent.logger.info('startRuntime()', ' KVM Plugin - Observing {} for image'.format(uri))
+        self.agent.dstore.observe(uri, self.__react_to_cache_image)
         '''
         These directories should be created at dom0
         dom0 is for sure a linux kernel with basic linux command
         '''
 
-
-        # if self.agent.get_os_plugin().dir_exists(self.BASE_DIR):
-        #     if not self.agent.get_os_plugin().dir_exists(os.path.join(self.BASE_DIR, self.DISK_DIR)):
-        #         self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.DISK_DIR))
-        #     if not self.agent.get_os_plugin().dir_exists(os.path.join(self.BASE_DIR, self.IMAGE_DIR)):
-        #         self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.IMAGE_DIR))
-        #     if not self.agent.get_os_plugin().dir_exists(os.path.join(self.BASE_DIR, self.LOG_DIR)):
-        #         self.agent.get_os_plugin().create_dir(os.path.join(self.BASE_DIR, self.LOG_DIR))
-        # else:
-
-
         self.__execture_on_dom0(self.hypervisor,'mkdir {}'.format(self.BASE_DIR))
         self.__execture_on_dom0(self.hypervisor, 'mkdir {}'.format(os.path.join(self.BASE_DIR, self.DISK_DIR)))
         self.__execture_on_dom0(self.hypervisor, 'mkdir {}'.format(os.path.join(self.BASE_DIR, self.IMAGE_DIR)))
         self.__execture_on_dom0(self.hypervisor, 'mkdir {}'.format(os.path.join(self.BASE_DIR, self.LOG_DIR)))
-
-
 
         return self.uuid
 
@@ -85,7 +88,16 @@ class XENLibvirt(RuntimePlugin):
             if entity.get_state() == State.DEFINED:
                 self.undefine_entity(k)
 
-        self.conn.close()
+        for k in list(self.images.keys()):
+            self.__remove_image(k)
+        for k in list(self.flavors.keys()):
+            self.__remove_flavor(k)
+
+        try:
+            self.conn.close()
+        except libvirt.libvirtError as err:
+            pass
+
         self.agent.logger.info('stopRuntime()', '[ DONE ] XEN Plugin - Bye Bye')
 
     def get_entities(self):
@@ -99,38 +111,93 @@ class XENLibvirt(RuntimePlugin):
         '''
         self.agent.logger.info('define_entity()', ' XEN Plugin - Defining a VM')
 
-        if len(args) > 0:
-            entity_uuid = args[4]
-            disk_path = '{}.qcow2'.format(entity_uuid)
-            cdrom_path = '{}_config.iso'.format(entity_uuid)
-            disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
-            cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
-            entity = XENLibvirtEntity(entity_uuid, args[0], args[2], args[1], disk_path, args[3], cdrom_path, [],
-                                   args[5], args[6], args[7])
-        elif len(kwargs) > 0:
+        # if len(args) > 0:
+        #     entity_uuid = args[4]
+        #     disk_path = '{}.qcow2'.format(entity_uuid)
+        #     cdrom_path = '{}_config.iso'.format(entity_uuid)
+        #     disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
+        #     cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
+        #     entity = XENLibvirtEntity(entity_uuid, args[0], args[2], args[1], disk_path, args[3], cdrom_path, [],
+        #                            args[5], args[6], args[7])
+        if len(kwargs) > 0:
+            self.agent.logger.info('define_entity()', ' XEN Plugin - Called with **kwargs')
             entity_uuid = kwargs.get('entity_uuid')
-            disk_path = '{}.qcow2'.format(entity_uuid)
-            cdrom_path = '{}_config.iso'.format(entity_uuid)
-            disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
-            cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
-            entity = XENLibvirtEntity(entity_uuid, kwargs.get('name'), kwargs.get('cpu'), kwargs.get('memory'), disk_path,
-                                      kwargs.get('disk_size'), cdrom_path, kwargs.get('networks'),
-                                      kwargs.get('base_image'), kwargs.get('user-data'), kwargs.get('ssh-key'))
+            base_image = kwargs.get('base_image')
+            name = kwargs.get('name')
+
+            if self.is_uuid(base_image):
+                img = self.images.get(base_image, None)
+                if img is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find image {}'.format(base_image))
+                    #TODO should write the error in the store
+                    return
+            else:
+                self.agent.logger.warning('define_entity()', '[ WARN ] KVM Plugin - No image id specified defining from manifest information new image id uuid:{}'.format(entity_uuid))
+                #image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, base_image.split('/')[-1])
+                #self.agent.get_os_plugin().download_file(base_image, image_name)
+                img_info = {}
+                img_info.update({"uuid": entity_uuid})
+                img_info.update({"name": '{}_img'.format(name)})
+                img_info.update({"base_image": base_image})
+                #img_info.update({"path": image_name})
+                img_info.update({"format": base_image.split('.')[-1]})
+                self.__add_image(img_info)
+                img = self.images.get(entity_uuid, None)
+                if img is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find image {}'.format(entity_uuid))
+                    # TODO should write the error in the store
+                    return
+
+            if kwargs.get('flavor_id', None) is None:
+                self.agent.logger.warning('define_entity()', '[ WARN ] KVM Plugin - No flavor specified defining from manifest information new flavor uuid:{}'.format(entity_uuid))
+                cpu = kwargs.get('cpu')
+                mem = kwargs.get('memory')
+                disk_size = kwargs.get('disk_size')
+                flavor_info = {}
+                flavor_info.update({'name': '{}_flavor'.format(name)})
+                flavor_info.update({'uuid': entity_uuid})
+                flavor_info.update({'cpu': cpu})
+                flavor_info.update({'memory': mem})
+                flavor_info.update({'disk_size': disk_size})
+                self.__add_flavor(flavor_info)
+                flavor = self.flavors.get(entity_uuid, None)
+                if flavor is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find flavor {}'.format(entity_uuid))
+                    # TODO should write the error in the store
+                    return
+            else:
+                flavor = self.flavors.get(kwargs.get('flavor_id'), None)
+                if flavor is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find flavor {}'.format(kwargs.get('flavor_id')))
+                    # TODO should write the error in the store
+                    return
+
+            entity = XENLibvirtEntity(entity_uuid, name, img.get('uuid'), flavor.get('uuid'))
+            entity.set_user_file(kwargs.get('user-data'))
+            entity.set_ssh_key(kwargs.get('ssh-key'))
+            entity.set_networks(kwargs.get('networks'))
+
         else:
-            return None
+            self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Wrong parameters args:{} kwargs:{}'.format(args, kwargs))
+            # TODO should write the error in the store
+            return
 
-        image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image_url.split('/')[-1])
 
-        self.__execture_on_dom0(self.hypervisor, 'wget {} -O {}'.format(entity.image_url, image_name))
-        #self.agent.get_os_plugin().download_file(entity.image_url, image_name)
-        entity.image = image_name
-
-        entity.set_state(State.DEFINED)
+        entity.on_defined()
         self.current_entities.update({entity_uuid: entity})
-        uri = '{}/{}/{}'.format(self.agent.dhome, self.HOME, entity_uuid)
+        uri = '{}/{}/{}'.format(self.agent.dhome, self.HOME_ENTITY, entity_uuid)
         vm_info = json.loads(self.agent.dstore.get(uri))
-        vm_info.update({'status': 'defined'})
-        self.__update_actual_store(entity_uuid, vm_info)
+        vm_info.update({"status": "defined"})
+        data = vm_info.get('entity_data')
+
+        data.update({"flavor_id": flavor.get('uuid')})
+        data.pop('cpu', None)
+        data.pop('memory', None)
+        data.pop('disk_size', None)
+        data.update({"base_image": img.get('uuid')})
+
+        vm_info.update({'entity_data': data})
+        self.__update_actual_store_entity(entity_uuid, vm_info)
         self.agent.logger.info('define_entity()', '[ DONE ] XEN Plugin - VM Defined uuid: {}'.format(entity_uuid))
         return entity_uuid
 
@@ -153,9 +220,7 @@ class XENLibvirt(RuntimePlugin):
             for i in list(entity.instances.keys()):
                 self.__force_entity_instance_termination(entity_uuid, i)
 
-            self.__execture_on_dom0(self.hypervisor, 'rm {}'.format(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image)))
-            #self.agent.get_os_plugin().remove_file(os.path.join(self.BASE_DIR, self.IMAGE_DIR, entity.image))
-            self.__pop_actual_store(entity_uuid)
+            self.__pop_actual_store_entity(entity_uuid)
             self.agent.logger.info('undefine_entity()', '[ DONE ] XEN Plugin - Undefine a VM uuid {}'.format(entity_uuid))
             return True
 
@@ -186,15 +251,26 @@ class XENLibvirt(RuntimePlugin):
             else:
 
                 id = len(entity.instances)
-                name = '{0}{1}'.format(entity.name, id)
-                disk_path = '{}.qcow2'.format(instance_uuid)
+                name = '{}{}'.format(entity.name, id)
+                flavor = self.flavors.get(entity.flavor_id, None)
+                img = self.images.get(entity.image_id, None)
+                if flavor is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find flavor {}'.format(entity.flavor_id))
+                    # TODO should write the error in the store
+                    return
+
+                if img is None:
+                    self.agent.logger.error('define_entity()', '[ ERRO ] KVM Plugin - Cannot find image {}'.format(entity.image_id))
+                    # TODO should write the error in the store
+                    return
+
+                disk_path = '{}.{}'.format(instance_uuid, img.get('format'))
                 cdrom_path = '{}_config.iso'.format(instance_uuid)
                 disk_path = os.path.join(self.BASE_DIR, self.DISK_DIR, disk_path)
                 cdrom_path = os.path.join(self.BASE_DIR, self.DISK_DIR, cdrom_path)
                 #uuid, name, cpu, ram, disk, disk_size, cdrom, networks, image, user_file, ssh_key, entity_uuid)
-                instance = XENLibvirtEntityInstance(instance_uuid, name, entity.cpu, entity.ram, disk_path,
-                                      entity.disk_size, cdrom_path, entity.networks, entity.image, entity.user_file,
-                                      entity.ssh_key, entity_uuid)
+                instance = XENLibvirtEntityInstance(instance_uuid, name, disk_path, cdrom_path, entity.networks, entity.user_file,
+                                      entity.ssh_key, entity_uuid, flavor.get('uuid'), img.get('uuid'))
 
                 for i, n in enumerate(instance.networks):
                     # if n.get('type') in ['wifi']:
@@ -215,7 +291,7 @@ class XENLibvirt(RuntimePlugin):
                     if n.get('intf_name') is None:
                         n.update({'intf_name': 'veth{0}'.format(i)})
 
-                vm_xml = self.__generate_dom_xml(instance)
+                vm_xml = self.__generate_dom_xml(instance, flavor, img)
                 #image_name = instance.image.split('/')[-1]
 
                 #wget_cmd = 'wget %s -O %s/%s/%s' % (entity.image, self.BASE_DIR, self.IMAGE_DIR, image_name))
@@ -239,9 +315,9 @@ class XENLibvirt(RuntimePlugin):
 
                 conf_cmd = conf_cmd + ' {}'.format(instance.cdrom)
 
-                qemu_cmd = 'qemu-img create -f qcow2 {} {}G'.format(instance.disk, instance.disk_size)
+                qemu_cmd = 'qemu-img create -f {} {} {}G'.format(img.get('format'), instance.disk, flavor.get('disk_size'))
 
-                dd_cmd = 'dd if={} of={} bs=4M'.format(instance.image, instance.disk)
+                dd_cmd = 'dd if={} of={}'.format(img.get('path'), instance.disk)
 
                 #instance.image = image_name
 
@@ -272,13 +348,16 @@ class XENLibvirt(RuntimePlugin):
                 entity.add_instance(instance)
                 self.current_entities.update({entity_uuid: entity})
 
-                uri = '{}/{}/{}'.format(self.agent.ahome, self.HOME, entity_uuid)
+                uri = '{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, entity_uuid)
                 vm_info = json.loads(self.agent.astore.get(uri))
                 vm_info.update({'status': 'configured'})
                 vm_info.update({'name': instance.name})
+                data = vm_info.get('entity_data')
+                data.update({"flavor_id": flavor.get('uuid')})
+                data.update({"base_image": img.get('uuid')})
+                vm_info.update({'entity_data': data})
 
                 self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
-                #self.__update_actual_store(entity_uuid, vm_info)
 
                 self.agent.logger.info('configure_entity()', '[ DONE ] XEN Plugin - Configure a VM uuid {}'.format(instance_uuid))
                 return True
@@ -355,7 +434,7 @@ class XENLibvirt(RuntimePlugin):
                     # TODO check why wait boot not work
 
                     self.agent.logger.info('run_entity()', ' XEN Plugin - VM %s Started!' % instance)
-                    uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME, entity_uuid,self.INSTANCE, instance_uuid)
+                    uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid)
                     vm_info = json.loads(self.agent.astore.get(uri))
                     vm_info.update({'status': 'run'})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
@@ -387,7 +466,7 @@ class XENLibvirt(RuntimePlugin):
                     instance.on_stop()
                     self.current_entities.update({entity_uuid: entity})
 
-                    uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid)
+                    uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid)
                     vm_info = json.loads(self.agent.astore.get(uri))
                     vm_info.update({'status': 'stop'})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
@@ -418,7 +497,7 @@ class XENLibvirt(RuntimePlugin):
                     self.__lookup_by_uuid(instance_uuid).suspend()
                     instance.on_pause()
                     self.current_entities.update({entity_uuid: entity})
-                    uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid)
+                    uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid)
                     vm_info = json.loads(self.agent.astore.get(uri))
                     vm_info.update({'status': 'pause'})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
@@ -448,7 +527,7 @@ class XENLibvirt(RuntimePlugin):
                     self.__lookup_by_uuid(instance_uuid).resume()
                     instance_uuid.on_resume()
                     self.current_entities.update({entity_uuid: entity})
-                    uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid)
+                    uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid)
                     vm_info = json.loads(self.agent.dstore.get(uri))
                     vm_info.update({'status': 'run'})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, vm_info)
@@ -506,8 +585,6 @@ class XENLibvirt(RuntimePlugin):
             self.before_migrate_entity_actions(entity_uuid, instance_uuid=instance_uuid)
             self.after_migrate_entity_actions(entity_uuid,  instance_uuid=instance_uuid)
         """
-
-
 
     def before_migrate_entity_actions(self, entity_uuid, dst=False, instance_uuid=None):
         pass
@@ -693,7 +770,6 @@ class XENLibvirt(RuntimePlugin):
         :return:
         """
 
-
     def after_migrate_entity_actions(self, entity_uuid, dst=False, instance_uuid=None):
         pass
         """
@@ -744,9 +820,60 @@ class XENLibvirt(RuntimePlugin):
         :return:
         """
 
+    def __add_image(self, manifest):
+        url = manifest.get('base_image')
+        image_name = os.path.join(self.BASE_DIR, self.IMAGE_DIR, url.split('/')[-1])
 
+        self.__execture_on_dom0(self.hypervisor, 'wget {} -O {}'.format(url, image_name))
 
-    def __react_to_cache(self, uri, value, v):
+        manifest.update({'path':image_name})
+        uri = '{}/{}'.format(self.HOME_IMAGE,manifest.get('uuid'))
+        self.__update_actual_store(uri, manifest)
+        self.images.update({manifest.get('uuid'): manifest})
+
+    def __remove_image(self, image_uuid):
+        image = self.images.get(image_uuid, None)
+        if image is None:
+            self.agent.logger.info('__remove_image()', ' KVM Plugin - Image not found!!')
+            return
+        self.__execture_on_dom0(self.hypervisor, 'rm {}'.format(image.get('path')))
+        self.images.pop(image_uuid)
+        uri = '{}/{}'.format(self.HOME_IMAGE, image_uuid)
+        self.__pop_actual_store(uri)
+
+    def __add_flavor(self, manifest):
+        uri = '{}/{}'.format(self.HOME_FLAVOR, manifest.get('uuid'))
+        self.__update_actual_store(uri, manifest)
+        self.flavors.update({manifest.get('uuid'): manifest})
+
+    def __remove_flavor(self, flavor_uuid):
+        self.flavors.pop(flavor_uuid)
+        uri = '{}/{}'.format(self.HOME_FLAVOR, flavor_uuid)
+        self.__pop_actual_store(uri)
+
+    def __react_to_cache_image(self, uri, value, v):
+        self.agent.logger.info('__react_to_cache_image()', ' KVM Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
+        if uri.split('/')[-2] == 'image':
+            image_uuid = uri.split('/')[-1]
+            if value is None and v is None:
+                self.agent.logger.info('__react_to_cache_image()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+                self.__remove_image(image_uuid)
+            else:
+                value = json.loads(value)
+                self.__add_image(value)
+
+    def __react_to_cache_flavor(self, uri, value, v):
+        self.agent.logger.info('__react_to_cache_flavor()', ' KVM Plugin - React to to URI: %s Value: %s Version: %s' % (uri, value, v))
+        if uri.split('/')[-2] == 'flavor':
+            flavor_uuid = uri.split('/')[-1]
+            if value is None and v is None:
+                self.agent.logger.info('__react_to_cache_flavor()', ' KVM Plugin - This is a remove for URI: %s' % uri)
+                self.__remove_flavor(flavor_uuid)
+            else:
+                value = json.loads(value)
+                self.__add_flavor(value)
+
+    def __react_to_cache_entity(self, uri, value, v):
         self.agent.logger.info('__react_to_cache()', ' XEN Plugin - React to to URI: {} Value: {} Version: {}'.format(uri, value, v))
         if uri.split('/')[-2] == 'entity':
             if value is None and v is None:
@@ -865,49 +992,50 @@ class XENLibvirt(RuntimePlugin):
                 if instance.get_state() == State.CONFIGURED:
                     self.clean_entity(entity_uuid, instance_uuid)
 
-
-
-    def __generate_dom_xml(self, instance):
+    def __generate_dom_xml(self, instance, flavor, image):
         template_xml = self.agent.get_os_plugin().read_file(os.path.join(self.DIR, 'templates', 'vm.xml'))
         vm_xml = Environment().from_string(template_xml)
-        vm_xml = vm_xml.render(name=instance.name, uuid=instance.uuid, memory=instance.ram,
-                               cpu=instance.cpu, disk_image=instance.disk,
-                               iso_image=instance.cdrom, networks=instance.networks)
+        vm_xml = vm_xml.render(name=instance.name, uuid=instance.uuid, memory=flavor.get('memory'),
+                               cpu=flavor.get('cpu'), disk_image=instance.disk,
+                               iso_image=instance.cdrom, networks=instance.networks, format=image.get('format'))
         return vm_xml
 
-    def __update_actual_store(self, uri, value):
-        uri = '{}/{}/{}'.format(self.agent.ahome, self.HOME, uri)
+    def __update_actual_store_entity(self, uri, value):
+        uri = '{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, uri)
         value = json.dumps(value)
         self.agent.astore.put(uri, value)
 
     def __update_actual_store_instance(self, entity_uuid, instance_uuid, value):
-        uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid)
+        uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid)
         value = json.dumps(value)
         self.agent.astore.put(uri, value)
 
-    def __pop_actual_store(self, entity_uuid):
-        uri = '{}/{}/{}'.format(self.agent.ahome, self.HOME, entity_uuid)
+    def __pop_actual_store_entity(self, entity_uuid):
+        uri = '{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, entity_uuid)
         self.agent.astore.remove(uri)
 
-
     def __pop_actual_store_instance(self, entity_uuid, instance_uuid):
-        uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid)
+        uri = '{}/{}/{}/{}/{}'.format(self.agent.ahome, self.HOME_ENTITY, entity_uuid, self.INSTANCE, instance_uuid)
+        self.agent.astore.remove(uri)
+
+    def __update_actual_store(self, uri, value):
+        uri = '{}/{}'.format(self.agent.ahome, uri)
+        value = json.dumps(value)
+        self.agent.astore.put(uri, value)
+
+    def __pop_actual_store(self, uri):
+        uri = '{}/{}'.format(self.agent.ahome, uri)
         self.agent.astore.remove(uri)
 
     def __netmask_to_cidr(self, netmask):
         return sum([bin(int(x)).count('1') for x in netmask.split('.')])
 
-
     def __connect_to_hypervisor(self, address):
         self.conn = libvirt.open('xen+ssh://{}@{}'.format(self.user, address))
-
 
     def __execture_on_dom0(self, address, cmd):
         base_cmd = 'ssh {}@{} {}'.format(self.user, address, cmd)
         self.agent.get_os_plugin().execute_command(base_cmd, True)
-
-
-
 
     def __react(self, action):
         r = {
