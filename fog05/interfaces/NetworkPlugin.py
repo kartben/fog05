@@ -43,7 +43,7 @@ class NetworkPlugin(Plugin):
         '''
         raise NotImplementedError('This is and interface!')
 
-    def create_virtual_network(self, network_name, uuid, ip_range, has_dhcp, gateway):
+    def create_virtual_network(self, network_name, uuid, ip_range, has_dhcp, gateway, manifest):
         '''
         This should create a virtual network, with given caratteristics
 

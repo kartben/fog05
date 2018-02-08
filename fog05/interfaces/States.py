@@ -4,6 +4,7 @@ class State(Enum):
     '''
     States of entities
     '''
+    ERROR = -1
     UNDEFINED = 0
     DEFINED = 1
     CONFIGURED = 3
