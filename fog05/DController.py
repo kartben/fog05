@@ -166,36 +166,39 @@ class DController (Controller, Observer):
 
     def handle_remote_put(self, reader):
         samples = reader.take(DDS_ANY_SAMPLE_STATE)
-        for (d, i) in samples:
-            self.logger.debug('DController', ">>>>>>>> Handling remote put d.key {0}".format(d.key))
-            if i.is_disposed_instance():
-                self.logger.debug('DController','>>>>> D {0}'.format(d))
-                self.handle_remove(d.key)
-            elif i.valid_data:
-                rkey = d.key
-                rsid = d.sid
-                rvalue = d.value
-                rversion = d.version
-                self.logger.debug('DController', '>>>>> SID {0} Key {1} Version {2} Value {3}'.format(rsid, rkey,
-                                  rversion, rvalue))
-                self.logger.debug('DController', ' MY STORE ID {0} MY HOME {1}'.format(self.__store.store_id,
-                                                                                       self.__store.home))
+        while len(samples) != 0:
+            for (d, i) in samples:
+                self.logger.debug('DController', ">>>>>>>> Handling remote put d.key {0}".format(d.key))
+                if i.is_disposed_instance():
+                    self.logger.debug('DController','>>>>> D {0}'.format(d))
+                    self.handle_remove(d.key)
+                elif i.valid_data:
+                    rkey = d.key
+                    rsid = d.sid
+                    rvalue = d.value
+                    rversion = d.version
+                    self.logger.debug('DController', '>>>>> SID {0} Key {1} Version {2} Value {3}'.format(rsid, rkey,
+                                      rversion, rvalue))
+                    self.logger.debug('DController', ' MY STORE ID {0} MY HOME {1}'.format(self.__store.store_id,
+                                                                                           self.__store.home))
 
-                self.logger.debug('DController', 'Current store value {0}'.format(self.__store.get_value(rkey)))
-                self.logger.debug('DController', 'self put? {0}'.format(rsid != self.__store.store_id))
-                # We eagerly add all values to the cache to avoid problems created by inversion of miss and store
-                if rsid != self.__store.store_id:
-                    self.logger.debug('DController',">>>>>>>> Handling remote put in for key = " + rkey)
-                    r = self.__store.update_value(rkey, rvalue, rversion)
-                    if r:
-                        self.logger.debug('DController',">> Updated " + rkey)
-                        self.__store.notify_observers(rkey, rvalue, rversion)
+                    self.logger.debug('DController', 'Current store value {0}'.format(self.__store.get_value(rkey)))
+                    self.logger.debug('DController', 'self put? {0}'.format(rsid != self.__store.store_id))
+                    # We eagerly add all values to the cache to avoid problems created by inversion of miss and store
+                    if rsid != self.__store.store_id:
+                        self.logger.debug('DController',">>>>>>>> Handling remote put in for key = " + rkey)
+                        r = self.__store.update_value(rkey, rvalue, rversion)
+                        if r:
+                            self.logger.debug('DController',">> Updated " + rkey)
+                            self.__store.notify_observers(rkey, rvalue, rversion)
+                        else:
+                            self.logger.debug('DController',">> Received old version of " + rkey)
                     else:
-                        self.logger.debug('DController',">> Received old version of " + rkey)
+                        self.logger.debug('DController',">>>>>> Ignoring remote put as it is a self-put")
                 else:
-                    self.logger.debug('DController',">>>>>> Ignoring remote put as it is a self-put")
-            else:
-                self.logger.debug('DController',">>>>>> Some store unregistered instance {0}".format(d.key))
+                    self.logger.debug('DController',">>>>>> Some store unregistered instance {0}".format(d.key))
+
+            samples = reader.take(DDS_ANY_SAMPLE_STATE)
 
 
 
