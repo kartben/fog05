@@ -4,6 +4,10 @@
   "description": "entity definition schema",
   "type": "object",
   "properties": {
+    "error":{
+      "type":"string",
+      "description":"string error description"
+    },
     "status": {
       "type": "string",
       "desciption": "describe the action, so the desidered lifecycle state"

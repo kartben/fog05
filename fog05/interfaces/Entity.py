@@ -17,6 +17,9 @@ class Entity(object):
     def set_state(self, state):
         self.state = state
 
+    def on_defined(self):
+        raise NotImplementedError('This is and interface!')
+
     def on_configured(self, configuration):
         raise NotImplementedError('This is and interface!')
 

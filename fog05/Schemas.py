@@ -13,7 +13,7 @@ def readFile(file_path):
 
 network_schema = json.loads(readFile(os.path.join(os.path.dirname(__file__), 'json_objects', 'network_define.schema')))
 entity_schema = json.loads(readFile(os.path.join(os.path.dirname(__file__), 'json_objects', 'entity_definition.schema')))
-vm_schema = json.loads(readFile(os.path.join(os.path.dirname(__file__), 'json_objects', 'vm_define.schema')))
+vm_schema = json.loads(readFile(os.path.join(os.path.dirname(__file__), 'json_objects', 'vm.schema')))
 native_schema = json.loads(readFile(os.path.join(os.path.dirname(__file__), 'json_objects', 'native_define.schema')))
 container_schema = json.loads(readFile(os.path.join(os.path.dirname(__file__), 'json_objects', 'container_define.schema')))
 ros2_schema = json.loads(readFile(os.path.join(os.path.dirname(__file__), 'json_objects', 'ros2_define.schema')))
