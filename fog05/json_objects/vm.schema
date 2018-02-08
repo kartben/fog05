@@ -4,10 +4,6 @@
   "description": "VM definition schema",
   "type": "object",
   "properties": {
-    "error":{
-      "type":"string",
-      "description":"string error description"
-    },
     "name":{
       "type":"string",
       "description":"vm name"
