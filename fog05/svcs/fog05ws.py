@@ -252,9 +252,11 @@ class Server (object):
     async def dispatch(self, websocket, path):
         while True:
             raddr = websocket.remote_address
-            print("Connection from {} with path {}".format(raddr,path))
-            client_auth = path.split('/')[1]
-            if client_auth== self.auth:
+            print("Connection from {} with path {}".format(raddr, path))
+            client_auth = path.split('/')[-1]
+            print(client_auth)
+            print(self.auth)
+            if client_auth == self.auth:
                 while True:
                     message = await websocket.recv()
                     print(">> Processing message {}".format(message))
@@ -277,23 +279,4 @@ class Server (object):
             raise RuntimeError("Service Already Running")
 
 
-if __name__=='__main__':
-    port = 9669
-    auth = '/'
-    if len(sys.argv) > 1:
-        if sys.argv[1] == '--help' or sys.argv[1] == '-h' or sys.argv[1] == 'help':
-            print('\nUSAGE:\n\tpython3 fog05ws -p port -a auth\n')
-            exit(0)
-        else:
-            idx = 1
-            len = len(sys.argv)
-            while idx < len:
-                if sys.argv[idx] == '-p':
-                    port = sys.argv[idx + 1]
-                    idx = idx + 2
-                elif sys.argv[idx] == '-a':
-                    auth = sys.argv[idx + 1]
-                    idx = idx + 2
 
-    s = Server(port, auth)
-    s.start()

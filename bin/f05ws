@@ -5,21 +5,23 @@ import os
 from fog05.svcs.fog05ws import Server
 import tempfile
 
-
 if __name__ == '__main__':
     port = 9669
+    auth = 'a1b2c3d4'
     if len(sys.argv) > 1:
         if sys.argv[1] == '--help' or sys.argv[1] == '-h' or sys.argv[1] == 'help':
-            print('\nUSAGE:\n\tf05ws [port=9669]\n')
+            print('\nUSAGE:\n\tpython3 fog05ws -p port -a auth\n')
             exit(0)
         else:
-            port = int(sys.argv)
+            idx = 1
+            len = len(sys.argv)
+            while idx < len:
+                if sys.argv[idx] == '-p':
+                    port = sys.argv[idx + 1]
+                    idx = idx + 2
+                elif sys.argv[idx] == '-a':
+                    auth = sys.argv[idx + 1]
+                    idx = idx + 2
 
-    pid = os.getpid()
-    path = os.path.join(tempfile.gettempdir(), 'server.out')
-    with open(path, 'w') as f:
-        f.write(str(pid))
-        f.close()
-
-    s = Server(port)
+    s = Server(port, auth)
     s.start()
