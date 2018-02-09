@@ -508,13 +508,12 @@ class FosAgent(Agent):
         self.logger.info('__exit_gracefully()', 'Received signal: {}'.format(signal))
         self.logger.info('__exit_gracefully()', 'fosAgent exiting...')
         keys = list(self.__rtPlugins.keys())
-        # TODO fix try catch
         for k in keys:
             try:
                 self.__rtPlugins.get(k).stop_runtime()
             except Exception as e:
                 self.logger.error('__exit_gracefully()', '{}'.format(e))
-                traceback.print_exc()
+                #traceback.print_exc()
                 pass
         keys = list(self.__nwPlugins.keys())
         for k in keys:
@@ -522,7 +521,7 @@ class FosAgent(Agent):
                 self.__nwPlugins.get(k).stop_network()
             except Exception:
                 self.logger.error('__exit_gracefully()', '{}'.format(e))
-                traceback.print_exc()
+                #traceback.print_exc()
                 pass
 
         keys = list(self.__monPlugins.keys())
@@ -531,7 +530,7 @@ class FosAgent(Agent):
                 self.__monPlugins.get(k).stop_monitoring()
             except Exception:
                 self.logger.error('__exit_gracefully()', '{}'.format(e))
-                traceback.print_exc()
+                #traceback.print_exc()
                 pass
 
         self.dstore.close()

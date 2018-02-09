@@ -247,11 +247,9 @@ class Controll():
             if container_info is not None and container_info.get("status") == "cleaned":
                 break
 
-        # TODO this should be done with a remove
-        json_data = json.dumps({'status': 'undefine'})
+
         uri = str('dfos://<sys-id>/%s/runtime/%s/entity/%s' % (node_uuid, lxd.get('uuid'), container_uuid))
-        self.dstore.dput(uri, json_data)
-        #self.dstore.remove(uri)
+        self.dstore.remove(uri)
 
     def create_network(self, node_uuid, net_id, master=True):
         time.sleep(1)

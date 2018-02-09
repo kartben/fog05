@@ -246,25 +246,6 @@ class DStore(Store):
             data = json.loads(data)
             version = self.next_version(uri)
 
-        # version = self.next_version(uri)
-        # data = {}
-        # for key in self.__local_cache:
-        #     if fnmatch.fnmatch(key, uri):
-        #         data = json.loads(self.__local_cache.get(key)[0])
-        #
-        #
-        # # @TODO: Need to resolve this miss
-        # if len(data) == 0:
-        #     data = self.get(uri)
-        #     if data is None:
-        #         return
-        #     else:
-        #         self.__unchecked_store_value(uri, data, self.next_version(uri))
-        #         for key in self.__local_cache:
-        #             if fnmatch.fnmatch(key, uri):
-        #                 data = json.loads(self.__local_cache.get(key)[0])
-        #         version = self.next_version(uri)
-
         self.logger.debug('DStore','>>>VALUES {0} '.format(values))
         self.logger.debug('DStore','>>>VALUES TYPE {0} '.format(type(values)))
         if values is None:
@@ -469,8 +450,7 @@ class DStore(Store):
         # sub - delims = "!" / "$" / "&" / "'" / "(" / ")"
         #                   / "*" / "+" / "," / ";" / "="
         #
-        #
-        # TODO: use ~name~ ?
+        # metaresources ~name~
 
         r = '~{}~'.format(resource)
         self.__metaresources.update({r: action})
@@ -495,7 +475,7 @@ class DStore(Store):
         return ks
 
     def __check_writing_rights(self, uri):
-        #TODO add system_id to store values
+        #TODO add system_id to store fields
         if uri.startswith('afos://{}/{}'.format('<sys-id>', self.store_id)):
             return True
         elif uri.startswith('dfos://'):
