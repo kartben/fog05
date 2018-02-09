@@ -81,6 +81,11 @@ cd pydds
 
 cp builtin-types/libdython.so $OSPL_HOME/lib
 
+
+if [ ! -f /etc/machine-id ]; then
+   ln -s /var/lib/dbus/machine-id /etc/machine-id
+fi
+
 python3 setup.py install --record pydds_files.txt
 
 #cd $WD/fog
