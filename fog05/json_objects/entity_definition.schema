@@ -95,7 +95,7 @@
               "type":"string"
             },
             "radius":{
-              "type":"Number",
+              "type":"integer",
               "description":"radius to be considered when geofencing"
             }
           }
