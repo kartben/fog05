@@ -65,7 +65,7 @@
           "network_uuid":{
             "type":"string",
             "description":"uuid of the network to use present if type and "
-          }
+          },
           "connection_point":{
             "type":"object",
             "properties":{
