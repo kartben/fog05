@@ -81,7 +81,7 @@ class Server (object):
         if len(args) < 2:
             return False
         else:
-            store.put(args[0], args[1:])
+            store.put(args[0], ' '.join(args[1:]))
             return True
 
     def get(self, store, args):
@@ -133,7 +133,7 @@ class Server (object):
             store.dput(args[0])
             result = True
         elif len(args) > 1:
-            store.dput(args[0], args[1:])
+            store.dput(args[0], ' '.join(args[1:]))
             result = True
 
         return result
