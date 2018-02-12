@@ -59,6 +59,19 @@
           "network_uuid":{
             "type":"string",
             "description":"uuid of the network to use present if type and "
+          },
+          "connection_point":{
+            "type":"object",
+            "properties":{
+              "connection_point_uuid":{
+                "type":"string",
+                "description":"uuid of this connection point, if the cp already exist will be used, if is already in use there is an error"
+              },
+              "virtual_link_uuid":{
+                "type":"string",
+                "description":"uuid of virtual link connected to this connection point"
+              }
+            }
           }
         }
       }

@@ -84,6 +84,21 @@
         "os":{
           "type":"string",
           "description":"required os"
+        },
+        "position": {
+          "type": "object",
+          "properties": {
+            "lat":{
+              "type":"string"
+            },
+            "lon":{
+              "type":"string"
+            },
+            "radius":{
+              "type":"Number",
+              "description":"radius to be considered when geofencing"
+            }
+          }
         }
       }
     },

@@ -21,7 +21,7 @@
       "type":"array",
       "items":{
         "type":"string",
-        "description":"manifest for each network"
+        "description":"manifest for each network/network component"
       }
     },
     "components": {
