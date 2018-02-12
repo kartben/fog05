@@ -31,7 +31,7 @@ class FosAgent(Agent):
 
             self.logger.info('__init__()', 'Plugins Dir: {}'.format(self.__PLUGINDIR))
             self.pl = PluginLoader(self.__PLUGINDIR)
-            self.pl.getPlugins()
+            self.pl.get_plugins()
             self.__osPlugin = None
             self.__rtPlugins = {}
             self.__nwPlugins = {}
@@ -88,9 +88,9 @@ class FosAgent(Agent):
         platform = sys.platform
         if platform == 'linux':
             self.logger.info('__init__()', 'fosAgent running on GNU\Linux')
-            os = self.pl.locatePlugin('linux')
+            os = self.pl.locate_plugin('linux')
             if os is not None:
-                os = self.pl.loadPlugin(os)
+                os = self.pl.load_plugin(os)
                 self.__osPlugin = os.run(agent=self)
             else:
                 self.logger.error('__load_os_plugin()', 'Error on Loading GNU\Linux plugin!!!')
@@ -100,9 +100,9 @@ class FosAgent(Agent):
             self.logger.error('__load_os_plugin()', ' Mac plugin not yet implemented...')
             raise RuntimeError("Mac plugin not yet implemented...")
         elif platform in ['windows', 'Windows', 'win32']:
-            os = self.pl.locatePlugin('windows')
+            os = self.pl.locate_plugin('windows')
             if os is not None:
-                os = self.pl.loadPlugin(os)
+                os = self.pl.load_plugin(os)
                 self.__osPlugin = os.run(agent=self)
             else:
                 self.logger.error('__load_os_plugin()', 'Error on Loading GNU\Linux plugin!!!')
@@ -122,10 +122,10 @@ class FosAgent(Agent):
 
     def __load_runtime_plugin(self, plugin_name, plugin_uuid, configuration = None):
         self.logger.info('__load_runtime_plugin()', 'Loading a Runtime plugin: {}'.format(plugin_name))
-        rt = self.pl.locatePlugin(plugin_name)
+        rt = self.pl.locate_plugin(plugin_name)
         if rt is not None:
             self.logger.info('__load_runtime_plugin()', '[ INIT ] Loading a Runtime plugin: {}'.format(plugin_name))
-            rt = self.pl.loadPlugin(rt)
+            rt = self.pl.load_plugin(rt)
             rt = rt.run(agent=self, uuid=plugin_uuid, configuration=configuration)
             self.__rtPlugins.update({rt.uuid: rt})
             val = {'version': rt.version, 'description': str('runtime {}'.format(rt.name)), 'plugin': ''}
@@ -145,10 +145,10 @@ class FosAgent(Agent):
 
     def __load_network_plugin(self, plugin_name, plugin_uuid, configuration = None):
         self.logger.info('__load_network_plugin()', 'Loading a Network plugin: {}'.format(plugin_name))
-        net = self.pl.locatePlugin(plugin_name)
+        net = self.pl.locate_plugin(plugin_name)
         if net is not None:
             self.logger.info('__load_network_plugin()', '[ INIT ] Loading a Network plugin: {}'.format(plugin_name))
-            net = self.pl.loadPlugin(net)
+            net = self.pl.load_plugin(net)
             net = net.run(agent=self, uuid=plugin_uuid)
             self.__nwPlugins.update({net.uuid: net})
 
@@ -170,10 +170,10 @@ class FosAgent(Agent):
 
     def __load_monitoring_plugin(self, plugin_name, plugin_uuid, configuration = None):
         self.logger.info('__load_monitoring_plugin()', 'Loading a Monitoring plugin: {}'.format(plugin_name))
-        mon = self.pl.locatePlugin(plugin_name)
+        mon = self.pl.locate_plugin(plugin_name)
         if mon is not None:
             self.logger.info('__load_monitoring_plugin()', '[ INIT ] Loading a Monitoring plugin: {}'.format(plugin_name))
-            mon = self.pl.loadPlugin(mon)
+            mon = self.pl.load_plugin(mon)
             mon = mon.run(agent=self, uuid=plugin_uuid)
             self.__monPlugins.update({mon.uuid: mon})
 
@@ -221,6 +221,9 @@ class FosAgent(Agent):
                 name = v.get('name')
                 plugin_uuid = v.get('uuid')
                 conf = v.get('configuration', None)
+                req = v.get('requirements', None)
+                if req is not None:
+                    self.pl.install_requirements(req)
                 load_method = self.__load_plugin_method_selection(v.get('type'))
                 if load_method is not None:
                     if conf is None:

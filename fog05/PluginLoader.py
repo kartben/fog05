@@ -3,6 +3,7 @@ import importlib
 import importlib.machinery
 import os
 import sys
+import pip
 
 
 class PluginLoader(object):
@@ -12,7 +13,7 @@ class PluginLoader(object):
         self.MainModule = "__init__"
         self.plugins = []
     
-    def getPlugins(self):
+    def get_plugins(self):
         self.plugins = []
         possible_plugins = os.listdir(self.PluginFolder)
         for p in possible_plugins:
@@ -29,7 +30,7 @@ class PluginLoader(object):
             sys.path.append(os.path.join(sys.path[0], self.PluginFolder, p))
         return self.plugins
 
-    def loadPlugin(self, name):
+    def load_plugin(self, name):
 
         module = importlib.machinery.SourceFileLoader(name['name'], name['info']).load_module()
         #module = importlib.abc.import_module(self.MainModule,  *name["info"])
@@ -37,8 +38,15 @@ class PluginLoader(object):
         return module
         #imp.load_module(self.MainModule,)
 
-    def locatePlugin(self, name):
+    def locate_plugin(self, name):
         located = [x for x in self.plugins if x["name"] == name]
         if len(located) > 0:
             return located[0]
         return None
+
+    def install_requirements(self, requirements):
+        pip_args = ['install']
+        for r in requirements:
+            pip_args.append(r)
+
+        pip.main(pip_args)

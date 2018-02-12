@@ -720,6 +720,7 @@ class FOSCli(object):
             if action == 'add':
                 print('Adding plugin from {} to {}'.format(manifest, node_uuid))
                 manifest = json.loads(self.__read_file(manifest))
+                # TODO check manifest plugin
                 manifest.update({'status':'add'})
                 asyncio.get_event_loop().run_until_complete(self.__send_add_plugin(node_uuid, manifest))
                 return

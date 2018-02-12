@@ -2,5 +2,6 @@
       "name": "semaeapi",
       "version": 1,
       "uuid": "09399d1c-880a-445a-ab37-fb8d7b2a8853",
-      "type": "monitoring"
+      "type": "monitoring",
+      "requirements":["psutil"]
 }

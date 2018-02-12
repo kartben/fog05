@@ -22,15 +22,17 @@ package dependencies:
 - mkisofs
 - seabios
 - python3-libvirt
+- qemu-img
+- mkisofs
+- wget
+
 ---
 
 python dependencies:
 
 - libvirt-python
 - jinja2 
-- wget
-- qemu-img
-- mkisofs
+
 
 
 ---

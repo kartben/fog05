@@ -10,6 +10,7 @@ class OSPlugin(Plugin):
 
     def __init__(self,version, plugin_uuid=None):
         super(OSPlugin, self).__init__(version, plugin_uuid)
+        self.requirements = []
 
     def get_base_path(self):
         raise NotImplemented

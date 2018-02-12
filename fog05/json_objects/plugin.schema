@@ -25,6 +25,13 @@
     "configuration":{
       "type":"object",
       "description":"addition configuration for the plugin"
+    },
+    "requirements":{
+      "type":"array",
+       "items": {
+         "type": "string",
+         "description": "needed python packages for this plugin"
+       }
     }
   }
 }

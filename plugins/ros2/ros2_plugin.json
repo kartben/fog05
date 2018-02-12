@@ -2,5 +2,6 @@
       "name": "ros2",
       "version": 1,
       "uuid": "2eb0511f-6f28-4c6a-9801-7c9d540fc252",
-      "type": "runtime"
+      "type": "runtime",
+      "requirements":["psutil"]
 }

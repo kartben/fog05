@@ -2,7 +2,7 @@ import json
 import pkg_resources
 import os
 resource_package = 'fog05'  # Could be any module/package name
-resource_path = '/'.join(('json_objects', 'network_information.schema'))
+resource_path = '/'.join(('json_objects', 'network.schema'))
 
 
 def readFile(file_path):
