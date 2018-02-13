@@ -288,20 +288,131 @@ class FOSCli(object):
         else:
             print("Error on adding network")
 
-        # cmd = 'remove {0} {1}'.format(self.sid, uri)
-        # async with self.websocket as ws:
-        #     await ws.send(cmd)
-        #     response = await ws.recv()
-        # print('{0} NETWORK {1} REMOVE'.format(response, net_id))
-        #
-        # response = response.split(' ')
-        # if response[0] == 'OK':
-        #     print('Network UUID is {}' % net_id)
-        # elif response[0] == 'NOK':
-        #     print("Error on adding network")
-        # else:
-        #     print("Wrong response for dStore server")
-        #self.store.desidered.dput(uri)
+    @asyncio.coroutine
+    def __get_flavors(self):
+        uri = str('afos://<sys-id>/*/runtime/*/flavor/*/')
+        fls = []
+        fl_list = yield from self.store.actual.resolveAll(uri)
+        if fl_list is not None and len(fl_list) > 0:
+            for f in fl_list:
+                fls.append(json.loads(f[1]))
+        return fls
+
+    @asyncio.coroutine
+    def __get_flavor(self, flavor_uuid):
+        uri = str('afos://<sys-id>/*/runtime/*/flavor/{}'.format(flavor_uuid))
+        fls = []
+        fl_list = yield from self.store.actual.resolveAll(uri)
+        if fl_list is not None and len(fl_list) > 0:
+            for f in fl_list:
+                fls.append(json.loads(f[1]))
+            return fls[0]
+        if fl_list is None:
+            return None
+
+
+    @asyncio.coroutine
+    def __send_add_flavor(self, manifest):
+        manifest.update({'status': 'add'})
+        json_data = json.dumps(manifest).replace(' ', '')
+        uri = str('dfos://<sys-id>/*/runtime/*/flavor/{}'.format(manifest.get('uuid')))
+        res = yield from self.store.desired.put(uri, json_data)
+        return res
+
+
+    @asyncio.coroutine
+    def __send_add_flavor_node(self, node_uuid, manifest):
+        manifest.update({'status': 'add'})
+        json_data = json.dumps(manifest).replace(' ', '')
+
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
+        if all_plugins is None:
+            print('Error on receive plugin from node')
+            return
+        rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
+        for r in rts:
+            uri = str('dfos://<sys-id>/{}/runtime/{}/flavor/{}'.format(node_uuid, r.get('uuid'), manifest.get('uuid')))
+            yield from self.store.desired.put(uri, json_data)
+        # TODO fix this
+        return True
+
+    @asyncio.coroutine
+    def __send_remove_flavor_node(self, node_uuid, flavor_id):
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
+        if all_plugins is None:
+            print('Error on receive plugin from node')
+            return
+        rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
+        for r in rts:
+            uri = str('dfos://<sys-id>/{}/runtime/{}/flavor/{}'.format(node_uuid, r.get('uuid'), flavor_id))
+            yield from self.store.desired.remove(uri)
+        # TODO fix this
+        return True
+
+    @asyncio.coroutine
+    def __send_add_image(self, manifest):
+        manifest.update({'status': 'add'})
+        json_data = json.dumps(manifest).replace(' ', '')
+        uri = str('dfos://<sys-id>/*/runtime/*/image/{}'.format(manifest.get('uuid')))
+        res = yield from self.store.desired.put(uri, json_data)
+        return res
+
+    @asyncio.coroutine
+    def __send_add_image_node(self, node_uuid, manifest):
+        manifest.update({'status': 'add'})
+        json_data = json.dumps(manifest).replace(' ', '')
+
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
+        if all_plugins is None:
+            print('Error on receive plugin from node')
+            return
+        rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
+        for r in rts:
+            uri = str('dfos://<sys-id>/{}/runtime/{}/image/{}'.format(node_uuid, r.get('uuid'), manifest.get('uuid')))
+            yield from self.store.desired.put(uri, json_data)
+        # TODO fix this
+        return True
+
+    @asyncio.coroutine
+    def __get_images(self):
+        uri = str('afos://<sys-id>/*/runtime/*/image/*/')
+        imgs = []
+        img_list = yield from self.store.actual.resolveAll(uri)
+        if img_list is not None and len(img_list) > 0:
+            for i in img_list:
+                imgs.append(json.loads(i[1]))
+        return imgs
+
+    @asyncio.coroutine
+    def __get_image(self, image_uuid):
+        uri = str('afos://<sys-id>/*/runtime/*/image/{}'.format(image_uuid))
+        imgs = []
+        img_list = yield from self.store.actual.resolveAll(uri)
+        if img_list is not None and len(img_list) > 0:
+            for i in img_list:
+                imgs.append(json.loads(i[1]))
+            return imgs[0]
+        if img_list is None:
+            return None
+
+    @asyncio.coroutine
+    def __send_remove_image(self, image_uuid):
+        uri = str('afos://<sys-id>/*/runtime/*/image/{}'.format(image_uuid))
+        res = self.store.actual.remove(uri)
+        return res
+
+    @asyncio.coroutine
+    def __send_remove_image_node(self, node_uuid, image_uuid):
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
+        if all_plugins is None:
+            print('Error on receive plugin from node')
+            return
+        rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
+        for r in rts:
+            uri = str('dfos://<sys-id>/{}/runtime/{}/image/{}'.format(node_uuid, r.get('uuid'), image_uuid))
+            yield from self.store.desired.remove(uri)
+        # TODO fix this
+        return True
 
     def __catch_signal(self, signal, frame):
         if signal == 2:
