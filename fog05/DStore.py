@@ -475,15 +475,16 @@ class DStore(Store):
         return ks
 
     def __check_writing_rights(self, uri):
-        #TODO add system_id to store fields
-        if uri.startswith('afos://{}/{}'.format('<sys-id>', self.store_id)):
-            return True
-        elif uri.startswith('dfos://'):
-            return True
-        elif not uri.startswith('dfos://') and not uri.startswith('afos://'):
-            return True
-        else:
-            return False
+        # #TODO add system_id to store fields
+        # if uri.startswith('afos://{}/{}'.format('<sys-id>', self.store_id)):
+        #     return True
+        # elif uri.startswith('dfos://'):
+        #     return True
+        # elif not uri.startswith('dfos://') and not uri.startswith('afos://'):
+        #     return True
+        # else:
+        #     return False
+        return True
 
     def close(self):
         self.__controller.stop()
