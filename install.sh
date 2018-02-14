@@ -61,13 +61,13 @@ cd ospl
 
 wget https://www.dropbox.com/s/7u5vzxjg1ea50us/license.lic -O $WD/fog/license.lic
 
-./P768-VortexOpenSplice-6.8.2b1-HDE-x86_64.linux-gcc5.4.0-glibc2.23-installer.run  --providedLicenseFile $WD/fog/license.lic --mode unattended --prefix $WD/fog/ADLINK
+./ospl.run  --providedLicenseFile $WD/fog/license.lic --mode unattended --prefix $WD/fog/ADLINK
 
 wget https://www.dropbox.com/s/ql9ngtr3zoayp3k/ospl.xml
 
-cp ospl.xml $WD/fog/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.8.2b1/HDE/x86_64.linux/etc/config/ospl.xml
+cp ospl.xml $WD/fog/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.1/HDE/x86_64.linux/etc/config/ospl.xml
 
-echo "source $WD/fog/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.8.2b1/HDE/x86_64.linux/release.com" >> ~/.profile
+echo "source $WD/fog/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.1/HDE/x86_64.linux/release.com" >> ~/.profile
 
 source ~/.profile
 
