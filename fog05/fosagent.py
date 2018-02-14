@@ -44,8 +44,11 @@ class FosAgent(Agent):
 
             self.base_path = self.__osPlugin.get_base_path()
 
+            #todo get from command line
+            self.sys_id = 0
+
             # Desired Store. containing the desired state
-            self.droot = "dfos://<sys-id>"
+            self.droot = "dfos://{}".format(self.sys_id)
             self.dhome = str("{}/{}".format(self.droot, sid))
             self.logger.info('__init__()', '[ INIT ] Creating Desired State Store ROOT: {} HOME: {}'.format(self.droot,
                                                                                                           self.dhome))
@@ -53,7 +56,7 @@ class FosAgent(Agent):
             self.logger.info('__init__()', '[ DONE ] Creating Desired State Store')
 
             # Actual Store, containing the Actual State
-            self.aroot = "afos://<sys-id>"
+            self.aroot = "afos://{}".format(self.sys_id)
             self.ahome = str("{}/{}".format(self.aroot, sid))
             self.logger.info('__init__()', '[ INIT ] Creating Actual State Store ROOT: {} HOME: {}'.format(self.aroot,
                                                                                                        self.ahome))

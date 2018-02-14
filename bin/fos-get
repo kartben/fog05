@@ -31,8 +31,9 @@ class FOSGetCli(object):
     def __init__(self):
         self.agent = None
         self.store = None
-        self.aroot = 'afos://<sys-id>'
-        self.droot = 'dfos://<sys-id>'
+        self.sys_id = 0
+        self.aroot = 'afos://{}'.format(self.sys_id)
+        self.droot = 'dfos://{}'.format(self.sys_id)
         self.uuid = str(uuid.uuid4())
 
 
