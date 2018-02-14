@@ -125,8 +125,11 @@ class DController (Controller, Observer):
 
                 u = d.key.split('/')[-1]
                 if u.endswith('~') and u.startswith('~'):
-                    if u in self.__store.get_metaresources.keys():
-                        v = (self.__store.get_metaresources.get(u)(''.join(d.key.rsplit(u, 1))), 0)
+                    if u in self.__store.get_metaresources().keys():
+                        uri = '/'.join(d.key.split('/')[:-1])
+                        mr = self.__store.get_metaresources().get(u)(uri)
+                        print(mr)
+                        v = (mr, 0)
                 else:
                     v = self.__store.get_value(d.key)
 

@@ -148,7 +148,7 @@ class Linux(OSPlugin):
     def send_signal(self, signal, pid):
         if self.check_if_pid_exists(pid) is False:
             self.agent.logger.error('sendSignal()', 'OS Plugin Process not exists %d' % pid)
-            raise ProcessNotExistingException("Process %d not exists" % pid)
+            #raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(signal)
         return True
@@ -156,7 +156,7 @@ class Linux(OSPlugin):
     def send_sig_int(self, pid):
         if self.check_if_pid_exists(pid) is False:
             self.agent.logger.error('sendSigInt()', 'OS Plugin Process not exists %d' % pid)
-            raise ProcessNotExistingException("Process %d not exists" % pid)
+            #raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(2)
         return True
@@ -164,7 +164,7 @@ class Linux(OSPlugin):
     def send_sig_kill(self, pid):
         if self.check_if_pid_exists(pid) is False:
             self.agent.logger.error('sendSigInt()', 'OS Plugin Process not exists %d' % pid)
-            raise ProcessNotExistingException("Process %d not exists" % pid)
+            #raise ProcessNotExistingException("Process %d not exists" % pid)
         else:
             psutil.Process(pid).send_signal(9)
         return True

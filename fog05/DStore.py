@@ -459,17 +459,22 @@ class DStore(Store):
         return self.__metaresources
 
     def __get_stores(self, uri):
+        print(uri)
         return self.discovered_stores
 
     def __get_keys_under(self, uri):
         keys = self.keys()
         ks=[]
 
+        if isinstance(uri, list):
+            uri = uri[0]
+
         if '*' in uri:
             pass
             # do search with fnmatch
         else:
             for k in keys:
+                #print('{} starts with {}? {}'.format(k,uri,k.startswith(uri)))
                 if k.startswith(uri):
                     ks.append(k)
         return ks
