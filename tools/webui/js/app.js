@@ -1,5 +1,7 @@
 var store;
-
+var storeid;
+var store_root;
+var store_home;
 
 var wsconnect = function wsconnect() {
 
@@ -13,17 +15,20 @@ var wsconnect = function wsconnect() {
         display();
         var rootString = document.getElementById('root').value;
 
+        store_root = rootString;
+        store_home = rootString+'/web';
+
         document.getElementById('keyForm').value = rootString;
         var fos = this.fog05;
         var rt = new fos.Runtime(document.getElementById('connect').value);
         var storeid = document.getElementById('storeid').value;
         rt.onconnect = function () {
 
-            store = new fos.Store(rt, storeid, rootString, rootString, 1024);
+            store = new fos.Store(rt, storeid, store_root, store_home, 1024);
             refresh()
         };
         rt.connect();
-        setInterval(function(){refresh();}, 1000);
+        setInterval(function(){refresh();}, 10000);
     }
 }
 
@@ -102,11 +107,26 @@ function refreshtree()
 
         }).jstree();
 
-        store.keys(function (keys){
-            keys.forEach(function(key){
-                add_node(key);
+        // TODO see why the forEach not work
+        store.get(store_home+'/~stores~',function(k, vs){
+            console.log(`get ${k} ->  ${vs.show()}`)
+            vs.forEach(function(sid){
+                console.log(`Store id {sid.show()}`)
+                store.get(store_root+'/'+sid+'/~keys~', function(k, vs){
+                    console.log(`get ${k} ->  ${vs.show()}`)
+                    vs.forEach(function(key){
+                        console.log(`Key {key.show()}`)
+                        add_node(key);
+                    });
+                });
             });
         });
+
+//        store.keys(function (keys){
+//            keys.forEach(function(key){
+//                add_node(key);
+//            });
+//        });
     })
 }
 
