@@ -186,8 +186,11 @@ function add_node(name)
     else
     {
         var nodeName = $("#jstree").jstree("get_node", name)
-        //$("#jstree").jstree("get_node", name).li_attr = {"class":"node_disable"}
-        console.log("id" + nodeName.id)
+        if (document.getElementById(nodeName.id) == null)
+        {
+            return false;
+        }
+
         if (document.getElementById(nodeName.id).classList.contains("node_active"))
         {
             return false;
