@@ -123,12 +123,11 @@ class DController (Controller, Observer):
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
 
-                u = d.key.split('/')[-1]
-                if u.endswith('~') and u.startswith('~'):
+                if self.__is_metaresource(d.key):
+                    u = d.key.split('/')[-1]
                     if u in self.__store.get_metaresources().keys():
                         uri = '/'.join(d.key.split('/')[:-1])
                         mr = self.__store.get_metaresources().get(u)(uri)
-                        print(mr)
                         v = (mr, 0)
                 else:
                     v = self.__store.get_value(d.key)
@@ -149,8 +148,8 @@ class DController (Controller, Observer):
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
 
-                u = d.key.split('/')[-1]
-                if u.endswith('~') and u.startswith('~'):
+                if self.__is_metaresource(d.key):
+                    u = d.key.split('/')[-1]
                     if u in self.__store.get_metaresources().keys():
                         va = self.__store.get_metaresources().get(u)(''.join(d.key.rsplit(u, 1)))
                         xs = [(d.key, va, 0)]
@@ -325,11 +324,7 @@ class DController (Controller, Observer):
         # now we need to consolidate values
         self.logger.debug('DController', 'Resolved Values = {0}'.format(values))
 
-        #values = list(set(values))
-
         filtered_values = {}
-
-
 
         for (k, va, ve) in values:
             if k not in filtered_values:
@@ -337,8 +332,6 @@ class DController (Controller, Observer):
             else:
                 if ve > filtered_values.get(k)[2]:
                     filtered_values.update({k: (k, va, ve)})
-
-
 
         self.logger.debug('DController',"Filtered Values = {0}".format(filtered_values))
         return list(filtered_values.values())
@@ -387,14 +380,11 @@ class DController (Controller, Observer):
                         if int(d.version) > int(v[1]):
                             v = (d.value, d.version)
 
-
             if sn == 0 and v[0] is not None:
                 return v
 
             retries += 1
-
         return v
-
 
     def start(self):
         self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
@@ -411,7 +401,6 @@ class DController (Controller, Observer):
         pass
         # self.logger.debug('DController',"Pausing..")
 
-
     def resume(self):
         """
             Resumes the execution of the controller and applies all pending changes received from the network.
@@ -419,10 +408,16 @@ class DController (Controller, Observer):
         pass
         # self.logger.debug('DController',"Resuming..")
 
-
     def stop(self):
         info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
         self.store_info_writer.dispose_instance(info)
         self.dds_runtime.close()
         # self.logger.debug('DController',"Stopping..")
+
+    def __is_metaresource(self, uri):
+            u = uri.split('/')[-1]
+            if u.endswith('~') and u.startswith('~'):
+                return True
+            return False
+
 

@@ -326,12 +326,12 @@ class DStore(Store):
             return None
 
     def get(self, uri):
-        u = uri.split('/')[-1]
-        if u.endswith('~') and u.startswith('~'):
-            if u in self.__metaresources.keys():
+        if self.__is_metaresource(uri):
+            if uri.startswith(self.home):
+                u = uri.split('/')[-1]
                 return self.__metaresources.get(u)(uri.rsplit(u, 1))
             else:
-                return None
+                return self.resolve(uri)
 
         v = self.get_value(uri)
         if v == None:
@@ -454,6 +454,12 @@ class DStore(Store):
 
         r = '~{}~'.format(resource)
         self.__metaresources.update({r: action})
+
+    def __is_metaresource(self, uri):
+        u = uri.split('/')[-1]
+        if u.endswith('~') and u.startswith('~'):
+            return True
+        return False
 
     def get_metaresources(self):
         return self.__metaresources
