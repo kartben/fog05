@@ -1,9 +1,9 @@
-var store
-var rootString
+var store;
+
 
 var wsconnect = function wsconnect() {
 
-    rootString = document.getElementById('root').value;
+    var rootString = document.getElementById('root').value;
     if (rootString == "")
     {
         alert('Please enter a value for "Root"');
@@ -12,7 +12,7 @@ var wsconnect = function wsconnect() {
     {
         display();
         var rootString = document.getElementById('root').value;
-      
+
         document.getElementById('keyForm').value = rootString;
         var fos = this.fog05;
         var rt = new fos.Runtime(document.getElementById('connect').value);
@@ -20,34 +20,40 @@ var wsconnect = function wsconnect() {
         rt.onconnect = function () {
 
             store = new fos.Store(rt, storeid, rootString, rootString, 1024);
-            
             refresh()
         };
-
         rt.connect();
-        
         setInterval(function(){refresh();}, 1000);
     }
 }
 
 function pushKeyValue()
 {
-  var keyElem = document.getElementById('keyForm').value;
-  var valueElem = document.getElementById('valueForm').value;
-  var radioElem = radio();
-  var selectElem = select();
-  if (keyElem  == "")
-  {
-	 alert('Please enter a value for "Key"');
-  }
-  else
-  {
-	 if (selectElem == "put")
-	 {
-		store.put(keyElem, valueElem);
-	 }
-  }
+    var rootName = document.getElementById('root').value;
+    var keyElem = document.getElementById('keyForm').value;
+    var valueElem = document.getElementById('valueForm').value;
+    var radioElem = radio();
+    var selectElem = select();
+    if (keyElem  == "")
+    {
+        alert('Please enter a value for "Key"');
+    }
+    else
+    {
+        if (selectElem == "put")
+        {
+            if (keyElem === rootName)
+            {
+                alert('Please enter a different key from the root');
+            }
+            else
+            {
+                store.put(keyElem, valueElem);
+            }
+        }
+    }
 }
+
 
 var display = function display() {
     var page_connect = document.querySelectorAll('.page-connect.active');
@@ -65,110 +71,126 @@ var display = function display() {
 
 function refresh()
 {
-   refreshtree()
-   refreshpage()
+    refreshtree()
+    refreshpage()
 }
 
 function refreshtree()
 {
-   $(function () {
-      $('#jstree').jstree(
-      {
-          "core" : {
-             check_callback : true,
-             "themes" : { "icons": false }
-          }
-      });
-      
-      
-     $('#jstree').on('changed.jstree', function (e, data) {
-       var i, j, r = [];
-       for(i = 0, j = data.selected.length; i < j; i++) {
-         r.push(data.instance.get_node(data.selected[i]).text);
-       }
-       var node = $('#jstree').jstree().get_node(r);
-       store.get(node.text, function(k, v) {
-         document.getElementById("main").style.display = "block";
-         $('#nameNodeTree').html(k);
-         $('#valueNodeTree').html(v.value);
-         $('#keyForm').val(k);
-         $('#valueForm').val(v.value);
-       });
-  
-     }).jstree();
-      
-     store.keys(function (keys){
-        keys.forEach(function(key){
-          add_node(key);
+    $(function () {
+        $('#jstree').jstree(
+            {
+                "core" : {
+                    check_callback : true,
+                    "themes" : { "icons": false }
+                }
+            });
+
+        $('#jstree').on('changed.jstree', function (e, data) {
+            var i, j, r = [];
+            for(i = 0, j = data.selected.length; i < j; i++) {
+                r.push(data.instance.get_node(data.selected[i]).id);
+            }
+            var node = $('#jstree').jstree().get_node(r);
+            store.get(node.id, function(k, v) {
+                document.getElementById("main").style.display = "block";
+                $('#nameNodeTree').html(k);
+                $('#valueNodeTree').html(v.value);
+                $('#keyForm').val(k);
+                $('#valueForm').val(v.value);
+            });
+
+        }).jstree();
+
+        store.keys(function (keys){
+            keys.forEach(function(key){
+                add_node(key);
+            });
         });
-     });
-   })
+    })
 }
 
 function refreshpage()
 {
-   var keyElem = document.getElementById('nameNodeTree').innerHTML;
-   if (keyElem  != ""){
-      store.get(keyElem, function(k, v) {
-          $('#valueNodeTree').html(v.value);
-       });
+    var keyElem = document.getElementById('nameNodeTree').innerHTML;
+    if (keyElem  != ""){
+        store.get(keyElem, function(k, v) {
+
+            if (v.value != null)
+            {
+                $('#valueNodeTree').html(v.value);
+                if (document.getElementById('valueNodeTree').classList.contains('node_active')) {
+                    return false;
+                }
+                document.getElementById('valueNodeTree').classList.remove("node_disable")
+                document.getElementById('valueNodeTree').classList.add("node_active")
+                document.getElementById('nameNodeTree').classList.remove("node_disable")
+                document.getElementById('nameNodeTree').classList.add("node_active")
+            }
+            else
+            {
+                $('#valueNodeTree').html("UNDEFINED");
+                if (document.getElementById('valueNodeTree').classList.contains('node_disable')) {
+                    return false;
+                }
+                document.getElementById('valueNodeTree').classList.remove("node_active")
+                document.getElementById('valueNodeTree').classList.add("node_disable")
+                document.getElementById('nameNodeTree').classList.remove("name_active")
+                document.getElementById('nameNodeTree').classList.add("node_disable")
+
+            }
+        });
     }
 }
 
 function add_node(name)
 {
-   if($("#jstree").jstree("get_node",name) == false)
-   {
-      var subname = name.substring(0, name.lastIndexOf('/'))
-      while(subname.includes("//"))
-      {
-         var node = $("#jstree").jstree("get_node",subname)
-         if(node != false)
-         {
-            console.log("create")
-            $('#jstree').jstree(
-               'create_node',
-               subname,
-               { "text":name, "id":name, "state":{"opened": "true"}},
-               'last', false, false)
-            move_brothers(name)
-
-            return
-         }
-         subname = name.substring(0, subname.lastIndexOf('/'))
-      }
-
-      $('#jstree').jstree(
-         'create_node',
-         '#',
-         { "text":name, "id":name,  "state":{"opened": "true"}},
-         'last', false, false);
-
-      move_brothers(name)
-   }
-}
-
-function move_brothers(name)
-{
-    var children =
-        $('#jstree').jstree(
-            'get_json',
-            $("#jstree").jstree("get_parent",name)).children
-
-    if(children === undefined)
+    if($("#jstree").jstree("get_node", name) == false)
     {
-        children =
+        if (name == document.getElementById('root').value)
+        {
+            return
+        }
+
+        var rootParent = document.getElementById('root').value;
+        if ($("#jstree").jstree("get_node", rootParent) == false)
+        {
             $('#jstree').jstree(
-                'get_json',
-                "#")
-    }
-    if(children !== undefined) {
-        children.forEach(function (bro) {
-            if (bro.id.startsWith(name)) {
-                $('#jstree').jstree().move_node(bro.id, name, "last", false, false, false);
+                'create_node',
+                '#',
+                {"text": rootParent, "id": rootParent, "state": {"opened": "true", "disabled":"true"}},
+                'last', false, false);
+        }
+
+        var tab = name.split((document.getElementById('root').value) + '/')[1].split('/');
+        var parent = document.getElementById('root').value;
+        var newNode = parent + '/' + tab[0];
+        for (var i = 0; i < tab.length; i++) {
+            var node1 = $("#jstree").jstree("get_node", parent);
+            var node2 = $("#jstree").jstree("get_node", newNode);
+            if ((node1 != false) && (node2 == false)) {
+                console.log("CREATE")
+                $('#jstree').jstree(
+                    'create_node',
+                    parent,
+                    {"text": tab[i], "id": newNode, "state": {"opened": "true"}, "li_attr":{"class":"node_disable"}},
+                    'last', false, false);
             }
-        })
+            parent = parent + "/" + tab[i];
+            if (tab[i + 1] != null) {
+                newNode = newNode + '/' + tab[i + 1];
+            }
+        }
+
     }
+    else
+    {
+        var nodeName = $("#jstree").jstree("get_node", name)
+        $("#jstree").jstree("get_node", name).li_attr = {"class":"node_disable"}
+        document.getElementById(nodeName.id).classList.remove("node_disable")
+        document.getElementById(nodeName.id).classList.add("node_active")
+    }
+
 }
 
 var radio = function getRadio() {
@@ -184,7 +206,6 @@ var select = function getSelect() {
     var selects = document.getElementById('select');
     return selects.options[selects.selectedIndex].innerHTML;
 }
-
 
 
 

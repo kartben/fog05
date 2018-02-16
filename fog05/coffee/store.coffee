@@ -5,8 +5,9 @@
 
 
 root = this
-z_ = require('./coffez.js').coffez
-WebSocket = require('ws')
+
+z_ = root.coffez
+
 
 fog05 = {}
 
@@ -80,7 +81,7 @@ class Values
   constructor: (@sid, @key, @values) ->
     @cid = 'values'
   show: () ->
-    str = @values.reduce((a, v) -> a + ', ' + v)
+    str = @values.reduce((a, v) -> a + '|' + v)
     "#{@cid} #{@sid} #{@key} [#{str}]"
 
 class GetKeys
@@ -93,7 +94,7 @@ class Keys
   constructor: (@sid, @keys) ->
     @cid = 'keys'
   show: () ->
-    str= @keys.reduce((a, v) -> a + ', ' + v)
+    str= @keys.reduce((a, v) -> a + '|' + v)
     "#{@cid} #{@sid} [#{str}]"
 
 Parser = {}
@@ -127,14 +128,14 @@ Parser.parseValues = (ts) ->
   if ts.length == 3
     z_.Some(new Values(ts[1], ts[2], []))
   else if ts.length > 3
-    xs = ts[3].split(',').map((x) -> x.split('@'))
+    xs = ts[3].split('|').map((x) -> x.split('@'))
     z_.Some(new Values(ts[1], ts[2], xs))
   else
     z_.None
 
 Parser.parseKeys = (ts) ->
   if ts.length > 2
-    xs = ts[2].split(',')
+    xs = ts[2].split('|')
     z_.Some(new Keys(ts[1], xs))
   else
     z_.None
@@ -183,7 +184,7 @@ class Runtime
     @cookieId += 1
     id
 
-  # Establish a connection with the dscript.play server
+# Establish a connection with the dscript.play server
   connect: () =>
     if @connected is false
       console.log("Connecting to: #{@url}")
@@ -221,9 +222,9 @@ class Runtime
       console.log("Warning: Trying to connect an already connected Runtime")
 
 
-  # Disconnects, withouth closing, a `Runtime`. Notice that there is a big difference between disconnecting and
-  # closing a `Runtime`. The a disconnected `Runtime` can be reconnected and retains state across
-  # connection/disconnections. On the other hand, once closed a `Runtime` clears up all current state.
+# Disconnects, withouth closing, a `Runtime`. Notice that there is a big difference between disconnecting and
+# closing a `Runtime`. The a disconnected `Runtime` can be reconnected and retains state across
+# connection/disconnections. On the other hand, once closed a `Runtime` clears up all current state.
   disconnect: () =>
     @connected = false
     @webSock.map(
@@ -232,7 +233,7 @@ class Runtime
     @ondisconnect()
 
 
-  # Close the fog05 runtime and as a consequence all the `DataReaders` and `DataWriters` that belong to this runtime.
+# Close the fog05 runtime and as a consequence all the `DataReaders` and `DataWriters` that belong to this runtime.
   close: () =>
     @webSock.map (
       (s) =>
@@ -323,7 +324,7 @@ class Store
   handleKeys: (cmd) ->
     @keyFun.foreach( (f) -> f(cmd.keys))
 
-  # No so elegant, but there were issues with the map of lambdas.
+# No so elegant, but there were issues with the map of lambdas.
   handleCommand: (cmd) ->
     switch cmd.cid
       when 'NOK'

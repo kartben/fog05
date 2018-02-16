@@ -4,13 +4,11 @@
   // with fog05. Through this API any JS-based runtime can interact with the
   // distributed store used by fog05. As such it can access the full power of
   // fog05
-  var Create, Get, GetAll, GetKeys, Keys, NOK, Notify, OK, Observe, Parser, Put, Runtime, Store, Value, Values, WebSocket, exports, fog05, root, z_;
+  var Create, Get, GetAll, GetKeys, Keys, NOK, Notify, OK, Observe, Parser, Put, Runtime, Store, Value, Values, exports, fog05, root, z_;
 
   root = this;
 
-  z_ = require('./coffez.js').coffez;
-
-  WebSocket = require('ws');
+  z_ = root.coffez;
 
   fog05 = {};
 
@@ -166,7 +164,7 @@
     show() {
       var str;
       str = this.values.reduce(function(a, v) {
-        return a + ', ' + v;
+        return a + '|' + v;
       });
       return `${this.cid} ${this.sid} ${this.key} [${str}]`;
     }
@@ -195,7 +193,7 @@
     show() {
       var str;
       str = this.keys.reduce(function(a, v) {
-        return a + ', ' + v;
+        return a + '|' + v;
       });
       return `${this.cid} ${this.sid} [${str}]`;
     }
@@ -243,7 +241,7 @@
     if (ts.length === 3) {
       return z_.Some(new Values(ts[1], ts[2], []));
     } else if (ts.length > 3) {
-      xs = ts[3].split(',').map(function(x) {
+      xs = ts[3].split('|').map(function(x) {
         return x.split('@');
       });
       return z_.Some(new Values(ts[1], ts[2], xs));
@@ -255,7 +253,7 @@
   Parser.parseKeys = function(ts) {
     var xs;
     if (ts.length > 2) {
-      xs = ts[2].split(',');
+      xs = ts[2].split('|');
       return z_.Some(new Keys(ts[1], xs));
     } else {
       return z_.None;
