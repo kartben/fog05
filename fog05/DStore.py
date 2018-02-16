@@ -317,7 +317,7 @@ class DStore(Store):
 
     def resolve(self, uri):
         rv = self.__controller.resolve(uri)
-        if rv != None:
+        if rv != (None, -1):
             self.logger.debug('DStore', 'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
             self.update_value(uri, rv[0], rv[1])
             self.notify_observers(uri, rv[0], rv[1])
