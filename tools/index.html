@@ -20,7 +20,7 @@
     <!-- Start Header -->
     <header class="row header">
         <div class="col-md-5">
-            <img src="../pics/logo.png" alt="ADLINKs logo" />
+            <img src="pics/logo.png" alt="ADLINKs logo" />
         </div>
     </header>
     <!-- End header -->
@@ -34,21 +34,21 @@
                 <form class="well" method="#" onsubmit="wsconnect(); return false;" action="">
                     <legend class="legend">Connect</legend>
                     <fieldset>
-						<div class="form-group">
+                        <div class="form-group">
                             <label for="connect">Server</label>
                             <input type="text" class="form-control" id="connect" value="ws://10.100.1.247:9669"  required />
                         </div>
 
                         <div class="form-group">
-							<div class="row">
-								<div class="col-md-6">
-									<label for="root">Root</label>
-									<input type="text" class="form-control" id="root" value="fos://sys1" required />
-								</div>
-								<div class="col-md-6">
-									<label for="root">Store id</label>
-									<input type="text" class="form-control" id="storeid" value="101" required />
-								</div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="root">Root</label>
+                                    <input type="text" class="form-control" id="root" value="fos://sys1" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="root">Store id</label>
+                                    <input type="text" class="form-control" id="storeid" value="101" required />
+                                </div>
                             </div>
                         </div>
                         <input class="btn btn-default" role="button" type="submit" value="Connect"/>
@@ -72,9 +72,9 @@
 
                 <!-- Start section -->
                 <section class="container col-md-6 section" id="main" style="display:none">
-						</br>
-                        Key &nbsp;&nbsp; : <span id="nameNodeTree"></span></br>
-						Value : <span id="valueNodeTree"></span></br>
+                    </br>
+                    <p>Key : <span id="nameNodeTree"></span></p>
+                    <p>Value : <span id="valueNodeTree"></span></p>
                 </section>
                 <!-- End section -->
             </div>
@@ -97,7 +97,7 @@
         <!-- START PAGE-PRINCIPAL -->
         <div class="page-principal">
             <!-- Start FORM -->
-            <form id="go" method="#" action="" onsubmit="pushKeyValue(); return false;">
+            <form method="#" action="" onsubmit="pushKeyValue(); return false;">
                 <fieldset>
 
                     <!-- Start KEY / VALUE -->

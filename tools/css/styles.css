@@ -26,6 +26,7 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+
 }
 
 .content {
@@ -50,16 +51,34 @@ body {
 }
 
 .nav {
+    overflow: auto;
 }
 
 .section{
     width: 50%;
     margin: auto;
-    
     font-size: 15px;
 }
 
 .well {
     background-color:#CCC;
     padding: 20px;
+}
+
+#valueNodeTree {
+    word-wrap: break-word;
+}
+
+#nameNodeTree {
+    word-wrap: break-word;
+}
+
+.node_active {
+    color: #000000;
+}
+
+
+.node_disable {
+
+    color: #C0C0C0;
 }
