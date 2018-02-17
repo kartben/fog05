@@ -3,11 +3,7 @@
 # distributed store used by fog05. As such it can access the full power of
 # fog05
 
-
-root = this
-
-z_ = root.coffez
-
+z_ = require("./coffez")
 
 fog05 = {}
 
@@ -120,7 +116,7 @@ Parser.parseValue = (ts) ->
   if ts.length == 3
     z_.Some(new Value(ts[1], ts[2], z_.None))
   else if ts.length > 3
-    z_.Some(new Value(ts[1], ts[2], z_.Some(ts[3])))
+    z_.Some(new Value(ts[1], ts[2], z_.Some(ts[3..].join(' '))))
   else
     z_.None
 
