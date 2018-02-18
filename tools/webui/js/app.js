@@ -3,6 +3,31 @@ var storeid;
 var store_root;
 var store_home;
 
+if (!library)
+   var library = {};
+
+library.json = {
+   replacer: function(match, pIndent, pKey, pVal, pEnd) {
+      var key = '<span class=json-key>';
+      var val = '<span class=json-value>';
+      var str = '<span class=json-string>';
+      var r = pIndent || '';
+      if (pKey)
+         r = r + key + pKey.replace(/[": ]/g, '') + '</span>: ';
+      if (pVal)
+         r = r + (pVal[0] == '"' ? str : val) + pVal + '</span>';
+      return r + (pEnd || '');
+      },
+   prettyPrint: function(obj) {
+      var jsonLine = /^( *)("[\w]+": )?("[^"]*"|[\w.+-]*)?([,[{])?$/mg;
+      return JSON.stringify(obj, null, 3)
+         .replace(/&/g, '&amp;').replace(/\\"/g, '&quot;')
+         .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+         .replace(jsonLine, library.json.replacer);
+      }
+   };
+
+
 var wsconnect = function wsconnect() {
 
     var rootString = document.getElementById('root').value;
@@ -103,7 +128,7 @@ function refreshtree()
                 console.log(`Value ${v.value}`)
                 console.log(`V is ${v.show()}`)
                 $('#nameNodeTree').html(k);
-                $('#valueNodeTree').innerHTML = syntaxHighlight(v.value);
+                $('#valueNodeTree').html(library.json.prettyPrint(JSON.parse(v.value)));
                 $('#keyForm').val(k);
                 $('#valueForm').val(v.value);
             });
@@ -154,7 +179,7 @@ function refreshpage()
 
             if (v.value != null)
             {
-                $('#valueNodeTree').html(v.value);
+                $('#valueNodeTree').html(library.json.prettyPrint(JSON.parse(v.value)));
                 if (document.getElementById('valueNodeTree').classList.contains('node_active')) {
                     return false;
                 }
@@ -249,26 +274,6 @@ var radio = function getRadio() {
 var select = function getSelect() {
     var selects = document.getElementById('select');
     return selects.options[selects.selectedIndex].innerHTML;
-}
-
-
-function syntaxHighlight(json) {
-    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-        var cls = 'number';
-        if (/^"/.test(match)) {
-            if (/:$/.test(match)) {
-                cls = 'key';
-            } else {
-                cls = 'string';
-            }
-        } else if (/true|false/.test(match)) {
-            cls = 'boolean';
-        } else if (/null/.test(match)) {
-            cls = 'null';
-        }
-        return '<span class="' + cls + '">' + match + '</span>';
-    });
 }
 
 
