@@ -115,16 +115,26 @@ function refreshtree()
         //     is called foreach.
         store.get(store_home+'/~stores~',function(k, stores){
             console.log(`get ${k} ->  ${stores.show()}`)
-            stores.foreach(function(sid){
-                sid = sid.slice(2,-2);
-                console.log(`Store id ${sid}`)
-                store.get(store_root+'/'+sid+'/~keys~', function(k, keys){
-                    console.log(`get ${k} ->  ${keys.show()}`)
-                    keys.foreach(function(key){
-                        console.log(`Key ${key}`)
-                        add_node(key);
+            stores.foreach(function(sids){
+            sids = sids.replace(/'/g, '"');
+            sids = JSON.parse(sids)
+            console.log(`Stores ->  ${sids}`)
+                sids.forEach(function(id){
+                    console.log(`Store id ${id}`)
+                    store.get(store_root+'/'+id+'/~keys~', function(k, keys){
+                        console.log(`get ${k} ->  ${keys.show()}`)
+                        keys.foreach(function(list_key){
+                            list_key = list_key.replace(/'/g, '"');
+                            list_key = JSON.parse(list_key)
+                            console.log(`Keys ${list_key}`)
+                            list_key.forEach(function(key){
+                                console.log(`Key ->  ${key}`)
+                                add_node(key);
+                            });
+                        });
                     });
                 });
+
             });
         });
 
