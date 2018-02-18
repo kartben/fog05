@@ -99,6 +99,9 @@ function refreshtree()
             var node = $('#jstree').jstree().get_node(r);
             store.get(node.id, function(k, v) {
                 document.getElementById("main").style.display = "block";
+                console.log(`Key ${k}`)
+                console.log(`Value ${v.value}`)
+                console.log(`V is ${v.show()}`)
                 $('#nameNodeTree').html(k);
                 $('#valueNodeTree').html(v.value);
                 $('#keyForm').val(k);
@@ -114,7 +117,6 @@ function refreshtree()
             console.log(`get ${k} ->  ${stores.show()}`)
             stores.foreach(function(sid){
                 sid = sid.slice(2,-2);
-                console.log(`Store id ${ typeof sid}`)
                 console.log(`Store id ${sid}`)
                 store.get(store_root+'/'+sid+'/~keys~', function(k, keys){
                     console.log(`get ${k} ->  ${keys.show()}`)
