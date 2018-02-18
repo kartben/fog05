@@ -256,7 +256,7 @@
     if (ts.length === 3) {
       return z_.Some(new Value(ts[1], ts[2], z_.None));
     } else if (ts.length > 3) {
-      return z_.Some(new Value(ts[1], ts[2], z_.Some(ts[3])));
+      return z_.Some(new Value(ts[1], ts[2], z_.Some(ts.slice(3).join(' '))));
     } else {
       return z_.None;
     }

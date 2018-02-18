@@ -133,7 +133,7 @@ Parser.parseValue = (ts) ->
   if ts.length == 3
     z_.Some(new Value(ts[1], ts[2], z_.None))
   else if ts.length > 3
-    z_.Some(new Value(ts[1], ts[2], z_.Some(ts[3])))
+    z_.Some(new Value(ts[1], ts[2], z_.Some(ts[3..].join(' '))))
   else
     z_.None
 
