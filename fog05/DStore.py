@@ -187,7 +187,8 @@ class DStore(Store):
             self.logger.debug('DStore','OBSERVER KEY {0}'.format(key))
             if fnmatch.fnmatch(uri, key) or fnmatch.fnmatch(key, uri):
                 self.logger.debug('DStore',">>>>>>>> notify_observers inside if")
-                self.__observers.get(key)(uri, value, v)
+                for fun in self.__observers.get(key):
+                    fun(uri, value, v)
 
     def put(self, uri, value):
 
@@ -282,7 +283,12 @@ class DStore(Store):
 
 
     def observe(self, uri, action):
-        self.__observers.update({uri: action})
+        if uri in self.__observers.keys():
+            obs = self.__observers[uri]
+            obs.append(action)
+            self.__observers[uri] = obs
+        else:
+            self.__observers[uri] = [action]
 
     def remove(self, uri):
         if not self.__check_writing_rights(uri):

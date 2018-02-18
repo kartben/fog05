@@ -140,7 +140,6 @@ class Server (object):
 
         return result
 
-
     def observe(self, store, sid, args, websocket):
         success = False
         print("len(args) {}".format(len(args)))
