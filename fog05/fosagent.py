@@ -209,7 +209,7 @@ class FosAgent(Agent):
         node_info.update({'io': self.__osPlugin.get_io_informations()})
         node_info.update({'accelerator': self.__osPlugin.get_accelerators_informations()})
 
-        uri = str('{}/'.format(self.ahome))
+        uri = str('{}'.format(self.ahome))
         self.astore.put(uri, json.dumps(node_info))
 
     def __react_to_plugins(self, uri, value, v):

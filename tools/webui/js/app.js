@@ -113,11 +113,13 @@ function refreshtree()
         store.get(store_home+'/~stores~',function(k, stores){
             console.log(`get ${k} ->  ${stores.show()}`)
             stores.foreach(function(sid){
-                console.log(`Store id {sid.show()}`)
+                sid = sid.slice(2,-2);
+                console.log(`Store id ${ typeof sid}`)
+                console.log(`Store id ${sid}`)
                 store.get(store_root+'/'+sid+'/~keys~', function(k, keys){
                     console.log(`get ${k} ->  ${keys.show()}`)
                     keys.foreach(function(key){
-                        console.log(`Key {key.show()}`)
+                        console.log(`Key ${key}`)
                         add_node(key);
                     });
                 });
