@@ -725,7 +725,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_node_details(self, node_uuid, info):
-        uri = str('{}/{}/'.format(self.aroot, node_uuid))
+        uri = str('{}/{}'.format(self.aroot, node_uuid))
         infos = yield from self.store.actual.get(uri)
         if infos is not None and infos != '':
             node = json.loads(infos)
