@@ -10,14 +10,14 @@ import time
 ###
 def test_miss(sid, root, home):
 
-    sroot = 'fos://{0}'.format(root)
-    shome= 'fos://{0}-{1}'.format(root, home)
+    sroot = 'afos://{}'.format(root)
+    shome = 'afos://{}/{}'.format(root, home)
 
     store = DStore(sid, sroot, home, 1024)
 
-    uri_prefix = 'fos://{0}/{1}-{2}'.format(root, home, sid)
+    uri_prefix = 'afos://{0}/{1}-{2}'.format(root, home, sid)
     id = 100 + int(sid)
-    val = {'id': id, 'kind': 'info', 'value': 'am a store fos://{0}/{1}-{2}!'.format(root, home, sid)}
+    val = {'id': id, 'kind': 'info', 'value': 'am a store afos://{0}/{1}-{2}!'.format(root, home, sid)}
     store.put(uri_prefix, json.dumps(val))
 
     test_uri = uri_prefix+'/savia'
@@ -44,7 +44,7 @@ def test_miss(sid, root, home):
     input()
     # try get that need resolving
     for id in store.discovered_stores:
-       uri = 'fos://{0}/{1}-{2}/savia'.format(root, home, id)
+       uri = 'afos://{0}/{1}-{2}/savia'.format(root, home, id)
        v = store.get(uri)
        print('=========> store[{0}] = {1}'.format(uri, v))
 
@@ -52,7 +52,7 @@ def test_miss(sid, root, home):
     input()
     # try to get them in a single shot -- locally:
 
-    uri = 'fos://{0}/*'.format(root, home)
+    uri = 'afos://{0}/*'.format(root, home)
     vs = store.getAll(uri)
     print('=========> store[{0}] = {1}'.format(uri, vs))
 

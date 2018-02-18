@@ -108,13 +108,15 @@ function refreshtree()
         }).jstree();
 
         // TODO see why the forEach not work
-        store.get(store_home+'/~stores~',function(k, vs){
-            console.log(`get ${k} ->  ${vs.show()}`)
-            vs.forEach(function(sid){
+        // AC: this is a mis-spelling as for the None monad the method
+        //     is called foreach.
+        store.get(store_home+'/~stores~',function(k, stores){
+            console.log(`get ${k} ->  ${stores.show()}`)
+            stores.foreach(function(sid){
                 console.log(`Store id {sid.show()}`)
-                store.get(store_root+'/'+sid+'/~keys~', function(k, vs){
-                    console.log(`get ${k} ->  ${vs.show()}`)
-                    vs.forEach(function(key){
+                store.get(store_root+'/'+sid+'/~keys~', function(k, keys){
+                    console.log(`get ${k} ->  ${keys.show()}`)
+                    keys.foreach(function(key){
                         console.log(`Key {key.show()}`)
                         add_node(key);
                     });
