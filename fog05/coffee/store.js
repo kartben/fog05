@@ -4,7 +4,7 @@
   // with fog05. Through this API any JS-based runtime can interact with the
   // distributed store used by fog05. As such it can access the full power of
   // fog05
-  var Create, Get, GetAll, GetKeys, Keys, NOK, Notify, OK, Observe, Parser, Put, Runtime, Store, Value, Values, exports, fog05, root, z_;
+  var Create, Get, GetAll, GetKeys, Keys, NOK, Notify, OK, Observe, Parser, Put, Resolve, ResolveAll, Runtime, Store, Value, Values, exports, fog05, root, z_;
 
   root = this;
 
@@ -110,6 +110,32 @@
 
   };
 
+  Resolve = class Resolve {
+    constructor(sid1, uri) {
+      this.sid = sid1;
+      this.uri = uri;
+      this.cid = 'resolve';
+    }
+
+    show() {
+      return `${this.cid} ${this.sid} ${this.uri}`;
+    }
+
+  };
+
+  ResolveAll = class ResolveAll {
+    constructor(sid1, uri) {
+      this.sid = sid1;
+      this.uri = uri;
+      this.cid = 'aresolve';
+    }
+
+    show() {
+      return `${this.cid} ${this.sid} ${this.uri}`;
+    }
+
+  };
+
   Observe = class Observe {
     constructor(sid1, cookie1, uri) {
       this.sid = sid1;
@@ -119,7 +145,7 @@
     }
 
     show() {
-      return `${this.cid} ${this.sid} ${this.uri}`;
+      return `${this.cid} ${this.sid} ${this.uri} ${this.cookie}`;
     }
 
   };
@@ -134,7 +160,7 @@
     }
 
     show() {
-      return `${this.cid} ${this.sid} ${this.uri} ${this.value}`;
+      return `${this.cid} ${this.sid} ${this.uri} ${this.value} ${this.cookie}`;
     }
 
   };
@@ -220,7 +246,7 @@
 
   Parser.parseNotify = function(ts) {
     if (ts.length > 4) {
-      return z_.Some(new Notify(ts[1], ts[2], ts[3], tr[4]));
+      return z_.Some(new Notify(ts[1], ts[2], ts[3], ts[4]));
     } else {
       return z_.None;
     }
@@ -460,11 +486,25 @@
       return this.runtime.send(cmd.show());
     }
 
+    resolve(key, fun) {
+      var cmd;
+      this.getTable[key] = fun;
+      cmd = new Resolve(this.sid, key);
+      return this.runtime.send(cmd.show());
+    }
+
+    resolveAll(key, fun) {
+      var cmd;
+      this.getTable[key] = fun;
+      cmd = new Resolve(this.sid, key);
+      return this.runtime.send(cmd.show());
+    }
+
     observe(key, fun) {
       var cmd, cookie;
       cookie = this.runtime.generateCookie();
       this.obsTable[cookie] = fun;
-      cmd = new Observe(this.cid, cookie, key);
+      cmd = new Observe(this.sid, cookie, key);
       return this.runtime.send(cmd.show());
     }
 
@@ -493,7 +533,7 @@
     handleNotify(cmd) {
       console.log('>>> Store Handling Notify');
       return z_.get(this.obsTable, cmd.cookie).foreach(function(fun) {
-        return fun(cmd.key.cmd.value);
+        return fun(cmd.uri, cmd.value);
       });
     }
 
@@ -526,3 +566,5 @@
   root.fog05.Store = Store;
 
 }).call(this);
+
+//# sourceMappingURL=store.js.map

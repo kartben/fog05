@@ -53,6 +53,7 @@ class Server (object):
         self.storeMap = {}
 
     async def process(self, websocket, cmd):
+        print(">> Processing command: {}".format(cmd))
         if cmd is not None:
             xs = [x for x in cmd.split(' ') if x is not '']
             if len(xs) < 2:
@@ -61,6 +62,7 @@ class Server (object):
                 cid = xs[0]
                 sid = xs[1]
                 args = xs[2:]
+                print(">> calling handle command : {} {} {}".format(cid, sid, args))
                 await self.handle_command(websocket, cid, sid, args)
 
 
@@ -178,6 +180,7 @@ class Server (object):
             else:
                 prefix = 'OK'
 
+        # -- Close
         elif cid == 'close':
             if self.close(sid):
                 prefix = 'OK'
@@ -244,10 +247,7 @@ class Server (object):
 
 
         await websocket.send('{} {}'.format(prefix, result))
-        # if success:
-        #     await self.send_success(websocket, result)
-        # else:
-        #     await self.send_error(websocket, result)
+
 
     async def dispatch(self, websocket, path):
         while True:
@@ -259,7 +259,7 @@ class Server (object):
             if client_auth == self.auth:
                 while True:
                     message = await websocket.recv()
-                    print(">> Processing message {}".format(message))
+                    print(">> Processing message: {}".format(message))
                     await self.process(websocket, message)
 
             else:

@@ -3,7 +3,11 @@
 # distributed store used by fog05. As such it can access the full power of
 # fog05
 
-z_ = require("./coffez")
+
+root = this
+
+z_ = root.coffez
+
 
 fog05 = {}
 
@@ -55,17 +59,30 @@ class GetAll
   show: () ->
     "#{@cid} #{@sid} #{@uri}"
 
+
+class Resolve
+  constructor: (@sid, @uri) ->
+    @cid = 'resolve'
+  show: () ->
+    "#{@cid} #{@sid} #{@uri}"
+
+class ResolveAll
+  constructor: (@sid, @uri) ->
+    @cid = 'aresolve'
+  show: () ->
+    "#{@cid} #{@sid} #{@uri}"
+
 class Observe
   constructor: (@sid, @cookie, @uri) ->
     @cid = 'observe'
   show: () ->
-    "#{@cid} #{@sid} #{@uri}"
+    "#{@cid} #{@sid} #{@uri} #{@cookie}"
 
 class Notify
   constructor: (@sid, @cookie, @uri, @value) ->
     @cid = 'notify'
   show: () ->
-    "#{@cid} #{@sid} #{@uri} #{@value}"
+    "#{@cid} #{@sid} #{@uri} #{@value} #{@cookie}"
 
 class Value
   constructor: (@sid, @key, @value) ->
@@ -108,7 +125,7 @@ Parser.parseNOK = (ts) ->
 
 Parser.parseNotify = (ts) ->
   if ts.length > 4
-    z_.Some(new Notify(ts[1], ts[2], ts[3], tr[4]))
+    z_.Some(new Notify(ts[1], ts[2], ts[3], ts[4]))
   else
     z_.None
 
@@ -116,7 +133,7 @@ Parser.parseValue = (ts) ->
   if ts.length == 3
     z_.Some(new Value(ts[1], ts[2], z_.None))
   else if ts.length > 3
-    z_.Some(new Value(ts[1], ts[2], z_.Some(ts[3..].join(' '))))
+    z_.Some(new Value(ts[1], ts[2], z_.Some(ts[3])))
   else
     z_.None
 
@@ -292,10 +309,20 @@ class Store
     cmd = new GetAll(@sid, key)
     @runtime.send(cmd.show())
 
+  resolve: (key, fun) ->
+    @getTable[key] = fun
+    cmd = new Resolve(@sid, key)
+    @runtime.send(cmd.show())
+
+  resolveAll: (key, fun) ->
+    @getTable[key] = fun
+    cmd = new Resolve(@sid, key)
+    @runtime.send(cmd.show())
+
   observe: (key, fun) ->
     cookie = @runtime.generateCookie()
     @obsTable[cookie] = fun
-    cmd = new Observe(@cid, cookie, key)
+    cmd = new Observe(@sid, cookie, key)
     @runtime.send(cmd.show())
 
   handleOK: (cmd) ->
@@ -315,7 +342,7 @@ class Store
 
   handleNotify: (cmd) ->
     console.log('>>> Store Handling Notify')
-    z_.get(@obsTable, cmd.cookie).foreach( (fun) -> fun(cmd.key. cmd.value) )
+    z_.get(@obsTable, cmd.cookie).foreach( (fun) -> fun(cmd.uri, cmd.value) )
 
   handleKeys: (cmd) ->
     @keyFun.foreach( (f) -> f(cmd.keys))

@@ -1,25 +1,24 @@
-fos = require('./store.js').fog05
+fos = require('./store-node.coffee').fog05
 
-rt = new fos.Runtime('ws://localhost:9669')
+rt = new fos.Runtime('ws://localhost:9669/a1b2c3d4')
 rt.onconnect = () ->
-  store = new fos.Store(rt, 101, 'fos://root/', 'fos://root/kydos', 1024)
-  store.put('fos://root/kydos/one', 1)
-  store.put('fos://root/kydos/two', 2)
-  store.get('fos://root/kydos/two',
+  store = new fos.Store(rt, 101, '/', '/kydos', 1024)
+  store.put('/a/one', 1)
+  store.put('/a/two', 2)
+  store.get('/a/two',
     (k, v) -> console.log("get #{k} -> #{v.show()}")
   )
-  store.get('fos://root/kydos/one',
+  store.get('/a/one',
     (k, v) -> console.log("get #{k} ->  #{v.show()}"))
 
-  store.getAll('fos://root/kydos/*',
+  store.getAll('/a/*',
     (k, vs) -> console.log("aget #{k} -> #{JSON.stringify(vs)}"))
 
-  #store.keys( (ks) -> console.log("keys -> #{JSON.stringify(ks)}"))
+  store.keys( (ks) -> console.log("keys -> #{JSON.stringify(ks)}"))
 
-  store.get('afos://<sys-id>/84610ec8a5424b67a776d5d79e904ff7/plugins',
-    (k, v) -> console.log("get #{k} -> #{v.show()}")
-  )
+  store.observe('/a/*', (d) -> console.log("observer  -> #{JSON.stringify(d)}"))
 
 rt.connect()
 
-
+#
+# s.get('/a/one', (k, v) -> console.log("get #{k} ->  #{v.show()}"))
