@@ -123,7 +123,7 @@ class DController (Controller, Observer):
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
 
-                if self.__is_metaresource(d.key):
+                if self.__is_metaresource(d.key) and d.key.startswith(self.__store.home):
                     u = d.key.split('/')[-1]
                     if u in self.__store.get_metaresources().keys():
                         uri = '/'.join(d.key.split('/')[:-1])
@@ -189,9 +189,10 @@ class DController (Controller, Observer):
                 # We eagerly add all values to the cache to avoid problems created by inversion of miss and store
                 if rsid != self.__store.store_id:
                     self.logger.debug('DController',">>>>>>>> Handling remote put in for key = " + rkey)
-                    r = self.__store.update_value(rkey, rvalue, rversion)
-                    if r:
-                        self.logger.debug('DController',">> Updated " + rkey)
+                    if not self.__is_metaresource(rkey):
+                        r = self.__store.update_value(rkey, rvalue, rversion)
+                        if r:
+                            self.logger.debug('DController',">> Updated " + rkey)
                         self.__store.notify_observers(rkey, rvalue, rversion)
                     else:
                         self.logger.debug('DController',">> Received old version of " + rkey)

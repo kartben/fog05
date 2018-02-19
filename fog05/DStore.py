@@ -155,9 +155,11 @@ class DStore(Store):
         else:
             self.__local_cache[uri] = (value, version)
 
-
     def update_value(self, uri, value, version):
         succeeded = False
+        if self.__is_metaresource(uri):
+            self.logger.error('update_value({})'.format(uri), 'This is a metaresource should never be stored in cache!!!!')
+            return False
 
         current_version = self.get_version(uri)
         self.logger.debug('DStore','Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
@@ -325,6 +327,7 @@ class DStore(Store):
         rv = self.__controller.resolve(uri)
         if rv != (None, -1):
             self.logger.debug('DStore', 'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
+            #print('IS URI A METARESOURCE {}'.format(self.__is_metaresource(uri)))
             if not self.__is_metaresource(uri):
                 self.update_value(uri, rv[0], rv[1])
             self.notify_observers(uri, rv[0], rv[1])

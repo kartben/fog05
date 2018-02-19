@@ -85,6 +85,11 @@ def data_merge(base, updates):
                 else:
                     base.update({k: updates.get(k)})
     return base
+def is_metaresource(uri):
+    u = uri.split('/')[-1]
+    if u.endswith('~') and u.startswith('~'):
+        return True
+    return False
 
 class DependenciesTests(unittest.TestCase):
     def test_resolve_dependencies_with_dependable_components(self):
@@ -116,6 +121,21 @@ class DependenciesTests(unittest.TestCase):
         input_data_two = {'key2': {'subkey1': 2}}
         output_data = {'key1': 1, 'key2': {'subkey1': 2, 'subkey2': 1}}
         self.assertEqual(data_merge(input_data_one, input_data_two), output_data)
+
+    def test_is_metaresource_one(self):
+        input_data_one = 'afos://0/123/~keys~'
+        output_data = True
+        self.assertEqual(is_metaresource(input_data_one), output_data)
+
+    def test_is_metaresource_two(self):
+        input_data_one = 'afos://0/123/~stores~'
+        output_data = True
+        self.assertEqual(is_metaresource(input_data_one), output_data)
+
+    def test_is_metaresource_three(self):
+        input_data_one = 'afos://0/123/456'
+        output_data = False
+        self.assertEqual(is_metaresource(input_data_one), output_data)
 
 def main():
     unittest.main()
