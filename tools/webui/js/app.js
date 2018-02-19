@@ -127,8 +127,9 @@ function refreshtree()
                 console.log(`Key ${k}`)
                 console.log(`Value ${v.value}`)
                 console.log(`V is ${v.show()}`)
+                var store_value =  v.value.replace(/'/g, '"');
                 $('#nameNodeTree').html(k);
-                $('#valueNodeTree').html(library.json.prettyPrint(JSON.parse(v.value)));
+                $('#valueNodeTree').html(library.json.prettyPrint(JSON.parse(store_value)));
                 $('#keyForm').val(k);
                 $('#valueForm').val(v.value);
             });
