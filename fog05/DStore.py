@@ -325,7 +325,8 @@ class DStore(Store):
         rv = self.__controller.resolve(uri)
         if rv != (None, -1):
             self.logger.debug('DStore', 'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
-            self.update_value(uri, rv[0], rv[1])
+            if not self.__is_metaresource(uri):
+                self.update_value(uri, rv[0], rv[1])
             self.notify_observers(uri, rv[0], rv[1])
             return rv[0]
         else:
