@@ -266,6 +266,12 @@ class Server (object):
             websocket.close()
             break
 
+    def stop(self):
+        for id in list(self.storeMap.keys()):
+            store = self.storeMap.pop(id)
+            store.close()
+        asyncio.get_event_loop().close()
+
 
     def start(self):
         if self.svc is None:

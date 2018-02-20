@@ -4,6 +4,17 @@ import sys
 import os
 from fog05.svcs.fog05ws import Server
 import tempfile
+import signal
+
+s = None
+
+
+def genlty_close(signal, frame):
+    if signal == signal.SIGINT:
+        if s is not None:
+            s.stop()
+        exit(0)
+
 
 if __name__ == '__main__':
     port = 9669
@@ -22,6 +33,8 @@ if __name__ == '__main__':
                 elif sys.argv[idx] == '-a':
                     auth = sys.argv[idx + 1]
                     idx = idx + 2
-
+    global s
     s = Server(port, auth)
+    signal.signal(signal.SIGINT, genlty_close)
+    global s
     s.start()
