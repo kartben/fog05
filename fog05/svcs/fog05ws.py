@@ -267,10 +267,15 @@ class Server (object):
             break
 
     def stop(self):
-        for id in list(self.storeMap.keys()):
-            store = self.storeMap.pop(id)
-            store.close()
-        asyncio.get_event_loop().close()
+        try:
+            for id in list(self.storeMap.keys()):
+                store = self.storeMap.pop(id)
+                store.close()
+        except Error as e:
+            print('Error on exiting {}'.format(e))
+        finally:
+            return
+
 
 
     def start(self):

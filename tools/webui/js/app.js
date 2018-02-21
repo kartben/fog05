@@ -3,6 +3,16 @@ var storeid;
 var store_root;
 var store_home;
 
+
+var astore;
+var dstore;
+var aroot;
+var droot;
+var ahome;
+var dhome;
+var astoreid
+var dstoreid
+
 if (!library)
    var library = {};
 
@@ -30,31 +40,44 @@ library.json = {
 
 var wsconnect = function wsconnect() {
 
-    var rootString = document.getElementById('root').value;
-    if (rootString == "")
-    {
-        alert('Please enter a value for "Root"');
-    }
-    else
-    {
-        display();
-        var rootString = document.getElementById('root').value;
+    //var rootString = document.getElementById('root').value;
+    //if (rootString == "")
+    //{
+    //    //alert('Please enter a value for "Root"');
+    //}
+    //else
+    //{
+    display();
+    //var rootString = document.getElementById('root').value;
+    //var storeid = document.getElementById('storeid').value;
+    // ws://139.162.144.10:9669/a1b2c3d4
+    var host = 'ws://'+document.getElementById('connect').value+':9669/a1b2c3d4'
+    //store_root = rootString;
+    //store_home = rootString+'/web';
 
-        store_root = rootString;
-        store_home = rootString+'/web';
+    aroot = 'afos://0'
+    ahome = aroot+'/web'
+    astoreid = 'aweb'
 
-        document.getElementById('keyForm').value = rootString;
-        var fos = this.fog05;
-        var rt = new fos.Runtime(document.getElementById('connect').value);
-        var storeid = document.getElementById('storeid').value;
-        rt.onconnect = function () {
+    droot = 'dfos://0'
+    dhome = droot + '/web'
+    dstoreid = 'dweb'
 
-            store = new fos.Store(rt, storeid, store_root, store_home, 1024);
-            refresh()
-        };
-        rt.connect();
-        setInterval(function(){refresh();}, 10000);
-    }
+
+    document.getElementById('keyForm').value = droot;
+    var fos = this.fog05;
+    var rt = new fos.Runtime(host);
+
+    rt.onconnect = function () {
+
+        astore = new fos.Store(rt, astoreid, aroot, ahome, 1024)
+        dstore = new fos.Store(rt, dstoreid, droot, dhome, 1024)
+        //store = new fos.Store(rt, storeid, store_root, store_home, 1024);
+        refresh()
+    };
+    rt.connect();
+    setInterval(function(){refresh();}, 10000);
+    //}
 }
 
 function pushKeyValue()
@@ -101,18 +124,19 @@ var display = function display() {
 
 function refresh()
 {
-    refreshtree()
+    refreshatree()
+    refreshdtree()
     refreshpage()
 }
 
-function refreshtree()
+function refreshatree()
 {
     $(function () {
         $('#jstree').jstree(
             {
                 "core" : {
                     check_callback : true,
-                    "themes" : { "icons": false }
+                    "themes" : { "icons": true }
                 }
             });
 
@@ -122,7 +146,7 @@ function refreshtree()
                 r.push(data.instance.get_node(data.selected[i]).id);
             }
             var node = $('#jstree').jstree().get_node(r);
-            store.get(node.id, function(k, v) {
+            astore.get(node.id, function(k, v) {
                 document.getElementById("main").style.display = "block";
                 console.log(`Key ${k}`)
                 console.log(`Value ${v.value}`)
@@ -130,16 +154,14 @@ function refreshtree()
                 var store_value =  v.value.replace(/'/g, '"');
                 $('#nameNodeTree').html(k);
                 $('#valueNodeTree').html(library.json.prettyPrint(JSON.parse(store_value)));
-                $('#keyForm').val(k);
-                $('#valueForm').val(v.value);
+                //$('#keyForm').val(k);
+                //$('#valueForm').val(v.value);
             });
 
         }).jstree();
 
-        // TODO see why the forEach not work
-        // AC: this is a mis-spelling as for the None monad the method
-        //     is called foreach.
-        store.get(store_home+'/~stores~',function(k, stores){
+
+        astore.get(ahome+'/~stores~',function(k, stores){
             console.log(`get ${k} ->  ${stores.show()}`)
             stores.foreach(function(sids){
             sids = sids.replace(/'/g, '"');
@@ -147,7 +169,7 @@ function refreshtree()
             console.log(`Stores ->  ${sids}`)
                 sids.forEach(function(id){
                     console.log(`Store id ${id}`)
-                    store.get(store_root+'/'+id+'/~keys~', function(k, keys){
+                    astore.get(aroot+'/'+id+'/~keys~', function(k, keys){
                         console.log(`get ${k} ->  ${keys.show()}`)
                         keys.foreach(function(list_key){
                             list_key = list_key.replace(/'/g, '"');
@@ -155,7 +177,7 @@ function refreshtree()
                             console.log(`Keys ${list_key}`)
                             list_key.forEach(function(key){
                                 console.log(`Key ->  ${key}`)
-                                add_node(key);
+                                add_node_actual(key);
                             });
                         });
                     });
@@ -163,20 +185,74 @@ function refreshtree()
 
             });
         });
+    })
+}
 
-//        store.keys(function (keys){
-//            keys.forEach(function(key){
-//                add_node(key);
-//            });
-//        });
+
+function refreshdtree()
+{
+    $(function () {
+        $('#jstree-desired').jstree(
+            {
+                "core" : {
+                    check_callback : true,
+                    "themes" : { "icons": true }
+                }
+            });
+
+        $('#jstree-desired').on('changed.jstree', function (e, data) {
+            var i, j, r = [];
+            for(i = 0, j = data.selected.length; i < j; i++) {
+                r.push(data.instance.get_node(data.selected[i]).id);
+            }
+            var node = $('#jstree-desired').jstree().get_node(r);
+            dstore.get(node.id, function(k, v) {
+                document.getElementById("main").style.display = "block";
+                console.log(`Key ${k}`)
+                console.log(`Value ${v.value}`)
+                console.log(`V is ${v.show()}`)
+                var store_value =  v.value.replace(/'/g, '"');
+                $('#nameNodeTree-desired').html(k);
+                $('#valueNodeTree-desired').html(library.json.prettyPrint(JSON.parse(store_value)));
+                $('#keyForm').val(k);
+                $('#valueForm').val(v.value);
+            });
+
+        }).jstree();
+
+
+        dstore.get(dhome+'/~stores~',function(k, stores){
+            console.log(`get ${k} ->  ${stores.show()}`)
+            stores.foreach(function(sids){
+            sids = sids.replace(/'/g, '"');
+            sids = JSON.parse(sids)
+            console.log(`Stores ->  ${sids}`)
+                sids.forEach(function(id){
+                    console.log(`Store id ${id}`)
+                    dstore.get(droot+'/'+id+'/~keys~', function(k, keys){
+                        console.log(`get ${k} ->  ${keys.show()}`)
+                        keys.foreach(function(list_key){
+                            list_key = list_key.replace(/'/g, '"');
+                            list_key = JSON.parse(list_key)
+                            console.log(`Keys ${list_key}`)
+                            list_key.forEach(function(key){
+                                console.log(`Key ->  ${key}`)
+                                add_node_desired(key);
+                            });
+                        });
+                    });
+                });
+
+            });
+        });
     })
 }
 
 function refreshpage()
 {
-    var keyElem = document.getElementById('nameNodeTree').innerHTML;
-    if (keyElem  != ""){
-        store.get(keyElem, function(k, v) {
+    var akeyElem = document.getElementById('nameNodeTree').innerHTML;
+    if (akeyElem  != ""){
+        astore.get(akeyElem, function(k, v) {
 
             if (v.value != null)
             {
@@ -203,18 +279,48 @@ function refreshpage()
             }
         });
     }
+
+    var dkeyElem = document.getElementById('nameNodeTree-desired').innerHTML;
+    if (dkeyElem  != ""){
+        dstore.get(dkeyElem, function(k, v) {
+
+            if (v.value != null)
+            {
+                $('#valueNodeTree-desired').html(library.json.prettyPrint(JSON.parse(v.value)));
+                if (document.getElementById('valueNodeTree-desired').classList.contains('node_active')) {
+                    return false;
+                }
+                document.getElementById('valueNodeTree-desired').classList.remove("node_disable")
+                document.getElementById('valueNodeTree-desired').classList.add("node_active")
+                document.getElementById('nameNodeTree-desired').classList.remove("node_disable")
+                document.getElementById('nameNodeTree-desired').classList.add("node_active")
+            }
+            else
+            {
+                $('#valueNodeTree-desired').html("UNDEFINED");
+                if (document.getElementById('valueNodeTree-desired').classList.contains('node_disable')) {
+                    return false;
+                }
+                document.getElementById('valueNodeTree-desired').classList.remove("node_active")
+                document.getElementById('valueNodeTree-desired').classList.add("node_disable")
+                document.getElementById('nameNodeTree-desired').classList.remove("name_active")
+                document.getElementById('nameNodeTree-desired').classList.add("node_disable")
+
+            }
+        });
+    }
 }
 
-function add_node(name)
+function add_node_actual(name)
 {
     if($("#jstree").jstree("get_node", name) == false)
     {
-        if (name == document.getElementById('root').value)
+        if (name == aroot)
         {
             return
         }
 
-        var rootParent = document.getElementById('root').value;
+        var rootParent = aroot;
         if ($("#jstree").jstree("get_node", rootParent) == false)
         {
             $('#jstree').jstree(
@@ -224,8 +330,8 @@ function add_node(name)
                 'last', false, false);
         }
 
-        var tab = name.split((document.getElementById('root').value) + '/')[1].split('/');
-        var parent = document.getElementById('root').value;
+        var tab = name.split(aroot + '/')[1].split('/');
+        var parent = aroot
         var newNode = parent + '/' + tab[0];
         for (var i = 0; i < tab.length; i++) {
             var node1 = $("#jstree").jstree("get_node", parent);
@@ -262,6 +368,66 @@ function add_node(name)
     }
 
 }
+
+
+function add_node_desired(name)
+{
+    if($("#jstree-desired").jstree("get_node", name) == false)
+    {
+        if (name == droot)
+        {
+            return
+        }
+
+        var rootParent = droot;
+        if ($("#jstree-desired").jstree("get_node", rootParent) == false)
+        {
+            $('#jstree-desired').jstree(
+                'create_node',
+                '#',
+                {"text": rootParent, "id": rootParent, "state": {"opened": "true", "disabled":"true"}},
+                'last', false, false);
+        }
+
+        var tab = name.split(droot + '/')[1].split('/');
+        var parent = droot
+        var newNode = parent + '/' + tab[0];
+        for (var i = 0; i < tab.length; i++) {
+            var node1 = $("#jstree-desired").jstree("get_node", parent);
+            var node2 = $("#jstree-desired").jstree("get_node", newNode);
+            if ((node1 != false) && (node2 == false)) {
+                console.log("CREATE")
+                $('#jstree-desired').jstree(
+                    'create_node',
+                    parent,
+                    {"text": tab[i], "id": newNode, "state": {"opened": "true"}, "li_attr":{"class":"node_disable"}},
+                    'last', false, false);
+            }
+            parent = parent + "/" + tab[i];
+            if (tab[i + 1] != null) {
+                newNode = newNode + '/' + tab[i + 1];
+            }
+        }
+
+    }
+    else
+    {
+        var nodeName = $("#jstree-desired").jstree("get_node", name)
+        if (document.getElementById(nodeName.id) == null)
+        {
+            return false;
+        }
+
+        if (document.getElementById(nodeName.id).classList.contains("node_active"))
+        {
+            return false;
+        }
+        document.getElementById(nodeName.id).classList.remove("node_disable")
+        document.getElementById(nodeName.id).classList.add("node_active")
+    }
+
+}
+
 
 var radio = function getRadio() {
     var radios = document.getElementsByName('check');

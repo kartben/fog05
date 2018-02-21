@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8"/>
     <title>Fog05WebUI</title>
 
     <!-- CSS -->
     <link rel="stylesheet" href="css/styles.css">
     <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="libs/jstree/dist/themes/default/style.min.css" />
+    <link rel="stylesheet" href="libs/jstree/dist/themes/default/style.css"/>
     <link href="css/ubuntu.css" rel="stylesheet">
     <!-- 3nd CSS -->
 
@@ -20,7 +20,7 @@
     <!-- Start Header -->
     <header class="row header">
         <div class="col-md-1">
-            <img src="pics/logo.png" alt="ADLINKs logo" />
+            <img src="pics/logo.png" alt="ADLINKs logo"/>
         </div>
         <div class="col-md-4">
             <span></span>
@@ -28,8 +28,8 @@
         <div class="col-md-5">
             <span></span>
         </div>
-         <div class="col-md-1">
-            <img src="pics/f05_logo.png" height="80" alt="fog05 logo" />
+        <div class="col-md-1">
+            <img src="pics/f05_logo.png" height="80" alt="fog05 logo"/>
         </div>
 
     </header>
@@ -46,21 +46,21 @@
                     <fieldset>
                         <div class="form-group">
                             <label for="connect">Server</label>
-                            <input type="text" class="form-control" id="connect" value="ws://139.162.144.10:9669/a1b2c3d4"  required />
+                            <input type="text" class="form-control" id="connect" value="139.162.144.10" required/>
                         </div>
 
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <div class="row">
                                 <div class="col-md-6">
                                     <label for="root">Root</label>
-                                    <input type="text" class="form-control" id="root" value="afos://0" required />
+                                    <input type="text" class="form-control" id="root" value="afos://0" required/>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="root">Store id</label>
-                                    <input type="text" class="form-control" id="storeid" value="101" required />
+                                    <input type="text" class="form-control" id="storeid" value="101" required/>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                         <input class="btn btn-default" role="button" type="submit" value="Connect"/>
                     </fieldset>
                 </form>
@@ -72,29 +72,79 @@
 
 
         <!-- START PAGE-PRINCIPAL -->
-        <div class="page-principal">
-            <div class="row content">
-                <!-- Start nav-->
-                <nav class="col-md-6 nav">
-                    <div id="jstree"></div>
-                </nav>
-                <!-- End nav-->
 
-                <!-- Start section -->
-                <section class="container col-md-6 section" id="main">
-                    </br>
-                    <p>Key : <span id="nameNodeTree"></span></p>
-                    <p>Value:</p>
-                        <pre>
-                            <div contenteditable="true">
-                                <code id="valueNodeTree"></code>
-                            </div>
-                        </pre>
-                </section>
-                <!-- End section -->
+        <div class="page-principal">
+            <div class="container">
+                <div class="card">
+                    <div class="card-header">
+                        Actual Store
+                    </div>
+                    <div class="card-body">
+                        <div class="col-md-3 nav pre-scrollable">
+                            <div id="jstree"></div>
+                        </div>
+                        <!-- End nav afos-->
+                        <div class=" col-md-9 section pre-scrollable">
+                            <section id="main">
+                                <p>Key : <span id="nameNodeTree"></span></p>
+                                <p>Value:</p>
+                                <pre>
+                                    <code contenteditable="true" id="valueNodeTree"></code>
+                                </pre>
+                            </section>
+                        </div>
+                    </div>
+                    <!-- Start nav afos-->
+
+                </div>
+                <div class="clearfix"></div>
+                <div class="card">
+                     <div class="card-header">
+                        Desired Store
+                    </div>
+                    <div class="card-body">
+                        <div class="col-md-3 pre-scrollable nav">
+                            <div id="jstree-desired"></div>
+                        </div>
+                        <div class="col-md-9 pre-scrollable section">
+                            <section id="main_desired">
+                                <p>Key : <span id="nameNodeTree-desired"></span></p>
+                                <p>Value:</p>
+                                <pre>
+                                <div contenteditable="true">
+                                    <code id="valueNodeTree-desired"></code>
+                                </div>
+                            </pre>
+                            </section>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
-        <!-- END PAGE-PRINCIPAL -->
+
+
+        <!--        <div class="page-principal">
+                    <div class="row content">
+
+                        <nav class="col-md-6 nav">
+                            <div id="jstree"></div>
+                        </nav>
+
+                        <section class="container col-md-6 section" id="main">
+                            </br>
+                            <p>Key : <span id="nameNodeTree"></span></p>
+                            <p>Value:</p>
+                                <pre>
+                                    <div contenteditable="true">
+                                        <code id="valueNodeTree"></code>
+                                    </div>
+                                </pre>
+                        </section>
+
+                    </div>
+                </div> -->
+
     </div>
 
 
@@ -104,7 +154,7 @@
         <!-- START PAGE-CONNECT -->
         <div class="page-connect active">
             <div class="col-lg-12">
-                <h1>Fog05WebUI</h1>
+                <h1>DStore Dashboard</h1>
             </div>
         </div>
         <!-- END PAGE-CONNECT -->
@@ -119,9 +169,9 @@
                     <div class="col-md-4">
                         <div class="form-group">
                             <label for="keyForm">Key</label>
-                            <input type="text" class="form-control" id="keyForm" value="" required />
+                            <input type="text" class="form-control" id="keyForm" value="" required/>
                             <label for="valueForm">Value</label>
-                            <input type="text" class="form-control" id="valueForm" value="" required />
+                            <input type="text" class="form-control" id="valueForm" value="" required/>
                         </div>
                     </div>
                     <!-- End KEY / VALUE-->
@@ -131,13 +181,13 @@
                         <div class="form-group"><br>
                             <div class="radio">
                                 <label for="valueRadio">
-                                    <input type="radio" name="check" value="value" id="valueRadio" checked required />
+                                    <input type="radio" name="check" value="value" id="valueRadio" checked required/>
                                     Value
                                 </label> <br/>
                             </div>
                             <div class="radio">
                                 <label for="urlRadio">
-                                    <input type="radio" name="check" value="url" id="urlRadio" required />
+                                    <input type="radio" name="check" value="url" id="urlRadio" required/>
                                     URL (not yet available)
                                 </label> <br/>
                             </div>
