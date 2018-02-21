@@ -154,8 +154,10 @@ function refreshatree()
                 var store_value =  v.value.replace(/'/g, '"');
                 $('#nameNodeTree').html(k);
                 $('#valueNodeTree').html(library.json.prettyPrint(JSON.parse(store_value)));
-                //$('#keyForm').val(k);
-                //$('#valueForm').val(v.value);
+
+                desired_uri = k.replace("afos", "dfos");
+                $('#keyForm').val(desired_uri);
+                $('#valueForm').val(v.value);
             });
 
         }).jstree();
