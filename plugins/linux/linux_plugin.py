@@ -331,6 +331,8 @@ class Linux(OSPlugin):
         nets = []
         intfs = psutil.net_if_stats().keys()
         gws = netifaces.gateways().get(2)
+        if gws is None:
+            gws = []
 
         default_gw = self.__get_default_gw()
         if default_gw == "":
