@@ -106,7 +106,7 @@ class semaeapi(MonitoringPlugin):
                     name = api[0]
                     id = api[1]
                     uri = '{}/{}'.format(k, name)
-                    cmd = 'semaeapi_tool -a {} {} {}'.format(k, name, id)
+                    cmd = 'semaeapi_tool -a {} {}'.format(k, id)
                     res = self.__execute_sema_cli(cmd)
                     status = 'ok'
                     value = res
