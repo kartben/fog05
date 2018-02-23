@@ -30,7 +30,7 @@ class semaeapi(MonitoringPlugin):
         self.available_api = {}
         self.__updating_thread = None
         self.__monitoring_active = False
-        self.frequency = 15
+        self.frequency = 50
 
         self.start_monitoring()
 
