@@ -97,6 +97,7 @@ class semaeapi(MonitoringPlugin):
         uri = '{}/{}/{}'.format(self.agent.ahome, self.HOME, uri)
         value = json.dumps(value)
         self.agent.astore.put(uri, value)
+        self.agent.logger("SEMA PLUGIN", "Write to store {} -> {}".format(uri,value))
 
     def __monitoring_thread(self):
         while self.__monitoring_active:
