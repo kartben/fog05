@@ -20,6 +20,8 @@ class semaeapi(MonitoringPlugin):
         self.HOME = 'monitoring/{}'.format(self.uuid)
         self.UPDATE_FREQUENCY = 'update'
         self.STATUS = 'status'
+        file_dir = os.path.dirname(__file__)
+        self.DIR = os.path.abspath(file_dir)
 
         uri = '{}/{}/set/*'.format(self.agent.dhome, self.HOME)
         self.agent.dstore.observe(uri, self.__react_to_cache_eapi_monitoring)
@@ -39,26 +41,32 @@ class semaeapi(MonitoringPlugin):
             return
 
         self.agent.logger.info('start_monitoring()', ' SEMAEApi Plugin - Scanning available eAPI')
-        exp = r'(Sema[^ ]*)'
-        res = self.__execute_sema_cli('semaeapi_tool')
-        matches = re.findall(exp,res)
-        if matches:
-            for api in matches:
-                self.available_api.update({api: []})
-            for k in list(self.available_api.keys()):
-                exp = r'(([0-9][0-9]|[0-9]).*)'
-                cmd = 'semaeapi_tool -a {}'.format(k)
-                res = self.__execute_sema_cli(cmd)
-                v = self.available_api.get(k)
-                m2 = re.findall(exp, res)
-                for id in m2:
-                    id = id[0]
-                    id = id.split()
-                    if len(id)>1:
-                        v.append({'id': id[0], 'name': id[1]})
-                self.available_api.update({k: v})
+        # exp = r'(Sema[^ ]*)'
+        # res = self.__execute_sema_cli('semaeapi_tool')
+        # matches = re.findall(exp,res)
+        # if matches:
+        #     for api in matches:
+        #         self.available_api.update({api: []})
+        #     for k in list(self.available_api.keys()):
+        #         exp = r'(([0-9][0-9]|[0-9]).*)'
+        #         cmd = 'semaeapi_tool -a {}'.format(k)
+        #         res = self.__execute_sema_cli(cmd)
+        #         v = self.available_api.get(k)
+        #         m2 = re.findall(exp, res)
+        #         for id in m2:
+        #             id = id[0]
+        #             id = id.split()
+        #             if len(id)>1:
+        #                 v.append({'id': id[0], 'name': id[1]})
 
-        self.agent.logger.info('start_monitoring()', ' SEMAEApi Plugin - Found {} eAPI'.format(len(matches)))
+
+        #self.available_api.update({k: v})
+
+        api_file = self.agent.get_os_plugin().read_file(os.path.join(self.DIR, 'data', 'api.json'))
+        api_raw = open(api_file).read().replace('\n','')
+        self.available_api = json.loads(api_raw)
+
+        self.agent.logger.info('start_monitoring()', ' SEMAEApi Plugin - Found {} eAPI'.format(len(self.available_api)))
         self.__updating_thread = threading.Thread(target=self.__monitoring_thread)
         self.__monitoring_active = True
         self.__updating_thread.start()
@@ -94,35 +102,18 @@ class semaeapi(MonitoringPlugin):
     def __monitoring_thread(self):
         while self.__monitoring_active:
             for k in list(self.available_api.keys()):
-                if 'Set' not in k and 'Write' not in k:
-                    v = self.available_api.get(k)
-                    if v is None:
-                        pass
-                    else:
-                        for api in v:
-                            if isinstance(api, dict):
-                                id = api.get('id')
-                                name = api.get('name')
-                                uri = '{}/{}'.format(k, name)
-                                cmd = 'semaeapi_tool -a {} {}'.format(k, id)
-                            else:
-                                uri = '{}/'.format(k)
-                                cmd = 'semaeapi_tool -a {}'.format(k)
-
-                            res = self.__execute_sema_cli(cmd)
-                            if 'get eapi information failed' in res:
-                                status = 'error'
-                            else:
-                                status = 'ok'
-
-                            value = res
-                            val = {'status': status, 'value': value}
-                            time.sleep(0.2)
-                            self.__update_actual_store(uri, val)
-            time.sleep(self.frequency)
-
-
-
+                for api in k:
+                    name = api[0]
+                    id = api[1]
+                    uri = '{}/{}'.format(k, name)
+                    cmd = 'semaeapi_tool -a {} {} {}'.format(k, name, id)
+                    res = self.__execute_sema_cli(cmd)
+                    status = 'ok'
+                    value = res
+                    val = {'status': status, 'value': value}
+                    time.sleep(0.2)
+                    self.__update_actual_store(uri, val)
+        time.sleep(self.frequency)
 
 
     def __react_to_cache_eapi_monitoring(self, key, value, v):
