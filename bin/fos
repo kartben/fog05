@@ -122,7 +122,7 @@ class WSStore(object):
     def resolveAll(self, uri):
         cmd = 'aresolve {0} {1}'.format(self.sid, uri)
         values=[]
-        ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
+        ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host, self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
         infos = response.split(uri)[-1].replace(' ', '')
@@ -698,7 +698,9 @@ class FOSCli(object):
             print('+-------------------------------------------------------+')
             for e in infos:
                     node_info = json.loads(e[1])
-                    print('| Name: {0} \t| UUID: {1}\t '.format(node_info.get('name'), node_info.get('uuid')))
+                    if len(e[0].split('/')) == 4:
+                        node_info = json.loads(e[1])
+                        print('| Name: {0} \t| UUID: {1}\t '.format(node_info.get('name'), node_info.get('uuid')))
             print('+-------------------------------------------------------+')
         else:
             print('No node found!!')
