@@ -180,8 +180,7 @@ class FosAgent(Agent):
             mon = mon.run(agent=self, uuid=plugin_uuid)
             self.__monPlugins.update({mon.uuid: mon})
 
-            val = {'version': mon.version, 'description': str('monitoring {}' % mon.name),
-                   'plugin': ''}
+            val = {'version': mon.version, 'description': 'monitoring {}'.format(mon.name), 'plugin': ''}
             uri = str('{}/plugins/{}/{}'.format(self.ahome, mon.name, mon.uuid))
             self.astore.put(uri, json.dumps(val))
 
