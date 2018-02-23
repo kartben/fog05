@@ -97,7 +97,7 @@ class semaeapi(MonitoringPlugin):
         uri = '{}/{}/{}'.format(self.agent.ahome, self.HOME, uri)
         value = json.dumps(value)
         self.agent.astore.put(uri, value)
-        self.agent.logger.info("SEMA PLUGIN", "Write to store {} -> {}".format(uri,value))
+        #self.agent.logger.info("SEMA PLUGIN", "Write to store {} -> {}".format(uri,value))
 
     def __monitoring_thread(self):
         while self.__monitoring_active:
@@ -151,7 +151,7 @@ class semaeapi(MonitoringPlugin):
 
     def __execute_sema_cli(self, cmd):
         cmd_splitted = cmd.split()
-        self.agent.logger.info('__execute_sema_cli','cmd {}'.format(cmd))
+        #self.agent.logger.info('__execute_sema_cli','cmd {}'.format(cmd))
         p = psutil.Popen(cmd_splitted, stdout=subprocess.PIPE)
         p.wait()
         ret = ''
