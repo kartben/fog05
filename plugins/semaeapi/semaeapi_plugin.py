@@ -111,7 +111,7 @@ class semaeapi(MonitoringPlugin):
                     status = 'ok'
                     value = res
                     val = {'status': status, 'value': value}
-                    time.sleep(0.2)
+                    #time.sleep(0.2)
                     self.__update_actual_store(uri, val)
             time.sleep(self.frequency)
 
