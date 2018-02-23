@@ -96,26 +96,29 @@ class semaeapi(MonitoringPlugin):
             for k in list(self.available_api.keys()):
                 if 'Set' not in k and 'Write' not in k:
                     v = self.available_api.get(k)
-                    for api in v:
-                        if isinstance(api, dict):
-                            id = api.get('id')
-                            name = api.get('name')
-                            uri = '{}/{}'.format(k, name)
-                            cmd = 'semaeapi_tool -a {} {}'.format(k, id)
-                        else:
-                            uri = '{}/'.format(k)
-                            cmd = 'semaeapi_tool -a {}'.format(k)
+                    if v is None:
+                        pass
+                    else:
+                        for api in v:
+                            if isinstance(api, dict):
+                                id = api.get('id')
+                                name = api.get('name')
+                                uri = '{}/{}'.format(k, name)
+                                cmd = 'semaeapi_tool -a {} {}'.format(k, id)
+                            else:
+                                uri = '{}/'.format(k)
+                                cmd = 'semaeapi_tool -a {}'.format(k)
 
-                        res = self.__execute_sema_cli(cmd)
-                        if 'get eapi information failed' in res:
-                            status = 'error'
-                        else:
-                            status = 'ok'
+                            res = self.__execute_sema_cli(cmd)
+                            if 'get eapi information failed' in res:
+                                status = 'error'
+                            else:
+                                status = 'ok'
 
-                        value = res
-                        val = {'status': status, 'value': value}
-                        time.sleep(0.2)
-                        self.__update_actual_store(uri, val)
+                            value = res
+                            val = {'status': status, 'value': value}
+                            time.sleep(0.2)
+                            self.__update_actual_store(uri, val)
             time.sleep(self.frequency)
 
 
