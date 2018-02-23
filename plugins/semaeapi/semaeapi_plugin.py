@@ -112,7 +112,7 @@ class semaeapi(MonitoringPlugin):
                     val = {'status': status, 'value': value}
                     time.sleep(0.2)
                     self.__update_actual_store(uri, val)
-        time.sleep(self.frequency)
+            time.sleep(self.frequency)
 
 
     def __react_to_cache_eapi_monitoring(self, key, value, v):
