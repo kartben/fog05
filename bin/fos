@@ -692,7 +692,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_nodes(self):
-        uri = str('{}/*/'.format(self.aroot))
+        uri = str('{}/*'.format(self.aroot))
         infos = yield from self.store.actual.resolveAll(uri)
         if infos is not None and infos != '' and len(infos)>0:
             print('+-------------------------------------------------------+')
