@@ -81,14 +81,14 @@ var wsconnect = function wsconnect() {
     art.connect();
     drt.connect();
 
-    setInterval(function(){refresh();}, 5000);
-    setInterval(function(){refreshpage();}, 5000);
+    setInterval(function(){refresh();}, 15000);
+    setInterval(function(){refreshpage();}, 1000);
     //}
 }
 
 function pushKeyValue()
 {
-    var rootName = document.getElementById('root').value;
+    //var rootName = document.getElementById('root').value;
     var keyElem = document.getElementById('keyForm').value;
     var valueElem = document.getElementById('valueForm').value;
     var radioElem = radio();
@@ -101,14 +101,14 @@ function pushKeyValue()
     {
         if (selectElem == "put")
         {
-            if (keyElem === rootName)
-            {
-                alert('Please enter a different key from the root');
-            }
-            else
-            {
-                dstore.put(keyElem, valueElem);
-            }
+            //if (keyElem === rootName)
+            //{
+            //    alert('Please enter a different key from the root');
+            //}
+            //else
+            //{
+            dstore.put(keyElem, valueElem);
+            //}
         }
     }
 }
@@ -145,7 +145,7 @@ function refreshatree()
                 }
             });
 
-        $('#jstree').on('changed.jstree', function (e, data) {
+        /*$('#jstree').on('changed.jstree', function (e, data) {
             var i, j, r = [];
             for(i = 0, j = data.selected.length; i < j; i++) {
                 r.push(data.instance.get_node(data.selected[i]).id);
@@ -153,9 +153,9 @@ function refreshatree()
             var node = $('#jstree').jstree().get_node(r);
             astore.get(node.id, function(k, v) {
                 document.getElementById("main").style.display = "block";
-                console.log(`Key ${k}`)
-                console.log(`Value ${v.value}`)
-                console.log(`V is ${v.show()}`)
+                //console.log(`Key ${k}`)
+                //console.log(`Value ${v.value}`)
+                //console.log(`V is ${v.show()}`)
                 var store_value =  v.value.replace(/'/g, '"');
                 $('#nameNodeTree').html(k);
                 $('#valueNodeTree').html(library.json.prettyPrint(JSON.parse(store_value)));
@@ -165,25 +165,42 @@ function refreshatree()
                 $('#valueForm').val(v.value);
             });
 
-        }).jstree();
+        }).jstree(); */
+
+        $('#jstree').on("select_node.jstree", function (e, data) {
+            uri = data.node.id
+            astore.get(uri, function(k, v) {
+                document.getElementById("main").style.display = "block";
+                //console.log(`Key ${k}`)
+                //console.log(`Value ${v.value}`)
+                //console.log(`V is ${v.show()}`)
+                var store_value =  v.value.replace(/'/g, '"');
+                $('#nameNodeTree').html(k);
+                $('#valueNodeTree').html(library.json.prettyPrint(JSON.parse(store_value)));
+
+                desired_uri = k.replace("afos", "dfos");
+                $('#keyForm').val(desired_uri);
+                $('#valueForm').val(v.value);
+            });
+        });
 
 
         astore.get(ahome+'/~stores~',function(k, stores){
-            console.log(`get ${k} ->  ${stores.show()}`)
+            //console.log(`get ${k} ->  ${stores.show()}`)
             stores.foreach(function(sids){
             sids = sids.replace(/'/g, '"');
             sids = JSON.parse(sids)
-            console.log(`Stores ->  ${sids}`)
+            //console.log(`Stores ->  ${sids}`)
                 sids.forEach(function(id){
-                    console.log(`Store id ${id}`)
+                    //console.log(`Store id ${id}`)
                     astore.get(aroot+'/'+id+'/~keys~', function(k, keys){
-                        console.log(`get ${k} ->  ${keys.show()}`)
+                        //console.log(`get ${k} ->  ${keys.show()}`)
                         keys.foreach(function(list_key){
                             list_key = list_key.replace(/'/g, '"');
                             list_key = JSON.parse(list_key)
-                            console.log(`Keys ${list_key}`)
+                            //console.log(`Keys ${list_key}`)
                             list_key.forEach(function(key){
-                                console.log(`Key ->  ${key}`)
+                                //console.log(`Key ->  ${key}`)
                                 add_node_actual(key);
                             });
                         });
@@ -207,43 +224,40 @@ function refreshdtree()
                 }
             });
 
-        $('#jstree-desired').on('changed.jstree', function (e, data) {
-            var i, j, r = [];
-            for(i = 0, j = data.selected.length; i < j; i++) {
-                r.push(data.instance.get_node(data.selected[i]).id);
-            }
-            var node = $('#jstree-desired').jstree().get_node(r);
-            dstore.get(node.id, function(k, v) {
+        $('#jstree-desired').on("select_node.jstree", function (e, data) {
+            uri = data.node.id
+            astore.get(uri, function(k, v) {
                 document.getElementById("main").style.display = "block";
-                console.log(`Key ${k}`)
-                console.log(`Value ${v.value}`)
-                console.log(`V is ${v.show()}`)
+                //console.log(`Key ${k}`)
+                //console.log(`Value ${v.value}`)
+                //console.log(`V is ${v.show()}`)
                 var store_value =  v.value.replace(/'/g, '"');
                 $('#nameNodeTree-desired').html(k);
                 $('#valueNodeTree-desired').html(library.json.prettyPrint(JSON.parse(store_value)));
-                $('#keyForm').val(k);
+
+
+                $('#keyForm').val(desired_uri);
                 $('#valueForm').val(v.value);
             });
-
-        }).jstree();
+        });
 
 
         dstore.get(dhome+'/~stores~',function(k, stores){
-            console.log(`get ${k} ->  ${stores.show()}`)
+            //console.log(`get ${k} ->  ${stores.show()}`)
             stores.foreach(function(sids){
             sids = sids.replace(/'/g, '"');
             sids = JSON.parse(sids)
-            console.log(`Stores ->  ${sids}`)
+            //console.log(`Stores ->  ${sids}`)
                 sids.forEach(function(id){
-                    console.log(`Store id ${id}`)
+                    //console.log(`Store id ${id}`)
                     dstore.get(droot+'/'+id+'/~keys~', function(k, keys){
-                        console.log(`get ${k} ->  ${keys.show()}`)
+                        //console.log(`get ${k} ->  ${keys.show()}`)
                         keys.foreach(function(list_key){
                             list_key = list_key.replace(/'/g, '"');
                             list_key = JSON.parse(list_key)
-                            console.log(`Keys ${list_key}`)
+                            //console.log(`Keys ${list_key}`)
                             list_key.forEach(function(key){
-                                console.log(`Key ->  ${key}`)
+                                //console.log(`Key ->  ${key}`)
                                 add_node_desired(key);
                             });
                         });
@@ -263,8 +277,9 @@ function refreshpage()
 
             if (v.value != null)
             {
-                 var store_value =  v.value.replace(/'/g, '"');
+                var store_value =  v.value.replace(/'/g, '"');
                 $('#valueNodeTree').html(library.json.prettyPrint(JSON.parse(store_value)));
+                /*
                 if (document.getElementById('valueNodeTree').classList.contains('node_active')) {
                     return false;
                 }
@@ -272,17 +287,18 @@ function refreshpage()
                 document.getElementById('valueNodeTree').classList.add("node_active")
                 document.getElementById('nameNodeTree').classList.remove("node_disable")
                 document.getElementById('nameNodeTree').classList.add("node_active")
+                */
             }
             else
             {
                 $('#valueNodeTree').html("UNDEFINED");
-                if (document.getElementById('valueNodeTree').classList.contains('node_disable')) {
+                /*if (document.getElementById('valueNodeTree').classList.contains('node_disable')) {
                     return false;
                 }
                 document.getElementById('valueNodeTree').classList.remove("node_active")
                 document.getElementById('valueNodeTree').classList.add("node_disable")
                 document.getElementById('nameNodeTree').classList.remove("name_active")
-                document.getElementById('nameNodeTree').classList.add("node_disable")
+                document.getElementById('nameNodeTree').classList.add("node_disable")*/
 
             }
         });
@@ -296,24 +312,24 @@ function refreshpage()
             {
                 var store_value =  v.value.replace(/'/g, '"');
                 $('#valueNodeTree-desired').html(library.json.prettyPrint(JSON.parse(store_value)));
-                if (document.getElementById('valueNodeTree-desired').classList.contains('node_active')) {
+                /*if (document.getElementById('valueNodeTree-desired').classList.contains('node_active')) {
                     return false;
                 }
                 document.getElementById('valueNodeTree-desired').classList.remove("node_disable")
                 document.getElementById('valueNodeTree-desired').classList.add("node_active")
                 document.getElementById('nameNodeTree-desired').classList.remove("node_disable")
-                document.getElementById('nameNodeTree-desired').classList.add("node_active")
+                document.getElementById('nameNodeTree-desired').classList.add("node_active")*/
             }
             else
             {
                 $('#valueNodeTree-desired').html("UNDEFINED");
-                if (document.getElementById('valueNodeTree-desired').classList.contains('node_disable')) {
+                /*if (document.getElementById('valueNodeTree-desired').classList.contains('node_disable')) {
                     return false;
                 }
                 document.getElementById('valueNodeTree-desired').classList.remove("node_active")
                 document.getElementById('valueNodeTree-desired').classList.add("node_disable")
                 document.getElementById('nameNodeTree-desired').classList.remove("name_active")
-                document.getElementById('nameNodeTree-desired').classList.add("node_disable")
+                document.getElementById('nameNodeTree-desired').classList.add("node_disable")*/
 
             }
         });
@@ -346,7 +362,7 @@ function add_node_actual(name)
             var node1 = $("#jstree").jstree("get_node", parent);
             var node2 = $("#jstree").jstree("get_node", newNode);
             if ((node1 != false) && (node2 == false)) {
-                console.log("CREATE")
+                //console.log("CREATE")
                 $('#jstree').jstree(
                     'create_node',
                     parent,
@@ -405,7 +421,7 @@ function add_node_desired(name)
             var node1 = $("#jstree-desired").jstree("get_node", parent);
             var node2 = $("#jstree-desired").jstree("get_node", newNode);
             if ((node1 != false) && (node2 == false)) {
-                console.log("CREATE")
+                //console.log("CREATE")
                 $('#jstree-desired').jstree(
                     'create_node',
                     parent,
