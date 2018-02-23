@@ -107,7 +107,7 @@ function pushKeyValue()
             }
             else
             {
-                store.put(keyElem, valueElem);
+                dstore.put(keyElem, valueElem);
             }
         }
     }
