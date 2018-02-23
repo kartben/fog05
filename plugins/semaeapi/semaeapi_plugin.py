@@ -151,6 +151,7 @@ class semaeapi(MonitoringPlugin):
 
     def __execute_sema_cli(self, cmd):
         cmd_splitted = cmd.split()
+        self.agent.logger.info('__execute_sema_cli','cmd {}'.format(cmd))
         p = psutil.Popen(cmd_splitted, stdout=subprocess.PIPE)
         p.wait()
         ret = ''
