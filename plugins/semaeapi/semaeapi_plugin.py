@@ -62,8 +62,7 @@ class semaeapi(MonitoringPlugin):
 
         #self.available_api.update({k: v})
 
-        api_file = self.agent.get_os_plugin().read_file(os.path.join(self.DIR, 'data', 'api.json'))
-        api_raw = open(api_file).read().replace('\n','')
+        api_raw = self.agent.get_os_plugin().read_file(os.path.join(self.DIR, 'data', 'api.json')).replace('\n','')
         self.available_api = json.loads(api_raw)
 
         self.agent.logger.info('start_monitoring()', ' SEMAEApi Plugin - Found {} eAPI'.format(len(self.available_api)))
