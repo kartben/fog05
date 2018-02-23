@@ -51,33 +51,38 @@ var wsconnect = function wsconnect() {
     //var rootString = document.getElementById('root').value;
     //var storeid = document.getElementById('storeid').value;
     // ws://139.162.144.10:9669/a1b2c3d4
-    var host = 'ws://'+document.getElementById('connect').value+':9669/a1b2c3d4'
+    var host = 'ws://'+document.getElementById('connect').value+':9669/a1b2c3d4';
     //store_root = rootString;
     //store_home = rootString+'/web';
 
-    aroot = 'afos://0'
-    ahome = aroot+'/web'
-    astoreid = 'aweb'
+    aroot = 'afos://0';
+    ahome = aroot+'/web';
+    astoreid = 'aweb';
 
-    droot = 'dfos://0'
-    dhome = droot + '/web'
-    dstoreid = 'dweb'
+    droot = 'dfos://0';
+    dhome = droot + '/web';
+    dstoreid = 'dweb';
 
 
     document.getElementById('keyForm').value = droot;
     var fos = this.fog05;
-    var rt = new fos.Runtime(host);
+    var art = new fos.Runtime(host);
+    var drt = new fos.Runtime(host);
 
-    rt.onconnect = function () {
-
-        astore = new fos.Store(rt, astoreid, aroot, ahome, 1024)
-        dstore = new fos.Store(rt, dstoreid, droot, dhome, 1024)
-        //store = new fos.Store(rt, storeid, store_root, store_home, 1024);
-        refresh()
+    art.onconnect = function () {
+        astore = new fos.Store(art, astoreid, aroot, ahome, 1024);
     };
-    rt.connect();
-    setInterval(function(){refresh();}, 10000);
-    setInterval(function(){refreshpage();}, 1000);
+
+    drt.onconnect = function () {
+        dstore = new fos.Store(drt, dstoreid, droot, dhome, 1024);
+        refresh();
+    };
+
+    art.connect();
+    drt.connect();
+
+    setInterval(function(){refresh();}, 5000);
+    setInterval(function(){refreshpage();}, 5000);
     //}
 }
 
