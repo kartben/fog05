@@ -101,7 +101,7 @@ class semaeapi(MonitoringPlugin):
     def __monitoring_thread(self):
         while self.__monitoring_active:
             for k in list(self.available_api.keys()):
-                for api in k:
+                for api in self.available_api.get(k):
                     name = api[0]
                     id = api[1]
                     uri = '{}/{}'.format(k, name)
