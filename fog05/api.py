@@ -13,8 +13,6 @@ class FOSStore(object):
         self.droot = droot  # 'dfos://{}'
         self.dhome = str('{}/{}'.format(droot, home))  # str('dfos://{}/{}' % self.uuid)
 
-        self.auth = 'a1b2c3d4'
-
         self.actual = DStore('a{}'.format(home), self.aroot, self.ahome, 1024)
         self.desired = DStore('d{}'.format(home), self.droot, self.dhome, 1024)
 
@@ -34,22 +32,22 @@ class API(object):
 
     def __init__(self, sysid=0):
 
-        self.a_root = "afos://{}".format(sysid)
-        self.d_root = "dfos://{}".format(sysid)
+        self.a_root = 'afos://{}'.format(sysid)
+        self.d_root = 'dfos://{}'.format(sysid)
         self.store = FOSStore(self.a_root, self.d_root, 'python-api')
 
         self.manifest = self.Manifest(self.store)
         self.node = self.Node(self.store)
-        self.plugin = self.plugin(self.store)
-        self.network = self.network(self.store)
-        self.entity = self.entity(self.store)
-        self.image = self.image(self.store)
-        self.flavor = self.flavor(self.store)
+        self.plugin = self.Plugin(self.store)
+        self.network = self.Network(self.store)
+        self.entity = self.Entity(self.store)
+        self.image = self.Image(self.store)
+        self.flavor = self.Flavor(self.store)
 
     class Manifest(object):
         def __init__(self, store=None):
             if store is None:
-                raise RuntimeError("store cannot be none in API!")
+                raise RuntimeError('store cannot be none in API!')
             self.store = store
 
         def check(self, manifest, manifest_type):
@@ -96,14 +94,37 @@ class API(object):
     class Node(object):
         def __init__(self, store=None):
             if store is None:
-                raise RuntimeError("store cannot be none in API!")
+                raise RuntimeError('store cannot be none in API!')
             self.store = store
 
         def list(self):
-            pass
+            '''
+
+            :return: list of tuples (uuid, hostname)
+            '''
+            nodes = []
+            uri = '{}/*'.format(self.store.aroot)
+            infos = self.store.actual.resolveAll(uri)
+            for i in infos:
+                if len(i[0].split('/')) == 4:
+                    node_info = json.loads(i[1])
+                    nodes.append((node_info.get('uuid'), node_info.get('name')))
+            return nodes
 
         def info(self, node_uuid):
-            pass
+            """
+            Provide all information about a specific node
+
+            :param node_uuid: the uuid of the node you want info
+            :return: a dictionary with all infomarion about the node
+            """
+            if node_uuid is None:
+                return None
+            uri = '{}/{}'.format(self.astore.root, node_uuid)
+            infos = self.store.actual.resolve(uri)
+            if infos is None:
+                return None
+            return json.loads(infos)
 
         def search(self, search_dict):
             pass
@@ -111,7 +132,7 @@ class API(object):
     class Plugin(object):
         def __init__(self, store=None):
             if store is None:
-                raise RuntimeError("store cannot be none in API!")
+                raise RuntimeError('store cannot be none in API!')
             self.store = store
 
         def add(self, manifest, node_uuid=None):
@@ -129,7 +150,7 @@ class API(object):
     class Network(object):
         def __init__(self, store=None):
             if store is None:
-                raise RuntimeError("store cannot be none in API!")
+                raise RuntimeError('store cannot be none in API!')
             self.store = store
 
         def add(self, manifest, node_uuid=None):
@@ -147,7 +168,7 @@ class API(object):
     class Entity(object):
         def __init__(self, store=None):
             if store is None:
-                raise RuntimeError("store cannot be none in API!")
+                raise RuntimeError('store cannot be none in API!')
             self.store = store
 
         def add(self, manifest, node_uuid):
@@ -189,7 +210,7 @@ class API(object):
     class Image(object):
         def __init__(self, store=None):
             if store is None:
-                raise RuntimeError("store cannot be none in API!")
+                raise RuntimeError('store cannot be none in API!')
             self.store = store
 
         def add(self, manifest, node_uuid=None):
@@ -204,7 +225,7 @@ class API(object):
     class Flavor(object):
         def __init__(self, store=None):
             if store is None:
-                raise RuntimeError("store cannot be none in API!")
+                raise RuntimeError('store cannot be none in API!')
             self.store = store
 
         def add(self, manifest, node_uuid=None):
@@ -236,7 +257,6 @@ class API(object):
         - remove
         - list
         - search
-        
     - entity
         - add
         - remove
