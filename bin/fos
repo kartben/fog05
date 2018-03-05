@@ -533,7 +533,7 @@ class FOSCli(object):
     @asyncio.coroutine
     def __send_undefine_entity(self, node_uuid, entity_uuid):
         handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('{}/{}/runtime/{}/entity/{}'.format(self.drootnode_uuid, handler, entity_uuid))
+        uri = str('{}/{}/runtime/{}/entity/{}'.format(self.droot, node_uuid, handler, entity_uuid))
 
         res = yield from self.store.desired.remove(uri)
         if res:

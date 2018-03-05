@@ -1105,6 +1105,7 @@ class KVMLibvirt(RuntimePlugin):
             'clean': self.clean_entity,
             'undefine': self.undefine_entity,
             'stop': self.stop_entity,
+            'pause': self.pause_entity,
             'resume': self.resume_entity,
             'run': self.run_entity,
             'landing': self.migrate_entity,

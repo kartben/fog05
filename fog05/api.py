@@ -2,7 +2,8 @@ from jsonschema import validate, ValidationError
 from fog05 import Schemas
 from fog05.DStore import *
 from enum import Enum
-
+import re
+import uuid
 
 class FOSStore(object):
 
@@ -253,38 +254,245 @@ class API(object):
                 raise RuntimeError('store cannot be none in API!')
             self.store = store
 
-        def add(self, manifest, node_uuid):
+        def __search_plugin_by_name(self, name, node_uuid):
+            uri = '{}/{}/plugins'.format(self.store.aroot, node_uuid)
+            all_plugins = self.store.actual.get(uri)
+            if all_plugins is None or all_plugins == '':
+                print('Cannot get plugin')
+                return None
+            all_plugins = json.loads(all_plugins).get('plugins')
+            search = [x for x in all_plugins if name.upper() in x.get('name').upper()]
+            if len(search) == 0:
+                return None
+            else:
+                return search[0]
+
+        def __get_entity_handler_by_uuid(self, node_uuid, entity_uuid):
+            uri = '{}/{}/runtime/*/entity/{}'.format(self.store.aroot, node_uuid, entity_uuid)
+            all = self.store.actual.resolveAll(uri)
+            for i in all:
+                k = i[0]
+                if fnmatch.fnmatch(k, uri):
+                    # print('MATCH {0}'.format(k))
+                    # print('Extracting uuid...')
+                    regex = uri.replace('/', '\/')
+                    regex = regex.replace('*', '(.*)')
+                    reobj = re.compile(regex)
+                    mobj = reobj.match(k)
+                    uuid = mobj.group(1)
+                    # print('UUID {0}'.format(uuid))
+
+                    return uuid
+
+        def __get_entity_handler_by_type(self, node_uuid, t):
+            handler = None
+            handler = self.__search_plugin_by_name(t, node_uuid)
+            if handler is None:
+                print('type not yet supported')
+            return handler
+
+        def add(self, manifest, node_uuid, wait=False):
+            '''
+            define, configure and run an entity all in one shot
+            :param manifest:
+            :param node_uuid:
+            :param wait:
+            :return: the instance uuid
+            '''
             pass
 
-        def remove(self, entity_uuid, node_uuid):
+        def remove(self, entity_uuid, node_uuid, wait=False):
+            '''
+
+            stop, clean and undefine entity all in one shot
+
+            :param entity_uuid:
+            :param node_uuid:
+            :param wait:
+            :return: the instance uuid
+            '''
             pass
 
-        def define(self, entity_uuid, node_uuid):
+        def define(self, manifest, node_uuid, wait=False):
+            manifest.update({'status': 'define'})
+            handler = None
+            t = manifest.get('type')
+            try:
+                if t in ['kvm', 'xen']:
+                    handler = self.__search_plugin_by_name(t, node_uuid)
+                    validate(manifest.get('entity_data'), Schemas.vm_schema)
+                elif t in ['container', 'lxd']:
+                    handler = self.__search_plugin_by_name(t, node_uuid)
+                    validate(manifest.get('entity_data'), Schemas.container_schema)
+                elif t == 'native':
+                    handler = self.__search_plugin_by_name('native', node_uuid)
+                    validate(manifest.get('entity_data'), Schemas.native_schema)
+                elif t == 'ros2':
+                    handler = self.__search_plugin_by_name('ros2', node_uuid)
+                    validate(manifest.get('entity_data'), Schemas.ros2_schema)
+                elif t == 'usvc':
+                    print('microservice not yet')
+                else:
+                    print('type not recognized')
+
+                if handler is None:
+                    return False
+            except ValidationError as ve:
+                return False
+
+            entity_uuid = manifest.get('uuid')
+            entity_definition = manifest
+            json_data = json.dumps(entity_definition).replace(' ', '')
+            uri = '{}/{}/runtime/{}/entity/{}'.format(self.store.droot, node_uuid, handler.get('uuid'), entity_uuid)
+
+            res = self.store.desired.put(uri, json_data)
+            if res:
+
+                if wait:
+                    while True:
+                        time.sleep(1)
+                        uri = '{}/{}/runtime/{}/entity/{}'.format(self.store.aroot, node_uuid, handler.get('uuid'), entity_uuid)
+                        data = self.store.actual.get(uri)
+                        entity_info = None
+                        if data is not None:
+                            entity_info = json.loads(data)
+                            if entity_info is not None and entity_info.get('status') == 'defined':
+                                break
+                return True
+            else:
+                return False
+
+        def undefine(self, entity_uuid, node_uuid, wait=False):
+            handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+            uri = '{}/{}/runtime/{}/entity/{}'.format(self.store.droot, node_uuid, handler, entity_uuid)
+
+            res = self.store.desired.remove(uri)
+            if res:
+                return True
+            else:
+                return False
+
+        def configure(self, entity_uuid, node_uuid, instance_uuid=None, wait=False):
+            handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+            if instance_uuid is None:
+                instance_uuid = '{}'.format(uuid.uuid4())
+
+            uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=configure'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
+            res = self.store.desired.dput(uri)
+            if res:
+                if wait:
+                    while True:
+                        time.sleep(1)
+                        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+                        data = self.store.actual.get(uri)
+                        entity_info = None
+                        if data is not None:
+                            entity_info = json.loads(data)
+                            if entity_info is not None and entity_info.get('status') == 'configured':
+                                break
+                return instance_uuid
+            else:
+                return None
+
+        def clean(self, entity_uuid, node_uuid, instance_uuid, wait=False):
+            handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+            uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+            res = self.store.desired.remove(uri)
+            if res:
+                return True
+            else:
+                return False
+
+        def run(self, entity_uuid, node_uuid, instance_uuid, wait=False):
+            handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+            uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=run'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
+            res = self.store.desired.dput(uri)
+            if res:
+                if wait:
+                    while True:
+                        time.sleep(1)
+                        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+                        data = yield from self.store.actual.get(uri)
+                        entity_info = None
+                        if data is not None:
+                            entity_info = json.loads(data)
+                            if entity_info is not None and entity_info.get('status') == 'run':
+                                break
+                return True
+            else:
+                return False
+
+        def stop(self, entity_uuid, node_uuid, instance_uuid, wait=False):
+            handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+            uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=stop'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
+            res = self.store.desired.dput(uri)
+            if res:
+                if wait:
+                    while True:
+                        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+                        data = self.store.actual.get(uri)
+                        entity_info = None
+                        if data is not None:
+                            entity_info = json.loads(data)
+                            if entity_info is not None and entity_info.get('status') == 'stop':
+                                break
+                return True
+            else:
+                return False
+
+        def pause(self, entity_uuid, node_uuid, instance_uuid, wait=False):
             pass
 
-        def undefine(self, entity_uuid, node_uuid):
+        def resume(self, entity_uuid, node_uuid, instance_uuid, wait=False):
             pass
 
-        def configure(self, entity_uuid, instance_uuid, node_uuid):
-            pass
+        def migrate(self, entity_uuid, instance_uuid, node_uuid, destination_node_uuid, wait=False):
+            handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+            uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.aroot, node_uuid, handler, entity_uuid, instance_uuid)
 
-        def clean(self, entity_uuid, instance_uuid, node_uuid):
-            pass
+            entity_info = self.store.actual.get(uri)
+            if entity_info is None:
+                return False
 
-        def run(self, entity_uuid, instance_uuid, node_uuid):
-            pass
+            entity_info = json.loads(entity_info)
 
-        def stop(self, entity_uuid, instance_uuid, node_uuid):
-            pass
+            entity_info_src = entity_info.copy()
+            entity_info_dst = entity_info.copy()
 
-        def pause(self, entity_uuid, instance_uuid, node_uuid):
-            pass
+            entity_info_src.update({"status": "taking_off"})
+            entity_info_src.update({"dst": destination_node_uuid})
 
-        def resume(self, entity_uuid, instance_uuid, node_uuid):
-            pass
+            entity_info_dst.update({"status": "landing"})
+            entity_info_dst.update({"dst": destination_node_uuid})
 
-        def migrate(self, entity_uuid, instance_uuid, node_uuid, destination_node_uuid):
-            pass
+            destination_handler = self.__get_entity_handler_by_type(destination_node_uuid, entity_info_dst.get('type'))
+            if destination_handler is None:
+                return False
+
+            uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.droot, destination_node_uuid, destination_handler.get('uuid'), entity_uuid, instance_uuid)
+
+            res = self.store.desired.put(uri, json.dumps(entity_info_dst).replace(' ', ''))
+            if res:
+                uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
+                res_dest = yield from self.store.desired.dput(uri, json.dumps(entity_info_src).replace(' ', ''))
+                if res_dest:
+                    if wait:
+                        while True:
+                            time.sleep(1)
+                            uri = "{}/{}/runtime/{}/entity/{}/instance/{}".format(self.aroot, destination_node_uuid, destination_handler.get('uuid'), entity_uuid, instance_uuid)
+                            data = yield from self.store.actual.get(uri)
+                            entity_info = None
+                            if data is not None:
+                                entity_info = json.loads(data)
+                            if entity_info is not None and entity_info.get("status") == "run":
+                                break
+                    return True
+                else:
+                    print("Error on destination node")
+                    return False
+            else:
+                print("Error on source node")
+                return False
 
         def search(self, search_dict, node_uuid=None):
             pass
