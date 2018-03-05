@@ -658,11 +658,39 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __send_pause_entity(self, node_uuid, entity_uuid, instance_uuid):
-        pass
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = str('{}/{}/runtime/{}/entity/{}/instance/{}#status=pause'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid))
+        res = yield from self.store.desired.dput(uri)
+        if res:
+            while True:
+                uri = str('{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid))
+                data = yield from self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
+                if entity_info is not None and entity_info.get('status') == 'pause':
+                    break
+            print("Paused instance {} for entity {} on node {}".format(instance_uuid, entity_uuid, node_uuid))
+        else:
+            print("Error on pause entity instance")
 
     @asyncio.coroutine
     def __send_resume_entity(self, node_uuid, entity_uuid, instance_uuid):
-        pass
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = str('{}/{}/runtime/{}/entity/{}/instance/{}#status=resume'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid))
+        res = yield from self.store.desired.dput(uri)
+        if res:
+            while True:
+                uri = str('{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid))
+                data = yield from self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
+                if entity_info is not None and entity_info.get('status') == 'run':
+                    break
+            print("Resumed instance {} for entity {} on node {}".format(instance_uuid, entity_uuid, node_uuid))
+        else:
+            print("Error on resume entity instance")
 
     @asyncio.coroutine
     def __send_add_plugin(self, node_uuid, manifest):
