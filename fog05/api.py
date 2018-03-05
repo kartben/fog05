@@ -441,10 +441,40 @@ class API(object):
                 return False
 
         def pause(self, entity_uuid, node_uuid, instance_uuid, wait=False):
-            pass
+            handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+            uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=pause'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
+            res = self.store.desired.dput(uri)
+            if res:
+                if wait:
+                    while True:
+                        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+                        data = self.store.actual.get(uri)
+                        entity_info = None
+                        if data is not None:
+                            entity_info = json.loads(data)
+                            if entity_info is not None and entity_info.get('status') == 'pause':
+                                break
+                return True
+            else:
+                return False
 
         def resume(self, entity_uuid, node_uuid, instance_uuid, wait=False):
-            pass
+            handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+            uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=resume'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
+            res = self.store.desired.dput(uri)
+            if res:
+                if wait:
+                    while True:
+                        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+                        data = self.store.actual.get(uri)
+                        entity_info = None
+                        if data is not None:
+                            entity_info = json.loads(data)
+                            if entity_info is not None and entity_info.get('status') == 'run':
+                                break
+                return True
+            else:
+                return False
 
         def migrate(self, entity_uuid, instance_uuid, node_uuid, destination_node_uuid, wait=False):
             handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
