@@ -237,11 +237,11 @@ class API(object):
             for i in response:
                 id = i[0].split('/')[2]
                 net = json.loads(i[1])
-                l = nets.get(id)
-                if l is None:
-                    l = []
-                l.append(net)
-                nets.update({id: l})
+                net_list = nets.get(id, None)
+                if net_list is None:
+                    net_list = []
+                net_list.append(net)
+                nets.update({id: net_list})
             return nets
 
         def search(self, search_dict, node_uuid=None):
@@ -296,10 +296,28 @@ class API(object):
             self.store = store
 
         def add(self, manifest, node_uuid=None):
-            pass
+            manifest.update({'status': 'add'})
+            json_data = json.dumps(manifest).replace(' ', '')
+            if node_uuid is None:
+                uri = '{}/*/runtime/*/image/{}'.format(self.store.droot, manifest.get('uuid'))
+            else:
+                uri = '{}/{}/runtime/*/image/{}'.format(self.store.droot, node_uuid, manifest.get('uuid'))
+            res = self.store.desired.put(uri, json_data)
+            if res:
+                return True
+            else:
+                return False
 
         def remove(self, image_uuid, node_uuid=None):
-            pass
+            if node_uuid is None:
+                uri = '{}/*/runtime/*/image/{}'.format(self.store.droot, image_uuid)
+            else:
+                uri = '{}/{}/runtime/*/image/{}'.format(self.store.droot, node_uuid, image_uuid)
+            res = self.store.desired.remove(uri)
+            if res:
+                return True
+            else:
+                return False
 
         def search(self, search_dict, node_uuid=None):
             pass
@@ -311,10 +329,28 @@ class API(object):
             self.store = store
 
         def add(self, manifest, node_uuid=None):
-            pass
+            manifest.update({'status': 'add'})
+            json_data = json.dumps(manifest).replace(' ', '')
+            if node_uuid is None:
+                uri = '{}/*/runtime/*/flavor/{}'.format(self.store.droot, manifest.get('uuid'))
+            else:
+                uri = '{}/{}/runtime/*/flavor/{}'.format(self.store.droot, node_uuid, manifest.get('uuid'))
+            res = self.store.desired.put(uri, json_data)
+            if res:
+                return True
+            else:
+                return False
 
         def remove(self, flavor_uuid, node_uuid=None):
-            pass
+            if node_uuid is None:
+                uri = '{}/*/runtime/*/flavor/{}'.format(self.store.droot, flavor_uuid)
+            else:
+                uri = '{}/{}/runtime/*/flavor/{}'.format(self.store.droot, node_uuid, flavor_uuid)
+            res = self.store.desired.remove(uri)
+            if res:
+                return True
+            else:
+                return False
 
         def search(self, search_dict, node_uuid=None):
             pass
