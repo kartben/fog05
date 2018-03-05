@@ -120,7 +120,7 @@ class API(object):
             """
             if node_uuid is None:
                 return None
-            uri = '{}/{}'.format(self.astore.root, node_uuid)
+            uri = '{}/{}'.format(self.store.aroot, node_uuid)
             infos = self.store.actual.resolve(uri)
             if infos is None:
                 return None
