@@ -126,6 +126,14 @@ class API(object):
                 return None
             return json.loads(infos)
 
+        def plugins(self, node_uuid):
+            uri = '{}/{}/plugins'.format(self.store.aroot, node_uuid)
+            response = self.store.actual.get(uri)
+            if response is not None:
+                return json.loads(response).get('plugins')
+            else:
+                return None
+
         def search(self, search_dict):
             pass
 
@@ -136,13 +144,47 @@ class API(object):
             self.store = store
 
         def add(self, manifest, node_uuid=None):
-            pass
+            manifest.update({'status':'add'})
+            plugins = {"plugins": [manifest]}
+            plugins = json.dumps(plugins).replace(' ', '')
+            if node_uuid is None:
+                uri = '{}/*/plugins'.format(self.store.droot)
+            else:
+                uri = '{}/{}/plugins'.format(self.store.droot, node_uuid)
+
+            res = self.store.desired.dput(uri, plugins)
+            if res:
+                return True
+            else:
+                return False
 
         def remove(self, plugin_uuid, node_uuid=None):
             pass
 
         def list(self, node_uuid=None):
-            pass
+            '''
+
+
+            :param node_uuid: can be none
+            :return: dictionary {node_uuid, plugin list }
+            '''
+            if node_uuid is not None:
+
+                uri = '{}/{}/plugins'.format(self.store.aroot, node_uuid)
+                response = self.store.actual.get(uri)
+                if response is not None:
+                    return {node_uuid:json.loads(response).get('plugins')}
+                else:
+                    return None
+
+            plugins = {}
+            uri = '{}/*/plugins'.format(self.store.aroot)
+            response = self.store.actual.resolveAll(uri)
+            for i in response:
+                id = i[0].split('/')[2]
+                pl = json.loads(i[1]).get('plugins')
+                plugins.update({id: pl})
+            return plugins
 
         def search(self, search_dict, node_uuid=None):
             pass
@@ -154,13 +196,53 @@ class API(object):
             self.store = store
 
         def add(self, manifest, node_uuid=None):
-            pass
+            manifest.update({'status': 'add'})
+            json_data = json.dumps(manifest).replace(' ', '')
 
-        def remove(self, manifest, node_uuid=None):
-            pass
+            if node_uuid is not None:
+                uri = '{}/{}/network/*/networks/{}'.format(self.store.droot, node_uuid, manifest.get('uuid'))
+            else:
+                uri = '{}/*/network/*/networks/{}'.format(self.store.droot, manifest.get('uuid'))
+
+            res = self.store.desired.put(uri, json_data)
+            if res:
+                return True
+            else:
+                return False
+
+        def remove(self, net_uuid, node_uuid=None):
+            if node_uuid is not None:
+                uri = '{}/{}/network/*/networks/{}'.format(self.store.droot, node_uuid, net_uuid)
+            else:
+                uri = '{}/*/network/*/networks/{}'.format(self.store.droot, net_uuid)
+
+            res = self.store.desired.remove(uri)
+            if res:
+                return True
+            else:
+                return False
 
         def list(self, node_uuid=None):
-            pass
+            if node_uuid is not None:
+                n_list = []
+                uri = '{}/{}/network/*/networks/'.format(self.store.aroot, node_uuid)
+                response = self.store.actual.resolveAll(uri)
+                for i in response:
+                    n_list.append(json.loads(i[1]))
+                return {node_uuid: n_list}
+
+            nets = {}
+            uri = '{}/*/network/*/networks/'.format(self.store.aroot)
+            response = self.store.actual.resolveAll(uri)
+            for i in response:
+                id = i[0].split('/')[2]
+                net = json.loads(i[1])
+                l = nets.get(id)
+                if l is None:
+                    l = []
+                l.append(net)
+                nets.update({id: l})
+            return nets
 
         def search(self, search_dict, node_uuid=None):
             pass
@@ -245,6 +327,7 @@ class API(object):
     - node
         - list
         - info
+        - plugins
         - search
     - plugin
         - add
