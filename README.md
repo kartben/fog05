@@ -102,19 +102,25 @@ Add a network to a node
     $ fos network -u <node uuid> -a -m <network manifest>
 
 
-Simple lifecycle of an entity:
+Simple lifecycle of an atomic entity:
 
-    $ fos entity -u <node_uuid> --define -m <entity manifest>
-    $ fos entity -u <node uuid> -eu <entity uuid> --configure -iu <instance_uuid>
-    $ fos entity -u <node uuid> -eu <entity uuid> --run -iu <instance_uuid>
-    $ fos entity -u <node uuid> -eu <entity uuid> --stop -iu <instance_uuid>
-    $ fos entity -u <node uuid> -eu <entity uuid> --clean -iu <instance_uuid>
-    $ fos entity -u <node uuid> -eu <entity uuid> --undefine
+    $ fos entity -u <node_uuid> --define -m <atomic entity manifest>
+    $ fos entity -u <node uuid> -eu <atomic entity uuid> --configure -iu <instance_uuid>
+    $ fos entity -u <node uuid> -eu <atomic entity uuid> --run -iu <instance_uuid>
+    $ fos entity -u <node uuid> -eu <atomic entity uuid> --stop -iu <instance_uuid>
+    $ fos entity -u <node uuid> -eu <atomic entity uuid> --clean -iu <instance_uuid>
+    $ fos entity -u <node uuid> -eu <atomic entity uuid> --undefine
     
-Migration of an entity
+Migration of an atomic entity
 
     fos entity -u <current node uuid> -eu <entity uuid> -du <destination node uuid>  -iu <instance_uuid> --migrate
     
+Static Onboard entity (DAG of Atomic Entities)
+
+    $ fos entity --add -m <entity manifest>
+
+Only static and simple resource managment is available at the moment, you can find an example of a DAG Entity in this [example](./examples/manifest/example_entity.json)
+
 ### CLI utils
 
 With fos-get you can explore the distributed store
