@@ -1,0 +1,6 @@
+{
+    "name": "demo network",
+    "uuid": "2c4e946a-ed83-41cd-ac3d-42d8b806f546",
+    "vxlan_id":5,
+    "multicast_address":"239.0.0.5"
+}

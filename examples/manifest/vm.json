@@ -1,0 +1,17 @@
+{
+    "name": "cirros_example",
+    "version": 1,
+    "type":"kvm",
+    "uuid": "9fa75e6a-d9c3-11e7-b769-5f3db30f0c2e",
+    "entity_data":{
+        "name": "cirros034kvm",
+        "uuid": "9fa75e6a-d9c3-11e7-b769-5f3db30f0c2e",
+        "cpu": 1,
+        "memory": 512,
+        "disk_size": 5,
+        "base_image":"http://192.168.1.142/brain.qcow2",
+        "networks": [{"mac": "d2:e3:ed:6f:e3:ef", "network_uuid": "2c4e946a-ed83-41cd-ac3d-42d8b806f546"}],
+        "user-data": "",
+        "ssh-key": ""
+    }
+}

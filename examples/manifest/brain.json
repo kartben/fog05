@@ -1,0 +1,14 @@
+{
+    "name": "brain",
+    "version": 1,
+    "type":"lxd",
+    "uuid": "eecf97d2-64ff-4992-a499-d748038b0535",
+    "entity_data":{
+        "name": "brain",
+        "uuid": "eecf97d2-64ff-4992-a499-d748038b0535",
+        "base_image":"https://www.dropbox.com/s/6eoaqhoknp7134t/brain.tar.gz",
+        "networks": [{"intf_name": "mgmt","network_uuid": "2c4e946a-ed83-41cd-ac3d-42d8b806f546"}],
+        "user-data": "",
+        "ssh-key": ""
+    }
+}

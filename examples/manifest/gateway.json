@@ -1,0 +1,19 @@
+{
+    "name": "gateway",
+    "version": 1,
+    "type":"lxd",
+    "uuid": "0be550dc-d9c4-11e7-aa21-d3df37fbfcfa",
+    "entity_data":{
+        "name": "gateway",
+        "uuid": "0be550dc-d9c4-11e7-aa21-d3df37fbfcfa",
+        "cpu": 1,
+        "memory": 512,
+        "disk_size": 5,
+        "base_image":"https://www.dropbox.com/s/7ko6orndmkkekc7/gateway.tar.gz",
+        "networks": [
+                     {"intf_name": "wan" ,"br_name":"virbr0"},
+                     {"intf_name": "mgmt","network_uuid": "2c4e946a-ed83-41cd-ac3d-42d8b806f546"}],
+        "user-data": "",
+        "ssh-key": ""
+    }
+}
