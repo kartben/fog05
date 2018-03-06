@@ -76,7 +76,7 @@ class API(object):
                     return False
             if manifest_type == self.Type.ENTITY:
                 try:
-                    validate(manifest, Schemas.app_schema)
+                    validate(manifest, Schemas.entity_schema)
                 except ValidationError as ve:
                     return False
 

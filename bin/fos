@@ -734,6 +734,20 @@ class FOSCli(object):
             print('No node found!!')
 
     @asyncio.coroutine
+    def __get_nodes_uuids(self):
+        nodes = []
+        uri = '{}/*'.format(self.aroot)
+        infos = yield from self.store.actual.resolveAll(uri)
+        if infos is not None and infos != '' and len(infos) > 0:
+            for e in infos:
+                node_info = json.loads(e[1])
+                if len(e[0].split('/')) == 4:
+                    node_info = json.loads(e[1])
+                    nodes.append(node_info.get('uuid'))
+        return nodes
+
+
+    @asyncio.coroutine
     def __get_networks(self):
         uri = str('{}/*/network/*/networks/*/'.format(self.aroot))
         nw_list = yield from self.store.actual.resolveAll(uri)
@@ -825,6 +839,61 @@ class FOSCli(object):
             print('| Node: {} \t\t|'.format(entity_uri.split('/')[3]))
             print('+-------------------------------------------------------+')
 
+
+    @asyncio.coroutine
+    def __onboard_entity(self, manifest):
+        instances_uuids = []
+        nodes = yield from self.__get_nodes_uuids()
+        nws = manifest.get('networks')
+        for n in nws:
+            for node in nodes:
+                yield from self.__send_add_network(node, n)
+
+        deploy_order_list = self.__resolve_dependencies(manifest.get("components"))
+        for c in deploy_order_list:
+            search = [x for x in manifest.get("components") if x.get('name') == c]
+            if len(search) > 0:
+                component = search[0]
+            mf = component.get('manifest')
+            yield from self.__send_define_entity(component.get('node'),mf)
+            c_i_uuid = '{}'.format(uuid.uuid4())
+            yield from self.__send_configure_entity(component.get('node'), mf.get('uuid'),c_i_uuid)
+            yield from self.__send_run_entity(component.get('node'), mf.get('uuid'),c_i_uuid)
+            instances_uuids.append(c_i_uuid)
+        print('Onboarded:')
+        i = 0
+        while i<len(instances_uuids):
+            print('{} Instance UUID : {}'.format(deploy_order_list[i],instances_uuids[i]))
+            i = i+1
+
+
+    def __resolve_dependencies(self, components):
+        '''
+        The return list contains component's name in the order that can be used to deploy
+         @TODO: should use less cycle to do this job
+        :rtype: list
+        :param components: list like [{'name': 'c1', 'need': ['c2', 'c3']}, {'name': 'c2', 'need': ['c3']}, {'name': 'c3', 'need': ['c4']}, {'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}]
+
+        no_dependable_components -> list like [[{'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}], [{'name': 'c3', 'need': []}], [{'name': 'c2', 'need': []}], [{'name': 'c1', 'need': []}], []]
+        :return: list like ['c4', 'c5', 'c3', 'c2', 'c1']
+        '''
+        c = list(components)
+        no_dependable_components = []
+        for i in range(0, len(components)):
+            no_dependable_components.append([x for x in c if len(x.get('need')) == 0])
+            # print (no_dependable_components)
+            c = [x for x in c if x not in no_dependable_components[i]]
+            for y in c:
+                n = y.get('need')
+                n = [x for x in n if x not in [z.get('name') for z in no_dependable_components[i]]]
+                y.update({"need": n})
+
+        order = []
+        for i in range(0, len(no_dependable_components)):
+            n = [x.get('name') for x in no_dependable_components[i]]
+            order.extend(n)
+        return order
+
     def start(self, plugins, verbose, daemon):
         if plugins:
             sys.path.append(os.path.abspath(plugins))
@@ -891,11 +960,22 @@ class FOSCli(object):
         if en_list:
             asyncio.get_event_loop().run_until_complete(self.__get_entities())
             return
+        if action == 'add' and manifest is not None:
+            manifest = json.loads(self.__read_file(manifest))
+            try:
+                validate(manifest, Schemas.entity_schema)
+            except ValidationError as ve:
+                print('Manifest is not correct')
+                print('{}'.format(ve.message))
+                return
+            print('manifest Ok')
+            asyncio.get_event_loop().run_until_complete(self.__onboard_entity(manifest))
+            return
         if node_uuid is None: return
         if action == 'define' and manifest is not None:
             manifest = json.loads(self.__read_file(manifest))
             try:
-                validate(manifest, Schemas.entity_schema)
+                validate(manifest, Schemas.atomic_entity_schema)
             except ValidationError as ve:
                 print('Manifest is not correct')
                 print('{}'.format(ve.message))
@@ -934,6 +1014,8 @@ class FOSCli(object):
                     validate(manifest.get('entity_data'), Schemas.native_schema)
                 elif t == 'ros2':
                     validate(manifest.get('entity_data'), Schemas.ros2_schema)
+                elif t == 'entity':
+                    validate(manifest, Schemas.entity_schema)
                 elif t == 'usvc':
                     print('microservice not yet')
                 else:
@@ -951,7 +1033,7 @@ class FOSCli(object):
                 self.exit(-1)
         if type == 'application':
             try:
-                validate(manifest, Schemas.app_schema)
+                validate(manifest, Schemas.entity_schema)
             except ValidationError as ve:
                 print('Manifest is not correct')
                 print('{}'.format(ve.message))
@@ -961,7 +1043,7 @@ class FOSCli(object):
         return
 
     def main(self):
-        parser = argparse.ArgumentParser(description='Fog05 | The Fog-Computing IaaS')
+        parser = argparse.ArgumentParser(description='fog05 | The Fog-Computing IaaS')
         subparsers = parser.add_subparsers(dest='cmd')
 
         ##START CMD
@@ -1013,7 +1095,7 @@ class FOSCli(object):
         parser_entity = subparsers.add_parser('entity')
         entity_grp = parser_entity.add_mutually_exclusive_group(required=True)
 
-        entity_grp.add_argument('list', nargs='?', type=bool, default=False, help='list all network')
+        entity_grp.add_argument('list', nargs='?', type=bool, default=False, help='list all entities')
         entity_grp.add_argument('-a', '--add', action='store_true', help='add entity')
         entity_grp.add_argument('-r', '--remove', action='store_true', help='remove entity')
         entity_grp.add_argument('--define', action='store_true', help='define entity')
