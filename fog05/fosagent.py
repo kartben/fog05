@@ -2,8 +2,11 @@ import json
 # import networkx as nx
 import time
 import traceback
-
-from fog05.DStore import *
+import sys
+import json
+import uuid
+from fog05.DLogger import DLogger
+from dstore import Store
 from fog05.PluginLoader import PluginLoader
 from fog05.interfaces.Agent import Agent
 
@@ -52,7 +55,7 @@ class FosAgent(Agent):
             self.dhome = str("{}/{}".format(self.droot, sid))
             self.logger.info('__init__()', '[ INIT ] Creating Desired State Store ROOT: {} HOME: {}'.format(self.droot,
                                                                                                           self.dhome))
-            self.dstore = DStore(sid, self.droot, self.dhome, 1024)
+            self.dstore = Store(sid, self.droot, self.dhome, 1024)
             self.logger.info('__init__()', '[ DONE ] Creating Desired State Store')
 
             # Actual Store, containing the Actual State
@@ -60,7 +63,7 @@ class FosAgent(Agent):
             self.ahome = str("{}/{}".format(self.aroot, sid))
             self.logger.info('__init__()', '[ INIT ] Creating Actual State Store ROOT: {} HOME: {}'.format(self.aroot,
                                                                                                        self.ahome))
-            self.astore = DStore(sid, self.aroot, self.ahome, 1024)
+            self.astore = Store(sid, self.aroot, self.ahome, 1024)
             self.logger.info('__init__()', '[ DONE ] Creating Actual State Store')
 
             self.logger.info('__init__()', '[ INIT ] Populating Actual Store with data from OS Plugin')

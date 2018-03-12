@@ -1,6 +1,6 @@
 from jsonschema import validate, ValidationError
 from fog05 import Schemas
-from fog05.DStore import *
+from dstore import Store
 from enum import Enum
 import re
 import uuid
@@ -14,8 +14,8 @@ class FOSStore(object):
         self.droot = droot  # 'dfos://{}'
         self.dhome = str('{}/{}'.format(droot, home))  # str('dfos://{}/{}' % self.uuid)
 
-        self.actual = DStore('a{}'.format(home), self.aroot, self.ahome, 1024)
-        self.desired = DStore('d{}'.format(home), self.droot, self.dhome, 1024)
+        self.actual = Store('a{}'.format(home), self.aroot, self.ahome, 1024)
+        self.desired = Store('d{}'.format(home), self.droot, self.dhome, 1024)
 
     def close(self):
         pass

@@ -15,7 +15,7 @@ Inside [examples](./examples) you can find some example/demo
 
 ## Agent
 
-You should have [OpenSplice](https://github.com/ADLINK-IST/opensplice) installed, and [Python ATO DDS API Bindings](https://github.com/atolab/dds-python)
+You should have [Chameleon DDS](https://github.com/atolab/cdds) installed, [Python Chameleon DDS API Bindings](https://github.com/atolab/pycham) and the [DStore API](https://github.com/atolab/dstore-python)
 
 
 

@@ -2,7 +2,7 @@
 
 import sys
 import os
-from fog05.svcs.fog05ws import Server
+from dstore import WebStore
 import tempfile
 import signal
 
@@ -33,6 +33,6 @@ if __name__ == '__main__':
                 elif sys.argv[idx] == '-a':
                     auth = sys.argv[idx + 1]
                     idx = idx + 2
-    s = Server(port, auth)
+    s = WebStore(port, auth)
     signal.signal(signal.SIGINT, genlty_close)
     s.start()
