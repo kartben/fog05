@@ -73,6 +73,9 @@ sudo cp cyclonedds.xml /usr/local/etc/CycloneDDS/
 sudo chmod a+r /usr/local/etc/CycloneDDS/cyclonedds.xml
 sudo chmod a+w /usr/local/etc/CycloneDDS/cyclonedds.xml
 echo "export VORTEXDDS_URI=file:///usr/local/etc/CycloneDDS/cyclonedds.xml" >> ~/.bash_profile
+if [ -f ~/.profile ]; then
+   echo "source .profile" >> ~/.bash_profile
+fi
 source ~/.bash_profile
 cd $WD/fog
 
