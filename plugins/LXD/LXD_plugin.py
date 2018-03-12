@@ -133,7 +133,14 @@ class LXD(RuntimePlugin):
 
         except LXDAPIException as e:
             self.agent.logger.error('define_entity()', 'Error {0}'.format(e))
-            pass
+            self.current_entities.update({entity_uuid: entity})
+            uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
+            vm_info = json.loads(self.agent.dstore.get(uri))
+            vm_info.update({"status": "error"})
+            vm_info.update({"error": '{}'.format(e)})
+            self.__update_actual_store(entity_uuid, vm_info)
+            self.agent.logger.info('defineEntity()', '[ ERRO ] LXD Plugin - Container uuid: %s' % entity_uuid)
+            return entity_uuid
 
         self.current_entities.update({entity_uuid: entity})
         uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))

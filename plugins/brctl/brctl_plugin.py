@@ -72,7 +72,8 @@ class brctl(NetworkPlugin):
 
         net = self.netmap.get(net_uuid, None)
         if net is not None:
-            raise NetworkAlreadyExistsException('{} network already exists'.format(net_uuid))
+            self.agent.logger.error('create_virtual_network()', '{} network already exists'.format(net_uuid))
+            return None
 
         info = {}
         pi = []

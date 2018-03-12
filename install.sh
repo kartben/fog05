@@ -79,14 +79,14 @@ fi
 source ~/.bash_profile
 cd $WD/fog
 
-git clone git@github.com:atolab/pycham.git
-cd pycham
+git clone git@github.com:atolab/python-cdds.git
+cd python-cdds
 ./configure
 sudo python3 setup.py install --record pycham_files.txt
 cd $WD/fog
 
-git clone git@github.com:atolab/dstore-python.git
-cd dstore-python
+git clone git@github.com:atolab/python-dstore.git
+cd python-dstore
 sudo python3 setup.py install --record dstore_files.txt
 cd $WD
 
