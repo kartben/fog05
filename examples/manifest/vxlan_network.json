@@ -2,5 +2,6 @@
   "name": "example_vxlan",
   "uuid": "fdeb9506-d9c1-11e7-8387-f768dc1e4002",
   "vxlan_id":5,
+  "network_type":"vxlan",
   "multicast_address":"239.0.0.5"
 }

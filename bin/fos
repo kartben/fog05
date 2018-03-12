@@ -66,7 +66,7 @@ class WSStore(object):
     def dput(self, uri, value=None):
         cmd = 'dput {} {}'.format(self.sid, uri)
         if value is not None:
-            cmd = str('{} {}'.format(cmd, value))
+            cmd = '{} {}'.format(cmd, value)
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
@@ -99,7 +99,7 @@ class WSStore(object):
 
     @asyncio.coroutine
     def getAll(self, uri):
-        cmd = 'aget {0} {1}'.format(self.sid, uri)
+        cmd = 'aget {} {}'.format(self.sid, uri)
         values=[]
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
         yield from ws.send(cmd)
@@ -120,7 +120,7 @@ class WSStore(object):
 
     @asyncio.coroutine
     def resolveAll(self, uri):
-        cmd = 'aresolve {0} {1}'.format(self.sid, uri)
+        cmd = 'aresolve {} {}'.format(self.sid, uri)
         values=[]
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host, self.auth))
         yield from ws.send(cmd)
@@ -158,10 +158,10 @@ class WSStore(object):
 class FOSStore(object):
     def __init__(self, aroot, droot, home, host):
         self.aroot = aroot #'dfos://{}'
-        self.ahome = str('{}/{}'.format(aroot, home)) #str('dfos://{}/{}' % self.uuid)
+        self.ahome = '{}/{}'.format(aroot, home) #'dfos://{}/{}' % self.uuid)
 
         self.droot = droot  # 'dfos://{}'
-        self.dhome = str('{}/{}'.format(droot, home))  # str('dfos://{}/{}' % self.uuid)
+        self.dhome = '{}/{}'.format(droot, home)  # 'dfos://{}/{}' % self.uuid)
 
         self.auth = 'a1b2c3d4'
 
@@ -236,7 +236,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_all_node_plugin(self,node_uuid):
-        uri = str('{}/{}/plugins'.format(self.aroot, node_uuid))
+        uri = '{}/{}/plugins'.format(self.aroot, node_uuid)
         response = yield from self.store.actual.get(uri)
         if response is not None and response != '':
             return json.loads(response).get('plugins')
@@ -258,7 +258,7 @@ class FOSCli(object):
         brctl = nws[0]  # will use the first plugin
 
         json_data = json.dumps(manifest).replace(' ','')
-        uri = str('{}/{}/network/{}/networks/{}'.format(self.droot, node_uuid, brctl.get('uuid'), manifest.get('uuid')))
+        uri = '{}/{}/network/{}/networks/{}'.format(self.droot, node_uuid, brctl.get('uuid'), manifest.get('uuid'))
 
         res = yield from self.store.desired.put(uri, json_data)
         if res:
@@ -283,7 +283,7 @@ class FOSCli(object):
         else:
             brctl = search[0]
 
-        uri = str('{}/{}/network/{}/networks/{}'.format(self.droot, node_uuid, brctl.get('uuid'), net_id))
+        uri = '{}/{}/network/{}/networks/{}'.format(self.droot, node_uuid, brctl.get('uuid'), net_id)
         res = yield from self.store.desired.remove(uri)
         if res:
             print("Network {} removed from {}".format(net_id, node_uuid))
@@ -292,7 +292,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_flavors(self):
-        uri = str('{}/*/runtime/*/flavor/*/'.format(self.aroot))
+        uri = '{}/*/runtime/*/flavor/*/'.format(self.aroot)
         fls = []
         fl_list = yield from self.store.actual.resolveAll(uri)
         if fl_list is not None and len(fl_list) > 0:
@@ -302,7 +302,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_flavor(self, flavor_uuid):
-        uri = str('{}/*/runtime/*/flavor/{}'.format(self.aroot, flavor_uuid))
+        uri = '{}/*/runtime/*/flavor/{}'.format(self.aroot, flavor_uuid)
         fls = []
         fl_list = yield from self.store.actual.resolveAll(uri)
         if fl_list is not None and len(fl_list) > 0:
@@ -317,7 +317,7 @@ class FOSCli(object):
     def __send_add_flavor(self, manifest):
         manifest.update({'status': 'add'})
         json_data = json.dumps(manifest).replace(' ', '')
-        uri = str('{}/*/runtime/*/flavor/{}'.format(self.droot, manifest.get('uuid')))
+        uri = '{}/*/runtime/*/flavor/{}'.format(self.droot, manifest.get('uuid'))
         res = yield from self.store.desired.put(uri, json_data)
         return res
 
@@ -333,7 +333,7 @@ class FOSCli(object):
             return
         rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
         for r in rts:
-            uri = str('{}/{}/runtime/{}/flavor/{}'.format(self.droot, node_uuid, r.get('uuid'), manifest.get('uuid')))
+            uri = '{}/{}/runtime/{}/flavor/{}'.format(self.droot, node_uuid, r.get('uuid'), manifest.get('uuid'))
             yield from self.store.desired.put(uri, json_data)
         # TODO fix this
         return True
@@ -346,7 +346,7 @@ class FOSCli(object):
             return
         rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
         for r in rts:
-            uri = str('{}/{}/runtime/{}/flavor/{}'.format(self.droot, node_uuid, r.get('uuid'), flavor_id))
+            uri = '{}/{}/runtime/{}/flavor/{}'.format(self.droot, node_uuid, r.get('uuid'), flavor_id)
             yield from self.store.desired.remove(uri)
         # TODO fix this
         return True
@@ -355,7 +355,7 @@ class FOSCli(object):
     def __send_add_image(self, manifest):
         manifest.update({'status': 'add'})
         json_data = json.dumps(manifest).replace(' ', '')
-        uri = str('{}/*/runtime/*/image/{}'.format(self.droot, manifest.get('uuid')))
+        uri = '{}/*/runtime/*/image/{}'.format(self.droot, manifest.get('uuid'))
         res = yield from self.store.desired.put(uri, json_data)
         return res
 
@@ -370,14 +370,14 @@ class FOSCli(object):
             return
         rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
         for r in rts:
-            uri = str('{}/{}/runtime/{}/image/{}'.format(self.droot, node_uuid, r.get('uuid'), manifest.get('uuid')))
+            uri = '{}/{}/runtime/{}/image/{}'.format(self.droot, node_uuid, r.get('uuid'), manifest.get('uuid'))
             yield from self.store.desired.put(uri, json_data)
         # TODO fix this
         return True
 
     @asyncio.coroutine
     def __get_images(self):
-        uri = str('{}/*/runtime/*/image/*/'.format(self.aroot))
+        uri = '{}/*/runtime/*/image/*/'.format(self.aroot)
         imgs = []
         img_list = yield from self.store.actual.resolveAll(uri)
         if img_list is not None and len(img_list) > 0:
@@ -387,7 +387,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_image(self, image_uuid):
-        uri = str('{}/*/runtime/*/image/{}'.format(self.aroot,image_uuid))
+        uri = '{}/*/runtime/*/image/{}'.format(self.aroot,image_uuid)
         imgs = []
         img_list = yield from self.store.actual.resolveAll(uri)
         if img_list is not None and len(img_list) > 0:
@@ -399,7 +399,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __send_remove_image(self, image_uuid):
-        uri = str('{}/*/runtime/*/image/{}'.format(self.aroot, image_uuid))
+        uri = '{}/*/runtime/*/image/{}'.format(self.aroot, image_uuid)
         res = self.store.actual.remove(uri)
         return res
 
@@ -411,7 +411,7 @@ class FOSCli(object):
             return
         rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
         for r in rts:
-            uri = str('{}/{}/runtime/{}/image/{}'.format(self.droot, node_uuid, r.get('uuid'), image_uuid))
+            uri = '{}/{}/runtime/{}/image/{}'.format(self.droot, node_uuid, r.get('uuid'), image_uuid)
             yield from self.store.desired.remove(uri)
         # TODO fix this
         return True
@@ -452,7 +452,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_entity_handler_by_uuid(self, node_uuid, entity_uuid):
-        uri = str('{}/{}/runtime/*/entity/{}'.format(self.aroot, node_uuid, entity_uuid))
+        uri = '{}/{}/runtime/*/entity/{}'.format(self.aroot, node_uuid, entity_uuid)
         all = yield from self.store.actual.resolveAll(uri)
         for i in all:
             k = i[0]
@@ -512,13 +512,13 @@ class FOSCli(object):
         entity_uuid = manifest.get('uuid')
         entity_definition = manifest
         json_data = json.dumps(entity_definition).replace(' ', '')
-        uri = str('{}/{}/runtime/{}/entity/{}'.format(self.droot, node_uuid, handler.get('uuid'), entity_uuid))
+        uri = '{}/{}/runtime/{}/entity/{}'.format(self.droot, node_uuid, handler.get('uuid'), entity_uuid)
 
         res = yield from self.store.desired.put(uri, json_data)
         if res:
             while True:
                 time.sleep(1)
-                uri = str('{}/{}/runtime/{}/entity/{}'.format(self.aroot, node_uuid, handler.get('uuid'), entity_uuid))
+                uri = '{}/{}/runtime/{}/entity/{}'.format(self.aroot, node_uuid, handler.get('uuid'), entity_uuid)
                 data = yield from self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
@@ -533,7 +533,7 @@ class FOSCli(object):
     @asyncio.coroutine
     def __send_undefine_entity(self, node_uuid, entity_uuid):
         handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('{}/{}/runtime/{}/entity/{}'.format(self.droot, node_uuid, handler, entity_uuid))
+        uri = '{}/{}/runtime/{}/entity/{}'.format(self.droot, node_uuid, handler, entity_uuid)
 
         res = yield from self.store.desired.remove(uri)
         if res:
@@ -544,12 +544,12 @@ class FOSCli(object):
     @asyncio.coroutine
     def __send_configure_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('{}/{}/runtime/{}/entity/{}/instance/{}#status=configure'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid))
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=configure'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
         res = yield from self.store.desired.dput(uri)
         if res:
             while True:
                 time.sleep(1)
-                uri = str('{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid))
+                uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid)
                 data = yield from self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
@@ -563,7 +563,7 @@ class FOSCli(object):
     @asyncio.coroutine
     def __send_clean_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid))
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid)
         res = yield from self.store.desired.remove(uri)
         if res:
             print("Instance {} for entity {} cleaned in node {}".format(instance_uuid, entity_uuid, node_uuid))
@@ -573,13 +573,13 @@ class FOSCli(object):
     @asyncio.coroutine
     def __send_run_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('{}/{}/runtime/{}/entity/{}/instance/{}#status=run'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid))
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=run'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
 
         res = yield from self.store.desired.dput(uri)
         if res:
             while True:
                 time.sleep(1)
-                uri = str('{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid,  instance_uuid))
+                uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid,  instance_uuid)
                 data = yield from self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
@@ -593,11 +593,11 @@ class FOSCli(object):
     @asyncio.coroutine
     def __send_stop_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('{}/{}/runtime/{}/entity/{}/instance/{}#status=stop'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid))
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=stop'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
         res = yield from self.store.desired.dput(uri)
         if res:
             while True:
-                uri = str('{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid))
+                uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid)
                 data = yield from self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
@@ -611,7 +611,7 @@ class FOSCli(object):
     @asyncio.coroutine
     def __sent_migrate_entity(self, node_uuid, entity_uuid, destination_uuid, instance_uuid):
         handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid))
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
 
         entity_info = yield from self.store.actual.get(uri)
         if entity_info is None:
@@ -634,16 +634,16 @@ class FOSCli(object):
             print("Error Destination node can't handle this type of entity {0}".format(entity_info_dst.get('type')))
             self.exit(-1)
 
-        uri = str('{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, destination_uuid, destination_handler.get(
-            'uuid'), entity_uuid, instance_uuid))
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, destination_uuid, destination_handler.get(
+            'uuid'), entity_uuid, instance_uuid)
         res = yield from self.store.desired.put(uri, json.dumps(entity_info_dst).replace(' ',''))
         if res:
-            uri = str('{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid))
+            uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
             res_dest = yield from self.store.desired.dput(uri, json.dumps(entity_info_src).replace(' ',''))
             if res_dest:
                 while True:
                     time.sleep(1)
-                    uri = str("{}/{}/runtime/{}/entity/{}/instance/{}".format(self.aroot, destination_uuid, destination_handler.get('uuid'), entity_uuid, instance_uuid))
+                    uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, destination_uuid, destination_handler.get('uuid'), entity_uuid, instance_uuid)
                     data = yield from self.store.actual.get(uri)
                     entity_info = None
                     if data is not None:
@@ -659,11 +659,11 @@ class FOSCli(object):
     @asyncio.coroutine
     def __send_pause_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('{}/{}/runtime/{}/entity/{}/instance/{}#status=pause'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid))
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=pause'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
         res = yield from self.store.desired.dput(uri)
         if res:
             while True:
-                uri = str('{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid))
+                uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid)
                 data = yield from self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
@@ -677,11 +677,11 @@ class FOSCli(object):
     @asyncio.coroutine
     def __send_resume_entity(self, node_uuid, entity_uuid, instance_uuid):
         handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
-        uri = str('{}/{}/runtime/{}/entity/{}/instance/{}#status=resume'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid))
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=resume'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
         res = yield from self.store.desired.dput(uri)
         if res:
             while True:
-                uri = str('{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid))
+                uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid)
                 data = yield from self.store.actual.get(uri)
                 entity_info = None
                 if data is not None:
@@ -705,7 +705,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_plugins(self,node_uuid):
-        uri = str('{}/{}/plugins'.format(self.aroot, node_uuid))
+        uri = '{}/{}/plugins'.format(self.aroot, node_uuid)
         plugins = yield from self.store.actual.get(uri)
         if plugins is not None and plugins != '' :
             plugins = json.loads(plugins).get('plugins')
@@ -720,7 +720,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_nodes(self):
-        uri = str('{}/*'.format(self.aroot))
+        uri = '{}/*'.format(self.aroot)
         infos = yield from self.store.actual.resolveAll(uri)
         if infos is not None and infos != '' and len(infos)>0:
             print('+-------------------------------------------------------+')
@@ -749,7 +749,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_networks(self):
-        uri = str('{}/*/network/*/networks/*/'.format(self.aroot))
+        uri = '{}/*/network/*/networks/*/'.format(self.aroot)
         nw_list = yield from self.store.actual.resolveAll(uri)
         if nw_list is not None and len(nw_list)>0:
             for e in nw_list:
@@ -770,7 +770,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_node_details(self, node_uuid, info):
-        uri = str('{}/{}'.format(self.aroot, node_uuid))
+        uri = '{}/{}'.format(self.aroot, node_uuid)
         infos = yield from self.store.actual.get(uri)
         if infos is not None and infos != '':
             node = json.loads(infos)
@@ -827,7 +827,7 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_entities(self):
-        uri = str('{}/*/runtime/*/entity/*'.format(self.aroot))
+        uri = '{}/*/runtime/*/entity/*'.format(self.aroot)
         entities = yield from self.store.actual.resolveAll(uri)
         for entity in entities:
             entity_uri = entity[0]
