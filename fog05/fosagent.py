@@ -216,6 +216,9 @@ class FosAgent(Agent):
 
     def __react_to_plugins(self, uri, value, v):
         self.logger.info('__react_to_plugins()', ' Received a plugin action on Desired Store URI: {} Value: {} Version: {}'.format(uri, value, v))
+        if value is None:
+            self.logger.error('__react_to_plugins()', 'ERROR RECEIVED VALUE {}'.format(value))
+            return
         value = json.loads(value)
         value = value.get('plugins')
         for v in value:

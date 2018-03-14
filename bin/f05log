@@ -99,8 +99,8 @@ def log_samples(dr):
 def start_tlog(root):
     dds_runtime = Runtime.get_runtime()
     dp = Participant(0)
-    pub = Publisher(dp, root)
-    sub = Subscriber(dp, root)
+    pub = Publisher(dp, Publisher.partition(root))
+    sub = Subscriber(dp, Publisher.partition(root))
 
     store_info_topic = FlexyTopic(dp, "FOSStoreInfo")
     key_value_topic = FlexyTopic(dp, "FOSKeyValue")
