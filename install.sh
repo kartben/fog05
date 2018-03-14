@@ -56,6 +56,8 @@ sudo apt update
 sudo apt install -y unzip git python3 python3-dev python3-pip clang
 
 
+sudo rm -rf $WD/fog
+
 mkdir $WD/fog
 cd $WD/fog
 
