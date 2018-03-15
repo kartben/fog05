@@ -53,7 +53,7 @@ fi
 
 
 sudo apt update
-sudo apt install -y unzip git python3 python3-dev python3-pip clang maven
+sudo apt install -y unzip git python3 python3-dev python3-pip clang maven openjdk-8-jdk
 
 
 sudo rm -rf $WD/fog
