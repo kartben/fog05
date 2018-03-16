@@ -261,8 +261,8 @@ class LXD(RuntimePlugin):
 
                 self.current_entities.update({entity_uuid: entity})
 
-                uri = str('%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid))
-                container_info = json.loads(self.agent.dstore.get(uri))
+                uri = str('%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid))
+                container_info = json.loads(self.agent.astore.get(uri))
                 container_info.update({"status": "configured"})
 
                 self.__update_actual_store_instance(entity_uuid, instance_uuid, container_info)
@@ -359,8 +359,8 @@ class LXD(RuntimePlugin):
                 c.start()
 
                 instance.on_start()
-                uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
-                container_info = json.loads(self.agent.dstore.get(uri))
+                uri = str('%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid))
+                container_info = json.loads(self.agent.astore.get(uri))
                 container_info.update({"status": "run"})
                 self.__update_actual_store_instance(entity_uuid, instance_uuid, container_info)
                 self.current_entities.update({entity_uuid: entity})
@@ -400,8 +400,8 @@ class LXD(RuntimePlugin):
                 instance.on_stop()
                 self.current_entities.update({entity_uuid: entity})
 
-                uri = str('%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
-                container_info = json.loads(self.agent.dstore.get(uri))
+                uri = str('%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid))
+                container_info = json.loads(self.agent.astore.get(uri))
                 container_info.update({"status": "stop"})
                 self.__update_actual_store_instance(entity_uuid, instance_uuid, container_info)
                 self.agent.logger.info('stopEntity()', '[ DONE ] LXD Plugin - Stop a Container uuid %s ' % entity_uuid)
@@ -438,9 +438,8 @@ class LXD(RuntimePlugin):
 
                     instance.on_pause()
                     self.current_entities.update({entity_uuid: entity})
-                    uri = str(
-                        '%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
-                    container_info = json.loads(self.agent.dstore.get(uri))
+                    uri = str('%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid))
+                    container_info = json.loads(self.agent.astore.get(uri))
                     container_info.update({"status": "pause"})
                     self.__update_actual_store_instance(entity_uuid, instance_uuid, container_info)
                     self.agent.logger.info('pauseEntity()', '[ DONE ] LXD Plugin - Pause a Container uuid %s ' % instance_uuid)
@@ -477,9 +476,8 @@ class LXD(RuntimePlugin):
                     instance.on_resume()
                     self.current_entities.update({entity_uuid: entity})
 
-                    uri = str(
-                        '%s/%s/%s/%s/%s' % (self.agent.dhome, self.HOME, entity_uuid, self.INSTANCE, instance_uuid))
-                    container_info = json.loads(self.agent.dstore.get(uri))
+                    uri = str('%s/%s/%s' % (self.agent.ahome, self.HOME, entity_uuid))
+                    container_info = json.loads(self.agent.astore.get(uri))
                     container_info.update({"status": "run"})
                     self.__update_actual_store_instance(entity_uuid,instance_uuid, container_info)
                     self.agent.logger.info('resumeEntity()', '[ DONE ] LXD Plugin - Resume a Container uuid %s ' % instance_uuid)
