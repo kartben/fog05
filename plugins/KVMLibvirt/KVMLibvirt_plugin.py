@@ -530,6 +530,8 @@ class KVMLibvirt(RuntimePlugin):
                     self.agent.logger.info('resume_entity()', '[ DONE ] KVM Plugin - Resume a VM uuid {}'.format(instance_uuid))
                     return True
 
+
+    # TODO rethink the migration workflow to be faster, copy the disk first and copy the base image only when migration ended
     def migrate_entity(self, entity_uuid, dst=False, instance_uuid=None):
         if type(entity_uuid) == dict:
             entity_uuid = entity_uuid.get('entity_uuid')
