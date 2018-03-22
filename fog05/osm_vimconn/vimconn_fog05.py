@@ -80,7 +80,7 @@ HTTP_Internal_Server_Error = 500
 
 atomicEntityStatus2manoFormat = {'RUNNING': 'ACTIVE',
                                  'PAUSED': 'PAUSED',
-                                 'PAUSED': 'SUSPENDED',
+                                 'STOPPED': 'SUSPENDED',
                                  'CONFIGURED': 'INACTIVE',
                                  'DEFINED': 'BUILD',
                                  'ERROR': 'ERROR', 'DELETED': 'DELETED'  # should add error status? deleted can also defined, depends if referred to entity instance or to entity
@@ -483,7 +483,7 @@ class vimconnector(vimconn.vimconnector):
 
     @asyncio.coroutine
     def __get_all_node_plugin(self, node_uuid):
-        uri = str('afos://<sys-id>/{}/plugins'.format(node_uuid))
+        uri = '{}/{}/plugins'.format(self.aroot, node_uuid)
         response = yield from self.store.actual.get(uri)
         if response is not None and response != '':
             return json.loads(response).get('plugins')
@@ -505,7 +505,7 @@ class vimconnector(vimconn.vimconnector):
         brctl = nws[0]  # will use the first plugin
 
         json_data = json.dumps(manifest).replace(' ', '')
-        uri = str('dfos://<sys-id>/{}/network/{}/networks/{}'.format(node_uuid, brctl.get('uuid'), manifest.get('uuid')))
+        uri = '{}/{}/network/{}/networks/{}'.format(self.droot, node_uuid, brctl.get('uuid'), manifest.get('uuid'))
 
         res = yield from self.store.desired.put(uri, json_data)
 
@@ -528,13 +528,13 @@ class vimconnector(vimconn.vimconnector):
         else:
             brctl = search[0]
 
-        uri = str('dfos://<sys-id>/{}/network/{}/networks/{}'.format(node_uuid, brctl.get('uuid'), net_id))
+        uri = '{}/{}/network/{}/networks/{}'.format(self.droot, node_uuid, brctl.get('uuid'), net_id)
         res = yield from self.store.desired.remove(uri)
         return res
 
     @asyncio.coroutine
     def __get_nodes(self):
-        uri = str('afos://<sys-id>/*/')
+        uri = '{}/*/'.format(self.aroot)
         n = []
         infos = yield from self.store.actual.resolveAll(uri)
         if infos is not None and infos != '' and len(infos) > 0:
@@ -545,7 +545,7 @@ class vimconnector(vimconn.vimconnector):
 
     @asyncio.coroutine
     def __get_networks(self):
-        uri = str('afos://<sys-id>/*/network/*/networks/*/')
+        uri = '{}/*/network/*/networks/*/'.format(self.aroot)
         nws = []
         nw_list = yield from self.store.actual.resolveAll(uri)
         if nw_list is not None and len(nw_list) > 0:
@@ -556,7 +556,7 @@ class vimconnector(vimconn.vimconnector):
     @asyncio.coroutine
     def __get_network(self, net_uuid):
         # TODO should return only one network
-        uri = str('afos://<sys-id>/*/network/*/networks/{}/'.format(net_uuid))
+        uri = '{}/*/network/*/networks/{}/'.format(self.aroot, net_uuid)
         nws = []
         nw_list = yield from self.store.actual.resolveAll(uri)
         if nw_list is not None and len(nw_list) > 0:
@@ -567,7 +567,7 @@ class vimconnector(vimconn.vimconnector):
 
     @asyncio.coroutine
     def __get_flavors(self):
-        uri = str('afos://<sys-id>/*/runtime/*/flavor/*/')
+        uri = '{}/*/runtime/*/flavor/*/'.format(self.aroot)
         fls = []
         fl_list = yield from self.store.actual.resolveAll(uri)
         if fl_list is not None and len(fl_list) > 0:
@@ -577,7 +577,7 @@ class vimconnector(vimconn.vimconnector):
 
     @asyncio.coroutine
     def __get_flavor(self, flavor_uuid):
-        uri = str('afos://<sys-id>/*/runtime/*/flavor/{}'.format(flavor_uuid))
+        uri = '{}/*/runtime/*/flavor/{}'.format(self.aroot, flavor_uuid)
         fls = []
         fl_list = yield from self.store.actual.resolveAll(uri)
         if fl_list is not None and len(fl_list) > 0:
@@ -591,7 +591,7 @@ class vimconnector(vimconn.vimconnector):
     def __send_add_flavor(self, manifest):
         manifest.update({'status': 'add'})
         json_data = json.dumps(manifest).replace(' ', '')
-        uri = str('dfos://<sys-id>/*/runtime/*/flavor/{}'.format(manifest.get('uuid')))
+        uri = '{}/*/runtime/*/flavor/{}'.format(self.droot, manifest.get('uuid'))
         res = yield from self.store.desired.put(uri, json_data)
         return res
 
@@ -606,7 +606,7 @@ class vimconnector(vimconn.vimconnector):
             return
         rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
         for r in rts:
-            uri = str('dfos://<sys-id>/{}/runtime/{}/flavor/{}'.format(node_uuid, r.get('uuid'), manifest.get('uuid')))
+            uri = '{}/{}/runtime/{}/flavor/{}'.format(self.droot, node_uuid, r.get('uuid'), manifest.get('uuid'))
             yield from self.store.desired.put(uri, json_data)
         # TODO fix this
         return True
@@ -619,7 +619,7 @@ class vimconnector(vimconn.vimconnector):
             return
         rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
         for r in rts:
-            uri = str('dfos://<sys-id>/{}/runtime/{}/flavor/{}'.format(node_uuid, r.get('uuid'), flavor_id))
+            uri = '{}/{}/runtime/{}/flavor/{}'.format(self.droot, node_uuid, r.get('uuid'), flavor_id)
             yield from self.store.desired.remove(uri)
         # TODO fix this
         return True
@@ -628,7 +628,7 @@ class vimconnector(vimconn.vimconnector):
     def __send_add_image(self, manifest):
         manifest.update({'status': 'add'})
         json_data = json.dumps(manifest).replace(' ', '')
-        uri = str('dfos://<sys-id>/*/runtime/*/image/{}'.format(manifest.get('uuid')))
+        uri = '{}/*/runtime/*/image/{}'.format(self.droot, manifest.get('uuid'))
         res = yield from self.store.desired.put(uri, json_data)
         return res
 
@@ -643,14 +643,14 @@ class vimconnector(vimconn.vimconnector):
             return
         rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
         for r in rts:
-            uri = str('dfos://<sys-id>/{}/runtime/{}/image/{}'.format(node_uuid, r.get('uuid'), manifest.get('uuid')))
+            uri = '{}/{}/runtime/{}/image/{}'.format(self.droot, node_uuid, r.get('uuid'), manifest.get('uuid'))
             yield from self.store.desired.put(uri, json_data)
         # TODO fix this
         return True
 
     @asyncio.coroutine
     def __get_images(self):
-        uri = str('afos://<sys-id>/*/runtime/*/image/*/')
+        uri = '{}/*/runtime/*/image/*/'.format(self.aroot)
         imgs = []
         img_list = yield from self.store.actual.resolveAll(uri)
         if img_list is not None and len(img_list) > 0:
@@ -660,7 +660,7 @@ class vimconnector(vimconn.vimconnector):
 
     @asyncio.coroutine
     def __get_image(self, image_uuid):
-        uri = str('afos://<sys-id>/*/runtime/*/image/{}'.format(image_uuid))
+        uri = '{}/*/runtime/*/image/{}'.format(self.aroot, image_uuid)
         imgs = []
         img_list = yield from self.store.actual.resolveAll(uri)
         if img_list is not None and len(img_list) > 0:
@@ -672,7 +672,7 @@ class vimconnector(vimconn.vimconnector):
 
     @asyncio.coroutine
     def __send_remove_image(self, image_uuid):
-        uri = str('afos://<sys-id>/*/runtime/*/image/{}'.format(image_uuid))
+        uri = '{}/*/runtime/*/image/{}'.format(self.droot, image_uuid)
         res = self.store.actual.remove(uri)
         return res
 
@@ -684,10 +684,32 @@ class vimconnector(vimconn.vimconnector):
             return
         rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
         for r in rts:
-            uri = str('dfos://<sys-id>/{}/runtime/{}/image/{}'.format(node_uuid, r.get('uuid'), image_uuid))
+            uri = '{}/{}/runtime/{}/image/{}'.format(self.droot, node_uuid, r.get('uuid'), image_uuid)
             yield from self.store.desired.remove(uri)
         # TODO fix this
         return True
+
+    @asyncio.coroutine
+    def __get_instance(self, instance_uuid):
+        uri = '{}/*/runtime/*/entity/*/{}'.format(self.aroot, instance_uuid)
+        instances = []
+        i_list = yield from self.store.actual.resolveAll(uri)
+        if i_list is not None and len(i_list) > 0:
+            for f in i_list:
+                instances.append(json.loads(f[1]))
+        return instances
+
+    @asyncio.coroutine
+    def __get_instances(self):
+        uri = '{}/*/runtime/*/entity/*/*'.format(self.aroot)
+        instances = []
+        i_list = yield from self.store.actual.resolveAll(uri)
+        if i_list is not None and len(i_list) > 0:
+            for f in i_list:
+                instances.append(json.loads(f[1]))
+            return instances[0]
+        if i_list is None:
+            return None
 
     def __get_node(self, elegible_nodes):
         i = randint(0, len(elegible_nodes))
@@ -1614,14 +1636,14 @@ class vimconnector(vimconn.vimconnector):
                         created_items = {'entity_uuid': vm_ae_uuid}
                         return (vm_i_uuid, created_items)
                 else:
-                    created_items = {'entity_uuid': vm_ae_uuid}
+                    created_items = {'entity_uuid': vm_ae_uuid, 'node_uuid': node_uuid}
                     return (vm_i_uuid, created_items)
-
-        raise vimconnNotImplemented("Should have implemented this")
 
     def get_vminstance(self, vm_id):
         """Returns the VM instance information from VIM"""
-        raise vimconnNotImplemented("Should have implemented this")
+
+        data = self.__get_instance(vm_id)
+        return data
 
     def delete_vminstance(self, vm_id, created_items=None):
         """
@@ -1631,7 +1653,11 @@ class vimconnector(vimconn.vimconnector):
             action_vminstance
         :return: None or the same vm_id. Raises an exception on fail
         """
-        raise vimconnNotImplemented("Should have implemented this")
+
+        self.__send_stop_entity(created_items.get('node_uuid'), created_items.get('entity_uuid'), vm_id)
+        self.__send_clean_entity(created_items.get('node_uuid'), created_items.get('entity_uuid'), vm_id)
+        self.__send_undefine_entity(created_items.get('node_uuid'), created_items.get('entity_uuid'))
+        return vm_id
 
     def refresh_vms_status(self, vm_list):
         """Get the status of the virtual machines and their interfaces/ports
@@ -1659,7 +1685,25 @@ class vimconnector(vimconn.vimconnector):
                         pci:              #PCI address of the NIC that hosts the PF,VF
                         vlan:             #physical VLAN used for VF
         """
-        raise vimconnNotImplemented("Should have implemented this")
+        infos = {}
+        for vm in vm_list:
+            info = {}
+            data = self.get_vminstance(vm)
+            if data is None:
+                info.update({'status': 'DELETED'})
+            else:
+                info.update({'status': atomicEntityStatus2manoFormat.get(data.get('status').upper(), 'OTHER')})
+                info.update({'vim_info': json.dumps(data)})
+                vm_data = data.get('entity_data')
+                intfs = []
+                for n in vm_data.get('networks'):
+                    i = {}
+                    i.update({'vim_info': json.dumps(n)})
+                    i.update({'mac_address': n.get('mac_address')})
+                    i.update({'vim_net_id': n.get('network_uuid')})
+                    i.update({'vim_interface_id': n.get('inft_name')})
+                info.update({'interfaces': intfs})
+            infos.update({vm: info})
 
     def action_vminstance(self, vm_id, action_dict, created_items={}):
         """
