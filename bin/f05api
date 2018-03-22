@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+from flask import Flask, Response
+from dstore import Store
+import logging
+
+
+class FOSStore(object):
+
+    "Helper class to interact with the Store"
+
+    def __init__(self, aroot, droot, home):
+        '''
+
+        Initialize the Store with root and home
+
+        :param aroot: actual store root
+        :param droot: desired store root
+        :param home: store home also used to generate store id
+        '''
+
+        self.aroot = aroot  # 'dfos://{}'
+        self.ahome = str('{}/{}'.format(aroot, home))  # str('dfos://{}/{}' % self.uuid)
+
+        self.droot = droot  # 'dfos://{}'
+        self.dhome = str('{}/{}'.format(droot, home))  # str('dfos://{}/{}' % self.uuid)
+
+        self.actual = Store('a{}'.format(home), self.aroot, self.ahome, 1024)
+        self.desired = Store('d{}'.format(home), self.droot, self.dhome, 1024)
+
+    def close(self):
+        '''
+        Close the store
+
+        :return: None
+        '''
+        self.actual.close()
+        self.desired.close()
+
+
+app = Flask(__name__)
+
+
+@app.route('/')
+def index():
+    return "Hello, World!"
+
+
+@app.route('/<path:uri>', methods=['GET'])
+def get(uri):
+    v = None
+
+    if not uri.endswith('/**') and not uri.endswith('/') and not uri.endswith('~'):
+        uri = uri + '/'
+    elif uri.endswith('/**'):
+        uri.rstrip('*')
+
+    if '*' in uri:
+        if uri.startswith('a'):
+            v = store.actual.resolveAll(uri)
+        elif uri.startswith('d'):
+            v = store.desired.resolveAll(uri)
+    else:
+        if uri.startswith('a'):
+            v = store.actual.get(uri)
+        elif uri.startswith('d'):
+            v = store.desired.get(uri)
+
+    if v is not None or len(v) == 0:
+        return v
+    else:
+        return ''
+
+
+
+@app.route('/<value>/<path:uri>', methods=['PUT'])
+def put(value, uri):
+    if uri.startswith('a'):
+        return store.actual.put(uri, value)
+    elif uri.startswith('d'):
+        return store.desired.put(uri, value)
+
+
+#@app.route('/<path:uri>', defaults={'value': None} ,methods=['PATCH'])
+@app.route('/<path:uri>/<value>', methods=['PATCH'])
+def dput(uri, value=None):
+    if uri.startswith('a'):
+        return store.actual.dput(uri, value)
+    elif uri.startswith('d'):
+        return store.desired.dput(uri, value)
+
+
+if __name__ == '__main__':
+
+    sid = 0
+
+    home = "f05rest"
+
+    aroot = 'afos://{}'.format(sid)
+    droot = 'dfos://{}'.format(sid)
+
+    store = FOSStore(aroot, droot, home)
+
+    app.run(debug=True)
