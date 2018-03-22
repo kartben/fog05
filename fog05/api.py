@@ -49,11 +49,11 @@ class API(object):
         Need the distributed store
     '''
 
-    def __init__(self, sysid=0):
+    def __init__(self, sysid=0, store_id="python-api"):
 
         self.a_root = 'afos://{}'.format(sysid)
         self.d_root = 'dfos://{}'.format(sysid)
-        self.store = FOSStore(self.a_root, self.d_root, 'python-api')
+        self.store = FOSStore(self.a_root, self.d_root, store_id)
 
         self.manifest = self.Manifest(self.store)
         self.node = self.Node(self.store)

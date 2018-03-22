@@ -1,0 +1,7 @@
+(jbuild_version 1)
+
+(library
+  ((name            fos_types)
+  (public_name            fos-types)
+  (wrapped            false)
+  (libraries        (yojson atdgen))))

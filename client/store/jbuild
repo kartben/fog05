@@ -1,0 +1,7 @@
+(jbuild_version 1)
+
+(library
+  ((name            fos_store)
+  (public_name            fos-store)
+  (wrapped            false)
+  (libraries        (core websocket websocket-lwt))))

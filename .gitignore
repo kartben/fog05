@@ -10,3 +10,7 @@ dist
 fog05.egg-info
 
 nohup.out
+
+_build
+
+*/_build/*

@@ -1,0 +1,17 @@
+opam-version: "1.2"
+version:"0.1"
+maintainer: "gabriele.baldoni@adlinktech.com"
+homepage: "http://www.fog05.io"
+license: "Apache 2"
+
+build: [
+  ["jbuilder" "subst"]{pinned}  
+  ["jbuilder" "build" "--only" "fos" "--root" "." "-j" jobs]
+]
+
+
+depends: [
+  "core"
+  "fos-types"
+  "fos-store"
+]

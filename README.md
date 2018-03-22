@@ -27,37 +27,38 @@ config dependencies:
 
 ## Installation
 
-Installation script tested on ubuntu 16.04
+```bash
 
-    sudo ./install.sh
+    $ ./configure
+    $ make
+    $ make install
 
-Run `python3 setup.py install`
+```
+
 
 
 ### How to run:
 
 
-There are two ways to run a fog05 node
-
-1st:
-
-Open a python3 interpreter
+Using the fos command
     
-    $ python3
+    $ fos start -p <path_to_plugins> [-v to get verbose output, -d to run as a daemon]
+
+
+Or opening from Python 3 interpeter
+
+```python
     >>> from fog05.fosagent import FosAgent
     >>> a = FosAgent()
     >>> a.run()
     ....
     >>> a.stop()
+```    
+
 
 You can pass to the constructor the plugins directory `FosAgent(plugins_path="/path/to/plugins")`
 or debug=False to have logging on file
 
-2nd:
-
-Using the fos command
-    
-    $ fos start -p <path_to_plugins> [-v to get verbose output, -d to run as a daemon]
     
 
 ### Interact with the nodes
@@ -131,6 +132,33 @@ There is also available a logger to see the evolution of the distributed store a
 
     f05log <store root>
     
+    
+    
+### NG Command Line
+
+There is also a NG cli interface
+
+```bash
+    # fos-ng 
+        fog05 | The Fog-Computing IaaS
+
+        fos SUBCOMMAND
+
+        === subcommands ===
+
+        entity    Entity/Atomic Entity interaction
+        manifest  Check manifests
+        network   Network related commands
+        node      Getting information about nodes
+        start     Agent control
+        version   print version information
+        help      explain a given subcommand (perhaps recursively)
+
+```
+
+The old one will be removed soon, this new one is faster and safer.
+
+
 ### fog05 WebSocket Store server
 
 The store server providing websocket api can be started by:
