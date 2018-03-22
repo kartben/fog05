@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ##
-# Copyright 2017 ADLINK Technologies Inc.
+# Copyright 2018 ADLINK Technologies Inc.
 # This file is part of ETSI OSM
 # All Rights Reserved.
 #
@@ -27,10 +27,12 @@ vimconn_fog05
 @GB Should this use the dstore webservice for the comunication with fog05.
 This will simplify a lot the interaction between fog05 and openMANO, and should be also seamless
 
+Or we can create an REST HTTP API for fog05 mapped over the Python one
+
 
 """
 __author__ = "Gabriele Baldoni"
-__date__ = "$7-Feb-2018 11:51:34$"
+__date__ = "$19-jan-2018 17:11:59$"
 
 import logging
 import paramiko
@@ -41,12 +43,16 @@ import sys
 import vimconn
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
+from random import randint
 import asyncio
 import websockets
 from jsonschema import validate, ValidationError
 from fog05 import Schemas
 import uuid
+import json
+import fnmatch
+import re
+import time
 
 # from fog05.DStore import *
 
@@ -501,8 +507,9 @@ class vimconnector(vimconn.vimconnector):
         json_data = json.dumps(manifest).replace(' ', '')
         uri = str('dfos://<sys-id>/{}/network/{}/networks/{}'.format(node_uuid, brctl.get('uuid'), manifest.get('uuid')))
 
-        return
-        yield from self.store.desired.put(uri, json_data)
+        res = yield from self.store.desired.put(uri, json_data)
+
+        return res
 
     @asyncio.coroutine
     def __send_remove_network(self, node_uuid, net_id):
@@ -522,8 +529,8 @@ class vimconnector(vimconn.vimconnector):
             brctl = search[0]
 
         uri = str('dfos://<sys-id>/{}/network/{}/networks/{}'.format(node_uuid, brctl.get('uuid'), net_id))
-        return
-        yield from self.store.desired.remove(uri)
+        res = yield from self.store.desired.remove(uri)
+        return res
 
     @asyncio.coroutine
     def __get_nodes(self):
@@ -556,8 +563,475 @@ class vimconnector(vimconn.vimconnector):
             for e in nw_list:
                 nws.append(json.loads(e[1]))
             return nws[0]
-        if nw_list is None:
+        return None
+
+    @asyncio.coroutine
+    def __get_flavors(self):
+        uri = str('afos://<sys-id>/*/runtime/*/flavor/*/')
+        fls = []
+        fl_list = yield from self.store.actual.resolveAll(uri)
+        if fl_list is not None and len(fl_list) > 0:
+            for f in fl_list:
+                fls.append(json.loads(f[1]))
+        return fls
+
+    @asyncio.coroutine
+    def __get_flavor(self, flavor_uuid):
+        uri = str('afos://<sys-id>/*/runtime/*/flavor/{}'.format(flavor_uuid))
+        fls = []
+        fl_list = yield from self.store.actual.resolveAll(uri)
+        if fl_list is not None and len(fl_list) > 0:
+            for f in fl_list:
+                fls.append(json.loads(f[1]))
+            return fls[0]
+        if fl_list is None:
             return None
+
+    @asyncio.coroutine
+    def __send_add_flavor(self, manifest):
+        manifest.update({'status': 'add'})
+        json_data = json.dumps(manifest).replace(' ', '')
+        uri = str('dfos://<sys-id>/*/runtime/*/flavor/{}'.format(manifest.get('uuid')))
+        res = yield from self.store.desired.put(uri, json_data)
+        return res
+
+    @asyncio.coroutine
+    def __send_add_flavor_node(self, node_uuid, manifest):
+        manifest.update({'status': 'add'})
+        json_data = json.dumps(manifest).replace(' ', '')
+
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
+        if all_plugins is None:
+            print('Error on receive plugin from node')
+            return
+        rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
+        for r in rts:
+            uri = str('dfos://<sys-id>/{}/runtime/{}/flavor/{}'.format(node_uuid, r.get('uuid'), manifest.get('uuid')))
+            yield from self.store.desired.put(uri, json_data)
+        # TODO fix this
+        return True
+
+    @asyncio.coroutine
+    def __send_remove_flavor_node(self, node_uuid, flavor_id):
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
+        if all_plugins is None:
+            print('Error on receive plugin from node')
+            return
+        rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
+        for r in rts:
+            uri = str('dfos://<sys-id>/{}/runtime/{}/flavor/{}'.format(node_uuid, r.get('uuid'), flavor_id))
+            yield from self.store.desired.remove(uri)
+        # TODO fix this
+        return True
+
+    @asyncio.coroutine
+    def __send_add_image(self, manifest):
+        manifest.update({'status': 'add'})
+        json_data = json.dumps(manifest).replace(' ', '')
+        uri = str('dfos://<sys-id>/*/runtime/*/image/{}'.format(manifest.get('uuid')))
+        res = yield from self.store.desired.put(uri, json_data)
+        return res
+
+    @asyncio.coroutine
+    def __send_add_image_node(self, node_uuid, manifest):
+        manifest.update({'status': 'add'})
+        json_data = json.dumps(manifest).replace(' ', '')
+
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
+        if all_plugins is None:
+            print('Error on receive plugin from node')
+            return
+        rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
+        for r in rts:
+            uri = str('dfos://<sys-id>/{}/runtime/{}/image/{}'.format(node_uuid, r.get('uuid'), manifest.get('uuid')))
+            yield from self.store.desired.put(uri, json_data)
+        # TODO fix this
+        return True
+
+    @asyncio.coroutine
+    def __get_images(self):
+        uri = str('afos://<sys-id>/*/runtime/*/image/*/')
+        imgs = []
+        img_list = yield from self.store.actual.resolveAll(uri)
+        if img_list is not None and len(img_list) > 0:
+            for i in img_list:
+                imgs.append(json.loads(i[1]))
+        return imgs
+
+    @asyncio.coroutine
+    def __get_image(self, image_uuid):
+        uri = str('afos://<sys-id>/*/runtime/*/image/{}'.format(image_uuid))
+        imgs = []
+        img_list = yield from self.store.actual.resolveAll(uri)
+        if img_list is not None and len(img_list) > 0:
+            for i in img_list:
+                imgs.append(json.loads(i[1]))
+            return imgs[0]
+        if img_list is None:
+            return None
+
+    @asyncio.coroutine
+    def __send_remove_image(self, image_uuid):
+        uri = str('afos://<sys-id>/*/runtime/*/image/{}'.format(image_uuid))
+        res = self.store.actual.remove(uri)
+        return res
+
+    @asyncio.coroutine
+    def __send_remove_image_node(self, node_uuid, image_uuid):
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
+        if all_plugins is None:
+            print('Error on receive plugin from node')
+            return
+        rts = [x for x in all_plugins if x.get('type') == 'runtime' and x.get('name') in ['KVMLibvirt', 'XENLibvirt']]
+        for r in rts:
+            uri = str('dfos://<sys-id>/{}/runtime/{}/image/{}'.format(node_uuid, r.get('uuid'), image_uuid))
+            yield from self.store.desired.remove(uri)
+        # TODO fix this
+        return True
+
+    def __get_node(self, elegible_nodes):
+        i = randint(0, len(elegible_nodes))
+        return elegible_nodes[i]
+
+    def __get_eligible_nodes(self, nodes, entity_manifest):
+        eligible = []
+
+        nw_eligible = []
+        ac_eligible = []
+        io_eligible = []
+
+        constraints = entity_manifest.get("constraints", None)
+        if constraints is None:
+            return nodes
+
+        o_s = constraints.get('os')
+        if o_s is not None:
+            nodes = [x for x in nodes if x.get('os') == o_s]
+
+        arch = constraints.get("arch")
+        if arch is not None:
+            nodes = [x for x in nodes if x.get('hardware_specifications').get('cpu')[0].get('arch') == arch]
+
+        for node in nodes:
+            nw_constraints = constraints.get('networks', None)
+            node_nw = node.get('network', None)
+            if nw_constraints is not None and node_nw is not None:
+                for nw_c in nw_constraints:
+                    t = nw_c.get('type')
+                    n = nw_c.get('number')
+                    nws = [x for x in node_nw if x.get('type') == t and x.get('available') is True]
+                    if len(nws) >= n:
+                        nw_eligible.append(node.get('uuid'))
+            io_constraints = constraints.get('i/o', None)
+            node_io = node.get('io', None)
+            if io_constraints is not None and node_io is not None:
+                for io_c in io_constraints:
+                    t = io_c.get('type')
+                    n = io_c.get('number')
+                    ios = [x for x in node_io if x.get('io_type') == t and x.get('available') is True]
+                    if len(ios) >= n:
+                        io_eligible.append(node.get('uuid'))
+            ac_constraints = constraints.get('accelerators', None)
+            node_ac = node.get('accelerator', None)
+            if ac_constraints is not None and node_ac is not None:
+                node_ac = [x.get('supported_library') for x in node_ac and x.get('available') is True]
+                node_sl = []
+                for sl in node_ac:
+                    node_sl.extend(sl)
+                for ac_c in ac_constraints:
+                    t = ac_c.get('type')
+                    # n = ac_c.get('number')
+                    if t in node_sl:
+                        ac_eligible.append(node.get('uuid'))
+                        # ios = [x for x in node_ac if x.get('type') == t]
+                        # if len(ios) >= n:
+                        #    ac_elegibles.append(n.get('uuid'))
+
+        if constraints.get('networks', None) is not None and constraints.get('i/o', None) is None and constraints.get(
+                'accelerators', None) is None:
+            eligible.extend(nw_eligible)
+        elif constraints.get('i/o', None) is not None and constraints.get('networks', None) is None and constraints.get(
+                'accelerators', None) is None:
+            eligible.extend(io_eligible)
+        elif constraints.get('accelerators', None) is not None and constraints.get('networks',
+                                                                                   None) is None and constraints.get(
+            'i/o', None) is None:
+            eligible.extend(ac_eligible)
+        elif constraints.get('networks', None) is not None and constraints.get('i/o',
+                                                                               None) is not None and constraints.get(
+            'accelerators', None) is not None:
+            eligible = list((set(nw_eligible) & set(io_eligible)) & set(ac_eligible))
+        elif constraints.get('networks', None) is not None and constraints.get('i/o',
+                                                                               None) is not None and constraints.get(
+            'accelerators', None) is None:
+            eligible = list(set(nw_eligible) & set(io_eligible))
+        elif constraints.get('networks', None) is None and constraints.get('i/o', None) is not None and constraints.get(
+                'accelerators', None) is not None:
+            eligible = list(set(ac_eligible) & set(io_eligible))
+        elif constraints.get('networks', None) is not None and constraints.get('i/o', None) is None and constraints.get(
+                'accelerators', None) is not None:
+            eligible = list(set(nw_eligible) & set(ac_eligible))
+        eligible = list(set(eligible))
+        return eligible
+
+    @asyncio.coroutine
+    def __search_plugin_by_name(self, name, node_uuid):
+        uri = '{}/{}/plugins'.format(self.aroot, node_uuid)
+        all_plugins = yield from self.store.actual.get(uri)
+        # cmd = 'get {0} {1}'.format(self.asid, uri)
+        # with self.websocket as ws:
+        #     await ws.send(cmd)
+        #     response = await ws.recv()
+        # all_plugins = response.split(uri)[-1].replace(' ','')
+        if all_plugins is None or all_plugins == '':
+            print('Cannot get plugin')
+            return None
+        all_plugins = json.loads(all_plugins).get('plugins')
+        search = [x for x in all_plugins if name.upper() in x.get('name').upper()]
+        if len(search) == 0:
+            return None
+        else:
+            return search[0]
+
+    @asyncio.coroutine
+    def __get_entity_handler_by_uuid(self, node_uuid, entity_uuid):
+        uri = '{}/{}/runtime/*/entity/{}'.format(self.aroot, node_uuid, entity_uuid)
+        all = yield from self.store.actual.resolveAll(uri)
+        for i in all:
+            k = i[0]
+            if fnmatch.fnmatch(k, uri):
+                # print('MATCH {0}'.format(k))
+                # print('Extracting uuid...')
+                regex = uri.replace('/', '\/')
+                regex = regex.replace('*', '(.*)')
+                reobj = re.compile(regex)
+                mobj = reobj.match(k)
+                uuid = mobj.group(1)
+                # print('UUID {0}'.format(uuid))
+
+                return uuid
+
+    @asyncio.coroutine
+    def __get_entity_handler_by_type(self, node_uuid, t):
+        handler = None
+
+        handler = yield from self.__search_plugin_by_name(t, node_uuid)
+        if handler is None:
+            print('type not yet supported')
+        return handler
+
+    @asyncio.coroutine
+    def __send_define_entity(self, node_uuid, manifest):
+        manifest.update({'status': 'define'})
+        handler = None
+        t = manifest.get('type')
+
+        try:
+            if t in ['kvm', 'xen']:
+                handler = yield from self.__search_plugin_by_name(t, node_uuid)
+                validate(manifest.get('entity_data'), Schemas.vm_schema)
+            elif t in ['container', 'lxd']:
+                handler = yield from self.__search_plugin_by_name(t, node_uuid)
+                validate(manifest.get('entity_data'), Schemas.container_schema)
+            elif t == 'native':
+                handler = yield from self.__search_plugin_by_name('native', node_uuid)
+                validate(manifest.get('entity_data'), Schemas.native_schema)
+            elif t == 'ros2':
+                handler = yield from self.__search_plugin_by_name('ros2', node_uuid)
+                validate(manifest.get('entity_data'), Schemas.ros2_schema)
+            elif t == 'usvc':
+                print('microservice not yet')
+            else:
+                print('type not recognized')
+
+            if handler is None:
+                print('error on plugin for this type of entity')
+                self.exit(-1)
+        except ValidationError as ve:
+            self.logger.error('Manifest error {}', format(ve.message))
+            return False
+
+        entity_uuid = manifest.get('uuid')
+        entity_definition = manifest
+        json_data = json.dumps(entity_definition).replace(' ', '')
+        uri = '{}/{}/runtime/{}/entity/{}'.format(self.droot, node_uuid, handler.get('uuid'), entity_uuid)
+
+        res = yield from self.store.desired.put(uri, json_data)
+        if res:
+            while True:
+                time.sleep(1)
+                uri = '{}/{}/runtime/{}/entity/{}'.format(self.aroot, node_uuid, handler.get('uuid'), entity_uuid)
+                data = yield from self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
+                if entity_info is not None and entity_info.get('status') == 'defined':
+                    break
+            return True
+        else:
+            return False
+
+    @asyncio.coroutine
+    def __send_undefine_entity(self, node_uuid, entity_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = '{}/{}/runtime/{}/entity/{}'.format(self.droot, node_uuid, handler, entity_uuid)
+
+        res = yield from self.store.desired.remove(uri)
+        if res:
+            return True
+        else:
+            return False
+
+    @asyncio.coroutine
+    def __send_configure_entity(self, node_uuid, entity_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=configure'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
+        res = yield from self.store.desired.dput(uri)
+        if res:
+            while True:
+                time.sleep(1)
+                uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+                data = yield from self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
+                if entity_info is not None and entity_info.get('status') == 'configured':
+                    break
+            return True
+        else:
+            return False
+
+    @asyncio.coroutine
+    def __send_clean_entity(self, node_uuid, entity_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+        res = yield from self.store.desired.remove(uri)
+        if res:
+            return True
+        else:
+            return False
+
+    @asyncio.coroutine
+    def __send_run_entity(self, node_uuid, entity_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=run'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
+
+        res = yield from self.store.desired.dput(uri)
+        if res:
+            while True:
+                time.sleep(1)
+                uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+                data = yield from self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
+                if entity_info is not None and entity_info.get('status') == 'run':
+                    break
+            return True
+        else:
+            return False
+
+    @asyncio.coroutine
+    def __send_stop_entity(self, node_uuid, entity_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=stop'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
+        res = yield from self.store.desired.dput(uri)
+        if res:
+            while True:
+                uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+                data = yield from self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
+                if entity_info is not None and entity_info.get('status') == 'stop':
+                    break
+            return True
+        else:
+            return False
+
+    @asyncio.coroutine
+    def __sent_migrate_entity(self, node_uuid, entity_uuid, destination_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
+
+        entity_info = yield from self.store.actual.get(uri)
+        if entity_info is None:
+            print("Error on getting instance info")
+            self.exit(-1)
+
+        entity_info = json.loads(entity_info)
+
+        entity_info_src = entity_info.copy()
+        entity_info_dst = entity_info.copy()
+
+        entity_info_src.update({"status": "taking_off"})
+        entity_info_src.update({"dst": destination_uuid})
+
+        entity_info_dst.update({"status": "landing"})
+        entity_info_dst.update({"dst": destination_uuid})
+
+        destination_handler = yield from self.__get_entity_handler_by_type(destination_uuid, entity_info_dst.get('type'))
+        if destination_handler is None:
+            self.logger.error("Error Destination node can't handle this type of entity {0}".format(entity_info_dst.get('type')))
+            return False
+
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, destination_uuid, destination_handler.get(
+            'uuid'), entity_uuid, instance_uuid)
+        res = yield from self.store.desired.put(uri, json.dumps(entity_info_dst).replace(' ', ''))
+        if res:
+            uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
+            res_dest = yield from self.store.desired.dput(uri, json.dumps(entity_info_src).replace(' ', ''))
+            if res_dest:
+                while True:
+                    time.sleep(1)
+                    uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, destination_uuid, destination_handler.get('uuid'), entity_uuid, instance_uuid)
+                    data = yield from self.store.actual.get(uri)
+                    entity_info = None
+                    if data is not None:
+                        entity_info = json.loads(data)
+                    if entity_info is not None and entity_info.get("status") == "run":
+                        break
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    @asyncio.coroutine
+    def __send_pause_entity(self, node_uuid, entity_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=pause'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
+        res = yield from self.store.desired.dput(uri)
+        if res:
+            while True:
+                uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+                data = yield from self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
+                if entity_info is not None and entity_info.get('status') == 'pause':
+                    break
+            return True
+        else:
+            return False
+
+    @asyncio.coroutine
+    def __send_resume_entity(self, node_uuid, entity_uuid, instance_uuid):
+        handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=resume'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
+        res = yield from self.store.desired.dput(uri)
+        if res:
+            while True:
+                uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.aroot, node_uuid, handler, entity_uuid, instance_uuid)
+                data = yield from self.store.actual.get(uri)
+                entity_info = None
+                if data is not None:
+                    entity_info = json.loads(data)
+                if entity_info is not None and entity_info.get('status') == 'run':
+                    break
+            return True
+        else:
+            return False
 
     def check_vim_connectivity(self):
         """Checks VIM can be reached and user credentials are ok.
@@ -566,7 +1040,7 @@ class vimconnector(vimconn.vimconnector):
         k = None
 
         try:
-            k = self.store.actual.keys()
+            k = yield from self.store.actual.keys()
         except Exception as e:
             self.logger.error('Error {}'.format(e))
             raise vimconnConnectionException
@@ -656,14 +1130,14 @@ class vimconnector(vimconn.vimconnector):
         # compute vxlan id and vxlan mcast address
 
         self.logger.debug("Network manifest created {}".format(manifest))
-        nodes = self.__get_nodes()
+        nodes = yield from self.__get_nodes()
         self.logger.debug("fog05 Nodes: {}".format(nodes))
         if len(nodes) == 0:
             raise vimconn.vimconnUnexpectedResponse("No fog05 nodes found!!")
 
         for n in nodes:
             self.logger.debug("Adding network to: {}".format(n))
-            res = self.__send_add_network(n, manifest)
+            res = yield from self.__send_add_network(n, manifest)
             if res:
                 self.logger.debug("Added network to: {}".format(n))
             else:
@@ -694,7 +1168,7 @@ class vimconnector(vimconn.vimconnector):
         """
 
         # TODO remove 'duplicated' networks, because the same network as to be defined in all nodes to provide connectivity
-        nws = self.__get_networks()
+        nws = yield from self.__get_networks()
         nets = []
         for n in nws:
             network_info = {}
@@ -718,7 +1192,7 @@ class vimconnector(vimconn.vimconnector):
         Raises an exception upon error or when network is not found
         """
 
-        n = self.__get_network(net_id)
+        n = yield from self.__get_network(net_id)
         network_info = {}
         network_info.update({'id': n.get('uuid')})
         network_info.update({'name': n.get('name')})
@@ -732,7 +1206,7 @@ class vimconnector(vimconn.vimconnector):
         Returns the network identifier or raises an exception upon error or when network is not found
         """
 
-        nodes = self.__get_nodes()
+        nodes = yield from self.__get_nodes()
         if len(nodes) == 0:
             raise vimconn.vimconnUnexpectedResponse("No fog05 nodes found!!")
         for n in nodes:
@@ -763,7 +1237,7 @@ class vimconnector(vimconn.vimconnector):
         """
         infos = {}
         for net_id in net_list:
-            net_info = self.__get_network(net_id)
+            net_info = yield from self.__get_network(net_id)
             d = {}
             if net_info is not None:
                 d.update({'status': 'ACTIVE'})
@@ -780,8 +1254,14 @@ class vimconnector(vimconn.vimconnector):
         Raises an exception upon error or if not found
         """
 
-        # TODO flavos in our case are the atomic entity definition?
-        raise vimconnNotImplemented("Should have implemented this")
+        self.logger.debug("Getting flavor '%s'", flavor_id)
+        f = yield from self.__get_flavor(flavor_id)
+        if f is None:
+            raise vimconn.vimconnNotFoundException("Flavor {} not found".format(flavor_id))
+        id = f.get('uuid')
+        f.pop('uuid')
+        f.update({'id': id})
+        return f
 
     def get_flavor_id_from_data(self, flavor_dict):
         """Obtain flavor id that match the flavor description
@@ -793,7 +1273,20 @@ class vimconnector(vimconn.vimconnector):
                 #TODO: complete parameters for EPA
         Returns the flavor_id or raises a vimconnNotFoundException
         """
-        raise vimconnNotImplemented("Should have implemented this")
+
+        f_id = None
+        f_target = (flavor_dict.get("ram"), flavor_dict.get("vcpus"), flavor_dict.get("disk"))
+        numas = flavor_dict.get("extended", {}).get("numas")
+        if numas:
+            # TODO
+            raise vimconn.vimconnNotFoundException("Flavor with EPA still not implemted")
+        flvs = yield from self.__get_flavors()
+        for f in flvs:
+            f_data = (f.get("memory"), f.get("cpu"), f.get("disk_size"))
+            if f_data == f_target:
+                return f.get('uuid')
+        if f_id is None:
+            raise vimconn.vimconnNotFoundException("Cannot find any flavor matching '{}'".format(flavor_dict))
 
     def new_flavor(self, flavor_data):
         """Adds a tenant flavor to VIM
@@ -814,30 +1307,126 @@ class vimconnector(vimconn.vimconnector):
                 is_public:
                  #TODO to concrete
         Returns the flavor identifier"""
-        raise vimconnNotImplemented("Should have implemented this")
+        numas = flavor_data.get("extended", {}).get("numas")
+        if numas:
+            raise vimconn.vimconnNotFoundException("Flavor with EPA still not implemted")
+
+        f_manifest = {}
+        uuid = str(uuid.uuid4())
+        f_manifest.update({'uuid': uuid})
+        f_manifest.update({'memory': flavor_data.get('ram')})
+        f_manifest.update({'cpu': flavor_data.get('vcpus')})
+        f_manifest.update({'disk_size': flavor_data.get('disk')})
+
+        # if yield from self.__send_add_flavor(f)
+        #    return uuid
+
+        nodes = yield from self.__get_nodes()
+        self.logger.debug("fog05 Nodes: {}".format(nodes))
+        if len(nodes) == 0:
+            raise vimconn.vimconnUnexpectedResponse("No fog05 nodes found!!")
+
+        for n in nodes:
+            res = yield from self.__send_add_flavor_node(n, f_manifest)
+            if res:
+                self.logger.debug("Added flavor to: {}".format(n))
+            else:
+                self.logger.debug("Error on adding flavor to: {}".format(n))
+
+        return uuid
+        # raise vimconnNotImplemented( "Should have implemented this" )
 
     def delete_flavor(self, flavor_id):
         """Deletes a tenant flavor from VIM identify by its id
         Returns the used id or raise an exception"""
-        raise vimconnNotImplemented("Should have implemented this")
+        nodes = yield from self.__get_nodes()
+        self.logger.debug("fog05 Nodes: {}".format(nodes))
+        if len(nodes) == 0:
+            raise vimconn.vimconnUnexpectedResponse("No fog05 nodes found!!")
+
+        for n in nodes:
+            res = self.__send_remove_flavor_node(n, flavor_id)
+            if res:
+                self.logger.debug("Removed flavor from: {}".format(n))
+            else:
+                self.logger.debug("Error on removing flavor from: {}".format(n))
+        return uuid
 
     def new_image(self, image_dict):
         """ Adds a tenant image to VIM
         Returns the image id or raises an exception if failed
+        image_dict
+            name: name
+            disk_format: qcow2, vhd, vmdk, raw (by default), ...
+            location: path or URI
+            public: "yes" or "no"
+            metadata: metadata of the image
         """
-        # TODO image are the base images used for atomic entity definition
-        raise vimconnNotImplemented("Should have implemented this")
+        # TODO writing image information to dfos://<sys-id>/<node-id>/runtime/<r id>/image/<image_id>
+        self.logger.debug('Adding new image {}'.format(image_dict))
+        if "disk_format" in image_dict:
+            disk_format = image_dict.get("disk_format")
+        else:  # autodiscover based on extension
+            if image_dict.get('location')[-6:] == ".qcow2":
+                disk_format = "qcow2"
+            elif image_dict.get('location')[-4:] == ".vhd":
+                disk_format = "vhd"
+            elif image_dict.get('location')[-5:] == ".vmdk":
+                disk_format = "vmdk"
+            elif image_dict.get('location')[-4:] == ".vdi":
+                disk_format = "vdi"
+            elif image_dict.get('location')[-4:] == ".iso":
+                disk_format = "iso"
+            elif image_dict.get('location')[-4:] == ".aki":
+                disk_format = "aki"
+            elif image_dict.get('location')[-4:] == ".ari":
+                disk_format = "ari"
+            elif image_dict.get('location')[-4:] == ".ami":
+                disk_format = "ami"
+            else:
+                disk_format = "raw"
+
+        self.logger.debug("new_image: '{}' loading from '{}'".format(image_dict.get('name'), image_dict.get('location')))
+
+        image_manifest = {}
+        uuid = '{}'.format(uuid.uuid4())
+        # {uuid, name, base_image, format}
+        image_manifest.update({'uuid': uuid})
+        image_manifest.update({'name': image_dict.get('name')})
+        image_manifest.update({'format': disk_format})
+        if image_dict.get('location')[0:4] == "http":
+            # in this case it is easy just put location as base_image
+            image_manifest.update({'base_image': image_dict.get('location')})
+        else:
+            # the image is a local file
+            # should be able to upload the image some where and the use the url to put the image in the node
+            # the webservice provide a ftp server to upload?
+            raise vimconnNotSupportedException("Image from local file not yet supported '{}'".format(image_dict))
+
+        res = self.__send_add_image(image_manifest)
+        if res:
+            return uuid
+        else:
+            raise vimconnUnexpectedResponse("Error on adding new image '{}'".format(image_dict))
 
     def delete_image(self, image_id):
         """Deletes a tenant image from VIM
         Returns the image_id if image is deleted or raises an exception on error"""
-        raise vimconnNotImplemented("Should have implemented this")
+
+        res = self.__send_remove_image(image_id)
+        if res:
+            return image_id
+        else:
+            raise vimconnUnexpectedResponse("Error on removing image '{}'".format(image_dict))
 
     def get_image_id_from_path(self, path):
         """Get the image id from image path in the VIM database.
            Returns the image_id or raises a vimconnNotFoundException
         """
-        raise vimconnNotImplemented("Should have implemented this")
+        imgs = self.__get_images()
+        for i in imgs:
+            if i.get('base_image') == path:
+                return i.get('uuid')
 
     def get_image_list(self, filter_dict={}):
         """Obtain tenant images from VIM
@@ -850,7 +1439,73 @@ class vimconnector(vimconn.vimconnector):
             [{<the fields at Filter_dict plus some VIM specific>}, ...]
             List can be empty
         """
-        raise vimconnNotImplemented("Should have implemented this")
+
+        f_name = filter_dict.get('name')
+        f_id = filter_dict.get('id')
+        f_location = filter_dict.get('location')
+
+        self.logger.debug("Getting image list from VIM filter: '{}'".format(filter_dict))
+        img_list = []
+        imgs = self.__get_images()
+        for i in imgs:
+            i_osm = {}
+            if f_name is not None and f_id is None and f_location is None:
+                if i.get('name') == f_name:
+                    i_osm.update({'id': i.get('uuid')})
+                    i_osm.update({'name': i.get('name')})
+                    i_osm.update({'location': i.get('base_image')})
+                    i_osm.update({'path': i.get('path')})
+                    i_osm.update({'format': i.get('format')})
+                    img_list.append(i_osm)
+            elif f_name is None and f_id is not None and f_location is None:
+                if i.get('uuid') == f_id:
+                    i_osm.update({'id': i.get('uuid')})
+                    i_osm.update({'name': i.get('name')})
+                    i_osm.update({'location': i.get('base_image')})
+                    i_osm.update({'path': i.get('path')})
+                    i_osm.update({'format': i.get('format')})
+                    img_list.append(i_osm)
+            elif f_name is None and f_id is None and f_location is not None:
+                if i.get('base_image') == f_location:
+                    i_osm.update({'id': i.get('uuid')})
+                    i_osm.update({'name': i.get('name')})
+                    i_osm.update({'location': i.get('base_image')})
+                    i_osm.update({'path': i.get('path')})
+                    i_osm.update({'format': i.get('format')})
+                    img_list.append(i_osm)
+            elif f_name is not None and f_id is not None and f_location is not None:
+                if i.get('name') == f_name and i.get('uuid') == f_id:
+                    i_osm.update({'id': i.get('uuid')})
+                    i_osm.update({'name': i.get('name')})
+                    i_osm.update({'location': i.get('base_image')})
+                    i_osm.update({'path': i.get('path')})
+                    i_osm.update({'format': i.get('format')})
+                    img_list.append(i_osm)
+            elif f_name is not None and f_id is None and f_location is not not None:
+                if i.get('name') == f_name and i.get('base_image') == f_location:
+                    i_osm.update({'id': i.get('uuid')})
+                    i_osm.update({'name': i.get('name')})
+                    i_osm.update({'location': i.get('base_image')})
+                    i_osm.update({'path': i.get('path')})
+                    i_osm.update({'format': i.get('format')})
+                    img_list.append(i_osm)
+            elif f_name is None and f_id is not None and f_location is not not None:
+                if i.get('base_image') == f_location and i.get('uuid') == f_id:
+                    i_osm.update({'id': i.get('uuid')})
+                    i_osm.update({'name': i.get('name')})
+                    i_osm.update({'location': i.get('base_image')})
+                    i_osm.update({'path': i.get('path')})
+                    i_osm.update({'format': i.get('format')})
+                    img_list.append(i_osm)
+            elif f_name is not None and f_id is not None and f_location is not not None:
+                if i.get('base_image') == f_location and i.get('name') == f_name and i.get('uuid') == f_id:
+                    i_osm.update({'id': i.get('uuid')})
+                    i_osm.update({'name': i.get('name')})
+                    i_osm.update({'location': i.get('base_image')})
+                    i_osm.update({'path': i.get('path')})
+                    i_osm.update({'format': i.get('format')})
+                    img_list.append(i_osm)
+        return img_list
 
     def new_vminstance(self, name, description, start, image_id, flavor_id, net_list, cloud_config=None, disk_list=None,
                        availability_zone_index=None, availability_zone_list=None):
@@ -906,6 +1561,62 @@ class vimconnector(vimconn.vimconnector):
             Format is vimconnector dependent, but do not use nested dictionaries and a value of None should be the same
             as not present.
         """
+        self.logger.debug("Creating an entity (vm) on fog05: '{}'".format(name))
+
+        vm_ae_uuid = '{}'.format(uuid.uuid4())
+        vm_i_uuid = '{}'.format(uuid.uuid4())
+
+        vm_manifest = {}
+        vm_manifest.update({'uuid': vm_ae_uuid})
+        vm_manifest.update({'name': name})
+        vm_manifest.update({'flavor_id': flavor_id})
+        vm_manifest.update({'base_image': image_id})
+        networks = []
+        for n in net_list:
+            if n.get('type') == 'virtual':
+                net = {}
+                name = n.get('name', None)
+                if name is not None:
+                    net.update({'name': name})
+                net.update({'network_uuid': n.get('net_id')})
+                mac = n.get('mac_address', None)
+                if mac is not None:
+                    net.update({'mac_address': mac})
+            else:
+                self.logger.error("This VM has a network that is not supported at the moment: '{}'".format(n.get('name')))
+                raise vimconnNotImplemented("Only virtual networks are allowed at this moment")
+        if cloud_config is not None:
+            user_data = cloud_config.get('user-data')
+            if user_data is not None:
+                vm_manifest.update({'user-data': user_data})
+            keys = cloud_config.get('key-pairs')
+            if keys is not None:
+                vm_manifest.update({'ssh-key': keys[0]})  # TODO should add all keys
+
+        manifest = {}
+        manifest.update({'uuid': vm_ae_uuid})
+        manifest.update({'name': '{}_ae'.format(name)})
+        manifest.update({'type': 'kvm'})
+        manifest.update({'version': 1})
+
+        if availability_zone_index is not None:
+            node_uuid = availability_zone_index
+        else:
+            node_uuid = self.__get_node(self.__get_eligible_nodes(self.__get_nodes(), manifest))
+
+        res = self.__send_define_entity(node_uuid, manifest)
+        if res:
+            res = self.__send_configure_entity(node_uuid, vm_ae_uuid, vm_i_uuid)
+            if res:
+                if start:
+                    res = self.__send_run_entity(node_uuid, vm_ae_uuid, vm_i_uuid)
+                    if res:
+                        created_items = {'entity_uuid': vm_ae_uuid}
+                        return (vm_i_uuid, created_items)
+                else:
+                    created_items = {'entity_uuid': vm_ae_uuid}
+                    return (vm_i_uuid, created_items)
+
         raise vimconnNotImplemented("Should have implemented this")
 
     def get_vminstance(self, vm_id):
