@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, Response
+from flask import Flask, Response, request
 from dstore import Store
 import logging
 import json
@@ -46,7 +46,7 @@ def index():
     return json.dumps({'fog05 REST API': {'version': 0.1}})
 
 
-@app.route('/<path:uri>', methods=['GET'])
+@app.route('/get/<path:uri>', methods=['GET'])
 def get(uri):
     v = None
 
@@ -70,8 +70,11 @@ def get(uri):
 
 
 
-@app.route('/<value>/<path:uri>', methods=['PUT'])
-def put(value, uri):
+@app.route('/put/<path:uri>', methods=['PUT'])
+def put(uri):
+    value = request.form.get('value')
+    print('PUT -> {} -> {}'.format(uri, value))
+
     if uri.startswith('a'):
         return json.dumps(store.actual.put(uri, value))
     elif uri.startswith('d'):
@@ -79,14 +82,17 @@ def put(value, uri):
 
 
 #@app.route('/<path:uri>', defaults={'value': None} ,methods=['PATCH'])
-@app.route('/<path:uri>/<value>', methods=['PATCH'])
-def dput(uri, value=None):
+@app.route('/dput/<path:uri>/', methods=['PATCH'])
+def dput(uri):
+
+    value = request.form.get('value')
+
     if uri.startswith('a'):
         return json.dumps(store.actual.dput(uri, value))
     elif uri.startswith('d'):
         return json.dumps(store.desired.dput(uri, value))
 
-@app.route('/<path:uri>', methods=['DELETE'])
+@app.route('/remove/<path:uri>', methods=['DELETE'])
 def remove(uri):
     if uri.startswith('a'):
         return json.dumps(store.actual.remove(uri))

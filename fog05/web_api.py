@@ -8,6 +8,7 @@ import json
 import fnmatch
 import time
 import urllib3
+import requests
 
 
 class RESTStore(object):
@@ -15,28 +16,27 @@ class RESTStore(object):
         self.root = root
         self.host = host
         self.port = port
-        self.http = urllib3.PoolManager()
+
 
     def get(self, uri):
-        endpoint = "http://{}:{}/{}".format(self.host, self.port, uri)
-        resp = self.http.request('GET', endpoint)
-        return json.loads(resp.data)
+        endpoint = "http://{}:{}/get/{}".format(self.host, self.port, uri)
+        resp = requests.get(endpoint)
+        return json.loads(resp.text)
 
     def resolve(self, uri):
         return self.get(uri)
 
     def put(self, uri, value):
-        endpoint = "http://{}:{}/{}/{}".format(self.host, self.port, uri, value)
-        resp = self.http.request('PUT', endpoint)
-        return json.loads(resp.data)
+        endpoint = "http://{}:{}/put/{}".format(self.host, self.port, uri)
+        resp = requests.put(endpoint, data={'value': value})
+        return json.loads(resp.text)
 
     def dput(self, uri, value=None):
         if value is None:
             value = self.args2dict(uri.split('#')[-1])
-
-        endpoint = "http://{}:{}/{}/{}".format(self.host, self.port, uri, value)
-        resp = self.http.request('PATCH', endpoint)
-        return json.loads(resp.data)
+        endpoint = "http://{}:{}/dput/{}".format(self.host, self.port, uri)
+        resp = requests.patch(endpoint, data={'value': value})
+        return json.loads(resp.text)
 
     def getAll(self, uri):
         return self.get(uri)
@@ -45,9 +45,9 @@ class RESTStore(object):
         return self.get(uri)
 
     def remove(self, uri):
-        endpoint = "http://{}:{}/{}".format(self.host, self.port, uri)
-        resp = self.http.request('DELETE', endpoint)
-        return json.loads(resp.data)
+        endpoint = "http://{}:{}/remove/{}".format(self.host, self.port, uri)
+        resp = requests.delete(endpoint)
+        return json.loads(resp.text)
 
     def dot2dict(self, dot_notation, value=None):
         ld = []
@@ -451,6 +451,7 @@ class WebAPI(object):
             if len(search) == 0:
                 return None
             else:
+                print("handler {}".format(search))
                 return search[0]
 
         def __get_entity_handler_by_uuid(self, node_uuid, entity_uuid):
@@ -467,7 +468,7 @@ class WebAPI(object):
                     mobj = reobj.match(k)
                     uuid = mobj.group(1)
                     # print('UUID {0}'.format(uuid))
-
+                    print("handler {}".format(uuid))
                     return uuid
 
         def __get_entity_handler_by_type(self, node_uuid, t):
@@ -475,6 +476,7 @@ class WebAPI(object):
             handler = self.__search_plugin_by_name(t, node_uuid)
             if handler is None:
                 print('type not yet supported')
+            print("handler {}".format(handler))
             return handler
 
         def __wait_atomic_entity_state_change(self, node_uuid, handler_uuid, entity_uuid, state):
@@ -550,10 +552,10 @@ class WebAPI(object):
                     print('microservice not yet')
                 else:
                     print('type not recognized')
-
                 if handler is None:
                     return False
             except ValidationError as ve:
+                print("Error in manifest {}".format(ve))
                 return False
 
             entity_uuid = manifest.get('uuid')

@@ -13,9 +13,9 @@ if __name__ == '__main__':
 
     container_definition = {'name': container_name, 'uuid': container_uuid, 'base_image':
         'https://www.dropbox.com/s/7ko6orndmkkekc7/gateway.tar.gz', 'networks': [{
-        'br_name': 'lxdbr0', 'intf_name': "eth0"}], "user-data": None, "ssh-key": None}
+        'br_name': 'lxdbr0', 'intf_name': "eth0"}]}
 
-    entity_manifest = {'name': container_name, 'version': 1, 'entity_data': container_definition}
+    entity_manifest = {'name': container_name, 'version': 1, 'entity_data': container_definition, 'type': 'lxd', 'uuid': container_uuid}
 
     node = api.node.list()
     if len(node) == 0:
