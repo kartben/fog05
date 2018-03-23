@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 
-from fog05.DStore import *
+from dstore import Store
 
 import uuid
 import argparse
 import pprint
+import time
 
 
 
@@ -18,8 +19,8 @@ class FOSStore(object):
         self.droot = droot  # 'dfos://<sys-id>'
         self.dhome = str('{}/{}'.format(droot, home))  # str('dfos://<sys-id>/%s' % self.uuid)
 
-        self.actual = DStore(home, self.aroot, self.ahome, 1024)
-        self.desired = DStore(home, self.droot, self.dhome, 1024)
+        self.actual = Store(home, self.aroot, self.ahome, 1024)
+        self.desired = Store(home, self.droot, self.dhome, 1024)
 
     def close(self):
         self.actual.close()
@@ -64,9 +65,10 @@ class FOSGetCli(object):
 
         v = None
 
-        if not uri.endswith('/**') and not uri.endswith('/') and not uri.endswith('~'):
-            uri = uri + '/'
-        elif uri.endswith('/**'):
+        # if not uri.endswith('/**') and not uri.endswith('/') and not uri.endswith('~'):
+        #     uri = uri + '/'
+        # el
+        if uri.endswith('/**'):
             uri.rstrip('*')
 
         if uri.startswith('a'):
