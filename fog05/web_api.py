@@ -98,7 +98,7 @@ class FOSRESTStore(object):
 
 
 
-class API(object):
+class WebAPI(object):
     '''
         This class allow the interaction with fog05 using simple Python3 API
         Need the distributed store
