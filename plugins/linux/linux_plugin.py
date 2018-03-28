@@ -23,6 +23,7 @@ import sys
 
 '''
 
+# TODO OS Plugin should not be aware of the Agent - The Agent is in OCaml no way to access his store and his logger
 
 class Linux(OSPlugin):
     def __init__(self, name, version, agent, plugin_uuid):

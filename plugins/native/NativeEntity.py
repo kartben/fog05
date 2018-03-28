@@ -3,6 +3,8 @@ import os
 from fog05.interfaces.States import State
 from fog05.interfaces.Entity import Entity
 
+# TODO Plugins should not be aware of the Agent - The Agent is in OCaml no way to access his store, his logger and the OS plugin
+
 
 class NativeEntity(Entity):
     def __init__(self, uuid, name, command, source, args, outfile):

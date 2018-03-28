@@ -9,6 +9,7 @@ from ROS2Entity import ROS2Entity
 from ROS2EntityInstance import ROS2EntityInstance
 from jinja2 import Environment
 
+# TODO Plugins should not be aware of the Agent - The Agent is in OCaml no way to access his store, his logger and the OS plugin
 
 
 class ROS2(RuntimePlugin):

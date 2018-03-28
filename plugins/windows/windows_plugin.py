@@ -11,6 +11,8 @@ import socket
 import os
 import sys
 
+# TODO Plugins should not be aware of the Agent - The Agent is in OCaml no way to access his store, his logger and the OS plugin
+
 
 class Windows(OSPlugin):
     def __init__(self, name, version, agent, plugin_uuid):

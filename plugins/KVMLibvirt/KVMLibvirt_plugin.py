@@ -14,6 +14,10 @@ import libvirt
 import ipaddress
 import threading
 
+
+# TODO Plugins should not be aware of the Agent - The Agent is in OCaml no way to access his store, his logger and the OS plugin
+
+
 class KVMLibvirt(RuntimePlugin):
 
     def __init__(self, name, version, agent, plugin_uuid):

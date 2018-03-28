@@ -7,6 +7,7 @@ from fog05.interfaces.NetworkPlugin import *
 from jinja2 import Environment
 import socket
 
+# TODO Plugins should not be aware of the Agent - The Agent is in OCaml no way to access his store, his logger and the OS plugin
 
 class brctl(NetworkPlugin):
 

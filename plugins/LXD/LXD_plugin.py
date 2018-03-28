@@ -13,6 +13,10 @@ import time
 import re
 from pylxd import Client
 from pylxd.exceptions import LXDAPIException
+
+# TODO Plugins should not be aware of the Agent - The Agent is in OCaml no way to access his store, his logger and the OS plugin
+
+
 class LXD(RuntimePlugin):
 
     def __init__(self, name, version, agent, plugin_uuid):
