@@ -260,7 +260,7 @@ class FOSCli(object):
             return
         brctl = nws[0]  # will use the first plugin
 
-        json_data = json.dumps(manifest).replace(' ','')
+        json_data = json.dumps(manifest)#.replace(' ','')
         uri = '{}/{}/network/{}/networks/{}'.format(self.droot, node_uuid, brctl.get('uuid'), manifest.get('uuid'))
 
         res = yield from self.store.desired.put(uri, json_data)
@@ -514,7 +514,7 @@ class FOSCli(object):
 
         entity_uuid = manifest.get('uuid')
         entity_definition = manifest
-        json_data = json.dumps(entity_definition).replace(' ', '')
+        json_data = json.dumps(entity_definition) #.replace(' ', '')
         uri = '{}/{}/runtime/{}/entity/{}'.format(self.droot, node_uuid, handler.get('uuid'), entity_uuid)
 
         res = yield from self.store.desired.put(uri, json_data)
@@ -637,12 +637,13 @@ class FOSCli(object):
             print("Error Destination node can't handle this type of entity {0}".format(entity_info_dst.get('type')))
             self.exit(-1)
 
-        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, destination_uuid, destination_handler.get(
-            'uuid'), entity_uuid, instance_uuid)
-        res = yield from self.store.desired.put(uri, json.dumps(entity_info_dst).replace(' ',''))
+        uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, destination_uuid, destination_handler.get('uuid'), entity_uuid, instance_uuid)
+        res = yield from self.store.desired.put(uri, json.dumps(entity_info_dst))
+        #.replace(' ',''))
         if res:
             uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.droot, node_uuid, handler, entity_uuid, instance_uuid)
-            res_dest = yield from self.store.desired.dput(uri, json.dumps(entity_info_src).replace(' ',''))
+            res_dest = yield from self.store.desired.dput(uri, json.dumps(entity_info_src))
+            #.replace(' ',''))
             if res_dest:
                 while True:
                     time.sleep(1)
@@ -698,7 +699,7 @@ class FOSCli(object):
     @asyncio.coroutine
     def __send_add_plugin(self, node_uuid, manifest):
         plugins = {"plugins": [manifest]}
-        plugins = json.dumps(plugins).replace(' ','')
+        plugins = json.dumps(plugins)#.replace(' ','')
         uri = '{}/{}/plugins'.format(self.droot, node_uuid)
         res = yield from self.store.desired.dput(uri, plugins)
         if res:

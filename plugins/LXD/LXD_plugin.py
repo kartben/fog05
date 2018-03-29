@@ -238,14 +238,20 @@ class LXD(RuntimePlugin):
                     want to attach to the container
                     Below there is a try using a profile customized for network
                     '''
-                    custom_profile_for_network = self.conn.profiles.create(instance_uuid)
+
+
+
+                    custom_profile_for_instance = self.conn.profiles.create(instance_uuid)
 
                     #WAN=$(awk '$2 == 00000000 { print $1 }' /proc/net/route)
                     ## eno1
+                    if instance.user_file is not None and instance.user_file != '':
+                        user_data = self.__generate_custom_profile_userdata_configuration(instance.user_file)
+                        custom_profile_for_instance.config = user_data
 
                     dev = self.__generate_custom_profile_devices_configuration(instance)
-                    custom_profile_for_network.devices = dev
-                    custom_profile_for_network.save()
+                    custom_profile_for_instance.devices = dev
+                    custom_profile_for_instance.save()
 
                 except LXDAPIException as e:
                     self.agent.logger.error('configureEntity()', 'Error {0}'.format(e))
@@ -309,7 +315,7 @@ class LXD(RuntimePlugin):
                     #img.delete()
 
 
-                    time.sleep(5)
+                    time.sleep(2)
                     profile = self.conn.profiles.get(instance_uuid)
                     profile.delete()
 
@@ -663,6 +669,11 @@ class LXD(RuntimePlugin):
                     if m:
                         found = m.group(1)
                         return found
+
+    def __generate_custom_profile_userdata_configuration(self, userdata):
+        userdata = {'user.user-data': userdata}
+        return userdata
+
 
     def __generate_custom_profile_devices_configuration(self, instance):
         '''
