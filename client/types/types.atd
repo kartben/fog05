@@ -198,17 +198,42 @@ type plugins_info_type = {
 
 type atomic_entity_connection_point = {
   connection_point_uuid : string;
-  virtual_link_uuid : string;
-}
-
-type atomic_entity_network_type = {
-  ?mac_address : string option;
+  addresses : address_info list;
   ?intf_name : string option;
   ?br_name : string option;
   ?intf_type <json name="type"> : string option;
-  ?network_uuid : string option;
-  ?connection_point : atomic_entity_connection_point option;
- }
+  ?is_sap : bool;
+  ?virtual_links: vl_atomic_entity list option;
+}
+
+type address_info = {
+  address_info_uuid : string;
+  mac_address : string;
+  ipv4_address : string;
+  ipv4_netmask : string;
+  ipv4_gateway : string;
+  ipv6_address : string;
+  ipv6_netmask : string;
+  ?ipv6_gateway : string option;
+  ?bus_address : string option;
+}
+
+type vl_atomic_entity = {
+  vl_uuid : string;
+  protocol : string;
+  flow_pattern : string;
+  description : string;
+  vl_qos : vl_qos;
+}
+
+type vl_qos = {
+  vl_qos_uuid : string;
+  bitrate : int;
+  latency : int;
+  packet_delay_variation : float;
+  packet_loss_ratio : int;
+  priority : int;
+}
 
 type vm_atomic_entity = {
   name : string;
@@ -220,7 +245,7 @@ type vm_atomic_entity = {
   base_image : string;
   ?user_data <json name="user-data"> : string option;
   ?ssk_key <json name="ssk-key">: string option;
-  ?networks : atomic_entity_network_type list option;
+  ?connection_point : atomic_entity_connection_point list option;
 }
 
 type container_atomic_entity = {
@@ -229,7 +254,7 @@ type container_atomic_entity = {
   base_image : string;
   ?user_data <json name="user-data"> : string option;
   ?ssk_key <json name="ssk-key">: string option;
-  ?networks : atomic_entity_network_type list option;
+  ?connection_point : atomic_entity_connection_point list option;
 }
 
 type na_atomic_entity = {
