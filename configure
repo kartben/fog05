@@ -109,6 +109,11 @@ else
     echo "Eclipse Cyclone DDS already installed..."
 fi
 
+if [ ! -f /etc/machine-id ]; then
+   ln -s /var/lib/dbus/machine-id /etc/machine-id
+fi
+
+
 cd $WD/tmp
 
 if hash opam 2>/dev/null; then
