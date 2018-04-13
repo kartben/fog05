@@ -211,8 +211,8 @@ type atomic_entity_connection_point = {
   ?br_name : string option;
   ?intf_type <json name="type"> : string option;
   ?is_sap : bool;
-  ?virtual_links: vl_atomic_entity list option;
-  ?network_uuids : string list option;
+  virtual_link: vl_atomic_entity option;
+  network_uuid : string option;
 }
 
 type address_info = {
