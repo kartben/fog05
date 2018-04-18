@@ -114,16 +114,16 @@ if [ ! -f /etc/machine-id ]; then
 fi
 
 
-cd $WD/tmp
+#cd $WD/tmp
 
-if hash opam 2>/dev/null; then
-    echo "OPAM found installing dependencies..."
-else
-  echo "OPAM not found installing..."
-  install_opam
-fi
+#if hash opam 2>/dev/null; then
+#    echo "OPAM found installing dependencies..."
+#else
+#  echo "OPAM not found installing..."
+#  install_opam
+#fi
 
-install_dependencies
+#install_dependencies
 
 
 
