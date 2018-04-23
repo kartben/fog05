@@ -53,15 +53,17 @@ class Linux(OSPlugin):
     def get_base_path(self):
         return '/opt/fos'
 
-    def execute_command(self, command, blocking=False):
-        self.agent.logger.info('executeCommand()', str(' OS Plugin executing command %s' % command))
-        cmd_splitted = command.split()
-        p = psutil.Popen(cmd_splitted, stdout=PIPE)
-        if blocking:
-            p.wait()
-
-        for line in p.stdout:
-            self.agent.logger.debug('executeCommand()', str(line))
+    def execute_command(self, command, blocking=False, external=False):
+        self.agent.logger.info('executeCommand()', 'OS Plugin executing command {}'.format(command))
+        if external:
+            os.system(command)
+        else:
+            cmd_splitted = command.split()
+            p = psutil.Popen(cmd_splitted, stdout=PIPE)
+            if blocking:
+                p.wait()
+        # for line in p.stdout:
+        #     self.agent.logger.debug('executeCommand()', str(line))
 
     def add_know_host(self, hostname, ip):
         self.agent.logger.info('addKnowHost()', ' OS Plugin add to hosts file')

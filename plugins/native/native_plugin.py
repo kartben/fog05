@@ -89,7 +89,10 @@ class Native(RuntimePlugin):
             #entity.source = os.path.join(dest,entity.command)
 
             if self.operating_system == 'linux':
-                unzip_cmd = str("unzip %s -d %s" % (zip_file, dest))
+                if zip_name.endswith('.tar.gz'):
+                    unzip_cmd = 'tar -zxvf {} -C {}'.format(zip_file, dest)
+                else:
+                    unzip_cmd = str("unzip %s -d %s" % (zip_file, dest))
             elif self.operating_system == 'windows':
                 unzip_cmd = str('Expand-Archive -Path %s -DestinationPath %s' % (zip_file, dest))
             else:
@@ -99,7 +102,7 @@ class Native(RuntimePlugin):
             self.agent.get_os_plugin().download_file(entity.source_url,
                                                      os.path.join(self.BASE_DIR, self.STORE_DIR,entity_uuid, zip_name))
             # self.agent.getOSPlugin().executeCommand(wget_cmd, True)
-            self.agent.get_os_plugin().execute_command(unzip_cmd, True)
+            self.agent.get_os_plugin().execute_command(unzip_cmd, blocking=True, external=True )
             entity.source = dest
         else:
             entity.source = None

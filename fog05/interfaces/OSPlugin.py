@@ -14,7 +14,7 @@ class OSPlugin(Plugin):
 
     def get_base_path(self):
         raise NotImplemented
-    def execute_command(self, command, blocking):
+    def execute_command(self, command, blocking, external):
 
         '''
         Execute a command to cli of underlying os, IDK should return bool or the command output?
