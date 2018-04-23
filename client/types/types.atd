@@ -17,9 +17,10 @@ type constraints_type = {
   ?i_o <json name="i/o"> : constraint_type list option;
   ?networks : constraint_type list option;
   ?accelerators : constraint_type list option;
-  ?arch_constraint <json name="arch"> : string option;
   ?os_constraint <json name="os">: string option;
   ?position : position_constraint_type option;
+  ?cpu_constraint : cpu_constraint_type option;
+  ?running_time_constraint : running_time_constraints_type option;
 }
 
 type constraint_type = {
@@ -31,7 +32,17 @@ type position_constraint_type = {
   lat : string;
   lon : string;
   radius : int;
+}
 
+type cpu_constraint_type = {
+  ?arch_constraint <json name="arch"> : string option;
+  min_cpu_freq : float;
+  min_cpu_cores : int;
+}
+
+type running_time_constraints_type = {
+  min_time_minutes : int;
+  max_time_minutes : int;
 }
 
 (* Entity Manifest *)
@@ -104,6 +115,7 @@ type node_info = {
   accelerator : accelerator_spec_type list;
   network : network_spec_type list;
   ?position : pos_spec_type option;
+  ?volatility : volatility_spec_type option;
 }
 
 
@@ -130,6 +142,11 @@ type io_spec_type = {
   io_type : string;
   io_file : string;
   available : bool;
+}
+
+type volatility_spec_type = {
+  avg_avilability_minutes : int;
+  quartiles_availavility_minutes : int list;
 }
 
 type accelerator_spec_type = {
@@ -250,7 +267,7 @@ type vm_atomic_entity = {
   name : string;
   uuid : string;
   ?flavor_id : string option;
-  ?cpu : int option;
+  ?vcpus : int option;
   ?memory : int option;
   ?disk_size : int option;
   base_image : string;
