@@ -24,8 +24,12 @@ You should have [Cyclone DDS](https://github.com/atolab/cdds) installed, [Python
 config dependencies:
 
 - user should be able to use sudo without password asking (`echo "username  ALL=(ALL) NOPASSWD: ALL"  >> /etc/sudoers`)
+- user should be able to create files and directories under /opt/
 
 ## Installation
+
+You can install from source:
+
 
 ```bash
 
@@ -34,6 +38,10 @@ config dependencies:
     $ make install
 
 ```
+
+
+You can download from [here](https://drive.google.com/open?id=1gfLtGMm76Z5SirOQHAjovz75DrkAqmEH)
+the compressed file that contains the deb packages for your architecture (x86_64 or ARM)
 
 
 
