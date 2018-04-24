@@ -227,7 +227,7 @@ type atomic_entity_connection_point = {
   ?intf_name : string option;
   ?br_name : string option;
   ?intf_type <json name="type"> : string option;
-  ?is_sap : bool;
+  ?is_sap : bool option;
   virtual_link: vl_atomic_entity option;
   network_uuid : string option;
 }
