@@ -541,7 +541,7 @@ class KVMLibvirt(RuntimePlugin):
             entity_uuid = entity_uuid.get('entity_uuid')
         self.agent.logger.info('migrate_entity()', ' KVM Plugin - Migrate a VM uuid {}'.format(entity_uuid))
         entity = self.current_entities.get(entity_uuid, None)
-        if entity is None:
+        if entity is None or entity.get_instance(instance_uuid) is None:
 
             '''
             How migration works:
@@ -801,9 +801,12 @@ class KVMLibvirt(RuntimePlugin):
             else:
                 kvm_uuid = search[0].get('uuid')
 
-            self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - sending flavor to destination')
-            uri_flavor = '{}/{}/runtime/{}/flavor/{}'.format(self.agent.droot, destination_node_uuid, kvm_uuid, flavor_info.get('uuid'))
-            self.agent.dstore.put(uri_flavor, json.dumps(flavor_info))
+            self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - check if flavor is present on destination')
+            uri_flavor = '{}/{}/runtime/{}/flavor/{}'.format(self.agent.aroot, destination_node_uuid, kvm_uuid, flavor_info.get('uuid'))
+            if self.agent.astore.get(uri_flavor) is None:
+                self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - sending flavor to destination')
+                uri_flavor = '{}/{}/runtime/{}/flavor/{}'.format(self.agent.droot, destination_node_uuid, kvm_uuid, flavor_info.get('uuid'))
+                self.agent.dstore.put(uri_flavor, json.dumps(flavor_info))
             # wait to be defined flavor
             # self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - waiting flavor in destination')
             # while True:
@@ -815,9 +818,13 @@ class KVMLibvirt(RuntimePlugin):
             #         self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - Flavor in destination!')
             #         break
 
-            self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - sending image to destination')
-            uri_img = '{}/{}/runtime/{}/image/{}'.format(self.agent.droot, destination_node_uuid, kvm_uuid, img_info.get('uuid'))
-            self.agent.dstore.put(uri_img, json.dumps(img_info))
+            self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - check if image is present on destination')
+            uri_img = '{}/{}/runtime/{}/image/{}'.format(self.agent.aroot, destination_node_uuid, kvm_uuid, img_info.get('uuid'))
+            if self.agent.astore.get(uri_img) is None:
+                self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - sending image to destination')
+                uri_img = '{}/{}/runtime/{}/image/{}'.format(self.agent.droot, destination_node_uuid, kvm_uuid, img_info.get('uuid'))
+                self.agent.dstore.put(uri_img, json.dumps(img_info))
+
             # wait to be defined image
             # self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - Waiting image in destination')
             # while True:
@@ -836,31 +843,35 @@ class KVMLibvirt(RuntimePlugin):
             # colorama.init()
             # print(colorama.Fore.RED + '>>>>>> Registered observer for {} <<<<<<< '.format(uri) + colorama.Style.RESET_ALL)
 
-            self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - sending entity to destination')
-            uri_entity = '{}/{}/runtime/{}/entity/{}'.format(self.agent.droot, destination_node_uuid, kvm_uuid, entity_uuid)
-            self.agent.dstore.put(uri_entity, json.dumps(entity_info))
-
-            self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - Waiting entity in destination')
-            while True:
-                uri_entity = '{}/{}/runtime/{}/entity/{}'.format(self.agent.aroot, destination_node_uuid, kvm_uuid, entity_uuid)
-                jdata = self.agent.astore.get(uri_entity)
-                # print('{}'.format(jdata))
-                if jdata is not None:
-                    self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - Entity in destination!')
-                    entity_info = json.loads(jdata)
-                    if entity_info is not None and entity_info.get('status') == 'defined':
-                        break
+            self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - check if image is present on destination')
+            uri_entity = '{}/{}/runtime/{}/entity/{}'.format(self.agent.aroot, destination_node_uuid, kvm_uuid, entity_uuid)
+            if self.agent.astore.get(uri_entity) is None:
+                self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - sending entity to destination')
+                uri_entity = '{}/{}/runtime/{}/entity/{}'.format(self.agent.droot, destination_node_uuid, kvm_uuid, entity_uuid)
+                self.agent.dstore.put(uri_entity, json.dumps(entity_info))
+                self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - Waiting entity in destination')
+                while True:
+                    uri_entity = '{}/{}/runtime/{}/entity/{}'.format(self.agent.aroot, destination_node_uuid, kvm_uuid, entity_uuid)
+                    jdata = self.agent.astore.get(uri_entity)
+                    # print('{}'.format(jdata))
+                    if jdata is not None:
+                        self.agent.logger.info('before_migrate_entity_actions()', 'KVM Plugin - Entity in destination!')
+                        entity_info = json.loads(jdata)
+                        if entity_info is not None and entity_info.get('status') == 'defined':
+                            break
 
 
             # waiting for destination node to be ready
+            self.agent.logger.info('before_migrate_entity_actions()', ' KVM Plugin - Before Migration Source: Waiting destination to be ready')
             while True:
-                self.agent.logger.info('before_migrate_entity_actions()', ' KVM Plugin - Before Migration Source: Waiting destination to be ready')
+                #self.agent.logger.info('before_migrate_entity_actions()', ' KVM Plugin - Before Migration Source: Waiting destination to be ready')
                 uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.agent.aroot, destination_node_uuid, kvm_uuid, entity_uuid, instance_uuid)
                 vm_info = self.agent.astore.get(uri)
                 if vm_info is not None:
                     vm_info = json.loads(vm_info)
                     if vm_info is not None and vm_info.get("status") == "landing":
                             break
+            self.agent.logger.info('before_migrate_entity_actions()', ' KVM Plugin - Before Migration Source: Destination is ready!')
 
             instance.state = State.TAKING_OFF
             instance_info.update({'status': 'taking_off'})
