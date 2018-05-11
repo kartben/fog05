@@ -3,7 +3,8 @@ from flask import Flask, Response, request
 from dstore import Store
 import logging
 import json
-
+import random
+import time
 
 class FOSStore(object):
 
@@ -25,8 +26,12 @@ class FOSStore(object):
         self.droot = droot  # 'dfos://{}'
         self.dhome = str('{}/{}'.format(droot, home))  # str('dfos://{}/{}' % self.uuid)
 
-        self.actual = Store('a{}'.format(home), self.aroot, self.ahome, 1024)
-        self.desired = Store('d{}'.format(home), self.droot, self.dhome, 1024)
+
+
+        id = random.randint(int(time.time()-1000),int(time.time()))
+
+        self.actual = Store('a-{}-{}'.format(id, home), self.aroot, self.ahome, 1024)
+        self.desired = Store('d-{}-{}'.format(id, home), self.droot, self.dhome, 1024)
 
     def close(self):
         '''
