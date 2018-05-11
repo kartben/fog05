@@ -223,6 +223,7 @@ class FOSCli(object):
             #cmd_splitted = 'f05api'.split()
             p = psutil.Popen(cmd_splitted, stdout=f_out, stderr=f_err)
             f.write(str(p.pid))
+            pid = p.pid
             f.close()
             flag = True
         else:
