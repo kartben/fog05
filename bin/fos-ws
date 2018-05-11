@@ -159,9 +159,11 @@ class WSStore(object):
     @asyncio.coroutine
     def create(self):
         cmd = 'create {} {} {} 1024'.format(self.sid, self.root, self.home)
-        ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
+        ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host, self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
+        yield from ws.close()
+
         response = response.split(' ')
         if response[0] == 'OK':
             return True
@@ -177,6 +179,7 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
+        yield from ws.close()
         response = response.split(' ')
 
         if response[0] == 'OK':
@@ -195,6 +198,7 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
+        yield from ws.close()
         response = response.split(' ')
 
         if response[0] == 'OK':
@@ -212,7 +216,7 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
-
+        yield from ws.close()
         infos = response.split(uri)[-1]
         if infos in ['', ' ']:
             return None
@@ -229,6 +233,7 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
+        yield from ws.close()
         infos = response.split(uri)[-1].replace(' ', '')
         if infos is not None and infos != '':
             nodes_list = infos.split('|')
@@ -250,6 +255,7 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host, self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
+        yield from ws.close()
         infos = response.split(uri)[-1].replace(' ', '')
         if infos is not None and infos != '':
             nodes_list = infos.split('|')
@@ -270,6 +276,7 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host, self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
+        yield from ws.close()
         response = response.split(' ')
         if response[0] == 'OK':
             return True
@@ -291,11 +298,8 @@ class FOSStore(object):
 
         self.auth = 'a1b2c3d4'
 
-        self.actual = RESTStore(aroot, host, port)
-        self.desired = RESTStore(droot, host, port)
-
-        # self.actual = WSStore('a{}'.format(home), self.aroot, self.ahome, host, self.auth)
-        # self.desired = WSStore('d{}'.format(home), self.droot, self.dhome, host, self.auth)
+        self.actual = WSStore('a{}'.format(home), self.aroot, self.ahome, host, self.auth)
+        self.desired = WSStore('d{}'.format(home), self.droot, self.dhome, host, self.auth)
 
     def close(self):
         pass
@@ -328,8 +332,8 @@ class FOSCli(object):
             f = open(self.server_file, 'w')
             f_err = open(self.server_file_err, 'w')
             f_out = open(self.server_file_out, 'w')
-            # cmd_splitted = 'f05ws -p 9876'.split()
-            cmd_splitted = 'f05api'.split()
+            cmd_splitted = 'f05ws -p 9876'.split()
+            #cmd_splitted = 'f05api'.split()
             p = psutil.Popen(cmd_splitted, stdout=f_out, stderr=f_err)
             f.write(str(p.pid))
             f.close()
@@ -342,8 +346,8 @@ class FOSCli(object):
                 f = open(self.server_file, 'w')
                 f_err = open(self.server_file_err,'w')
                 f_out = open(self.server_file_out, 'w')
-                #cmd_splitted = 'f05ws -p 9876'.split()
-                cmd_splitted = 'f05api'.split()
+                cmd_splitted = 'f05ws -p 9876'.split()
+                #cmd_splitted = 'f05api'.split()
                 p = psutil.Popen(cmd_splitted, stdout=f_out,stderr=f_err)
                 f.write(str(p.pid))
                 f.close()
@@ -352,10 +356,10 @@ class FOSCli(object):
         self.store = FOSStore(self.aroot, self.droot, self.uuid, self.host)
         if flag:
             time.sleep(3)
-            # asyncio.get_event_loop().run_until_complete(self.store.desired.create())
-            # time.sleep(0.01)
-            # asyncio.get_event_loop().run_until_complete(self.store.actual.create())
-            # time.sleep(0.01)
+            asyncio.get_event_loop().run_until_complete(self.store.desired.create())
+            time.sleep(0.01)
+            asyncio.get_event_loop().run_until_complete(self.store.actual.create())
+            time.sleep(0.01)
         pass
 
     def __read_file(self, file_path):
