@@ -888,6 +888,36 @@ class WebAPI(object):
         def search(self, search_dict, node_uuid=None):
             pass
 
+        def list(self, node_uuid=None):
+            '''
+
+            List all network element available in the system/teneant or in a specified node
+
+            :param node_uuid: optional node uuid
+            :return: dictionary {node uuid: network element list}
+            '''
+
+            if node_uuid is not None:
+                f_list = []
+                uri = '{}/{}/runtime/*/flavor/'.format(self.store.aroot, node_uuid)
+                response = self.store.actual.resolveAll(uri)
+                for i in response:
+                    f_list.append(json.loads(i[1]))
+                return {node_uuid: f_list}
+
+            flavs = {}
+            uri = '{}/*/runtime/*/flavor/'.format(self.store.aroot)
+            response = self.store.actual.resolveAll(uri)
+            for i in response:
+                id = i[0].split('/')[2]
+                net = json.loads(i[1])
+                flavs_list = flavs.get(id, None)
+                if flavs_list is None:
+                    flavs_list = []
+                flavs_list.append(net)
+                flavs.update({id: flavs_list})
+            return flavs
+
     '''
     Methods
     

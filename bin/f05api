@@ -46,8 +46,9 @@ def index():
     return json.dumps({'fog05 REST API': {'version': 0.1}})
 
 
-@app.route('/get/<path:uri>', methods=['GET'])
-def get(uri):
+@app.route('/get/', methods=['GET'])
+def get():
+    uri = request.form.get('uri')
     v = None
 
     print('GET -> {}'.format(uri))
@@ -59,45 +60,52 @@ def get(uri):
             v = store.desired.resolveAll(uri)
     else:
         if uri.startswith('a'):
-            v = store.actual.get(uri)
+            v = store.actual.resolve(uri)
         elif uri.startswith('d'):
-            v = store.desired.get(uri)
+            v = store.desired.resolve(uri)
 
-    if v is not None or len(v) == 0:
-        return json.dumps(v)
-    else:
+    print('GET -> {}'.format(v))
+    if v is None:
         return ''
+    if len(v) == 0:
+        return ''
+    return json.dumps(v)
 
 
 
-@app.route('/put/<path:uri>', methods=['PUT'])
-def put(uri):
+@app.route('/put/', methods=['PUT'])
+def put():
+    uri = request.form.get('uri')
     value = request.form.get('value')
     print('PUT -> {} -> {}'.format(uri, value))
 
     if uri.startswith('a'):
-        return json.dumps(store.actual.put(uri, value))
+        return json.dumps({'res': store.actual.put(uri, value)})
     elif uri.startswith('d'):
-        return store.desired.put(uri, value)
+        return json.dumps({'res': store.desired.put(uri, value)})
 
 
 #@app.route('/<path:uri>', defaults={'value': None} ,methods=['PATCH'])
-@app.route('/dput/<path:uri>/', methods=['PATCH'])
-def dput(uri):
-
+@app.route('/dput/', methods=['PATCH'])
+def dput():
+    uri = request.form.get('uri')
     value = request.form.get('value')
-
+    print('DPUT -> {} -> {}'.format(uri, value))
     if uri.startswith('a'):
-        return json.dumps(store.actual.dput(uri, value))
+        return json.dumps({'res': store.actual.dput(uri, value)})
     elif uri.startswith('d'):
-        return json.dumps(store.desired.dput(uri, value))
+        return json.dumps({'res': store.desired.dput(uri, value)})
 
-@app.route('/remove/<path:uri>', methods=['DELETE'])
-def remove(uri):
+@app.route('/remove/', methods=['DELETE'])
+def remove():
+    uri = request.form.get('uri')
+    print('REMOVE -> {}'.format(uri))
     if uri.startswith('a'):
-        return json.dumps(store.actual.remove(uri))
+        store.actual.remove(uri)
+        return json.dumps({'res': True})
     elif uri.startswith('d'):
-        return json.dumps(store.desired.remove(uri))
+        store.desired.remove(uri)
+        return json.dumps({'res': True})
 
 
 if __name__ == '__main__':
