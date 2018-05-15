@@ -25,6 +25,7 @@ package dependencies:
 - qemu-img
 - mkisofs
 - wget
+- libguestfs-tools
 
 ---
 

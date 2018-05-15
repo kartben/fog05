@@ -4,9 +4,9 @@ WD := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))));
 
 all:
 
-	cd ./tmp; git clone git@github.com:atolab/python-cdds.git; cd python-cdds; ./configure; sudo python3 setup.py install --record cdds_files.txt;
+	cd ./tmp; git clone https://github.com/atolab/python-cdds; cd python-cdds; ./configure; sudo python3 setup.py install --record cdds_files.txt;
 
-	cd ./tmp; git clone git@github.com:atolab/python-dstore.git; cd python-dstore; sudo python3 setup.py install --record dstore_files.txt;
+	cd ./tmp; git clone https://github.com/atolab/python-dstore; cd python-dstore; sudo python3 setup.py install --record dstore_files.txt;
 
 	pip3 install python-daemon psutil netifaces jinja2
 

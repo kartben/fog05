@@ -307,7 +307,7 @@ class KVMLibvirt(RuntimePlugin):
                 # As in the first example, but the output format will be qcow2 instead of a raw  disk:
                 #
                 # qemu-img create -f qcow2 -o preallocation=metadata newdisk.qcow2 15G
-                # virt-resize - -expand /dev/sda2 olddisk newdisk.qcow2
+                # virt-resize --expand /dev/sda2 olddisk newdisk.qcow2
 
                 dd_cmd = 'dd if={} of={}'.format(img.get('path'), instance.disk)
 
