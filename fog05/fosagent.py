@@ -87,7 +87,7 @@ class FosAgent(Agent):
             exit(-1)
         except Exception as e:
             self.logger.error('__init__()', "Something trouble happen {} ".format(e))
-            traceback.print_stack()
+            traceback.print_exc()
             exit(-1)
 
 
