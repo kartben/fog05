@@ -342,50 +342,50 @@ class Linux(OSPlugin):
             self.agent.logger.warning('__get_nw_devices()', 'Default gw not found!!')
         for k in intfs:
             intf_info = psutil.net_if_addrs().get(k)
+            if intf_info is not None:
+                ipv4_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET]
+                ipv6_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET6]
+                l2_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_PACKET]
 
-            ipv4_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET]
-            ipv6_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_INET6]
-            l2_info = [x for x in intf_info if x[0] == socket.AddressFamily.AF_PACKET]
+                if len(ipv4_info) > 0:
+                    ipv4_info = ipv4_info[0]
+                    ipv4 = ipv4_info[1]
+                    ipv4mask = ipv4_info[2]
+                    search_gw = [x[0] for x in gws if x[1] == k]
+                    if len(search_gw) > 0:
+                        ipv4gateway = search_gw[0]
+                    else:
+                        ipv4gateway = ''
 
-            if len(ipv4_info) > 0:
-                ipv4_info = ipv4_info[0]
-                ipv4 = ipv4_info[1]
-                ipv4mask = ipv4_info[2]
-                search_gw = [x[0] for x in gws if x[1] == k]
-                if len(search_gw) > 0:
-                    ipv4gateway = search_gw[0]
                 else:
+                    ipv4 = ''
                     ipv4gateway = ''
+                    ipv4mask = ''
 
-            else:
-                ipv4 = ''
-                ipv4gateway = ''
-                ipv4mask = ''
+                if len(ipv6_info) > 0:
+                    ipv6_info = ipv6_info[0]
+                    ipv6 = ipv6_info[1]
+                    ipv6mask = ipv6_info[2]
+                else:
+                    ipv6 = ''
+                    ipv6mask = ''
 
-            if len(ipv6_info) > 0:
-                ipv6_info = ipv6_info[0]
-                ipv6 = ipv6_info[1]
-                ipv6mask = ipv6_info[2]
-            else:
-                ipv6 = ''
-                ipv6mask = ''
+                if len(l2_info) > 0:
+                    l2_info = l2_info[0]
+                    mac = l2_info[1]
+                else:
+                    mac = ''
 
-            if len(l2_info) > 0:
-                l2_info = l2_info[0]
-                mac = l2_info[1]
-            else:
-                mac = ''
+                speed = psutil.net_if_stats().get(k)[2]
+                inft_conf = {'ipv4_address': ipv4, 'ipv4_netmask': ipv4mask, "ipv4_gateway": ipv4gateway, "ipv6_address":
+                    ipv6, 'ipv6_netmask': ipv6mask}
 
-            speed = psutil.net_if_stats().get(k)[2]
-            inft_conf = {'ipv4_address': ipv4, 'ipv4_netmask': ipv4mask, "ipv4_gateway": ipv4gateway, "ipv6_address":
-                ipv6, 'ipv6_netmask': ipv6mask}
-
-            iface_info = {'intf_name': k, 'inft_configuration': inft_conf, 'intf_mac_address': mac, 'intf_speed':
-                          speed, "type": self.get_intf_type(k), 'available': True, "default_gw": False}
-            if k == default_gw:
-                iface_info.update({'available': False})
-                iface_info.update({'default_gw': True})
-            nets.append(iface_info)
+                iface_info = {'intf_name': k, 'inft_configuration': inft_conf, 'intf_mac_address': mac, 'intf_speed':
+                              speed, "type": self.get_intf_type(k), 'available': True, "default_gw": False}
+                if k == default_gw:
+                    iface_info.update({'available': False})
+                    iface_info.update({'default_gw': True})
+                nets.append(iface_info)
 
         return nets
 
