@@ -14,7 +14,6 @@ import websockets
 import uuid
 import fnmatch
 import sys
-import random
 from jsonschema import validate, ValidationError
 
 from fog05 import Schemas
@@ -31,6 +30,120 @@ if os.name == 'posix':
     import daemon as dmn
 
 
+class RESTStore(object):
+
+    def __init__(self, root, host, port):
+        self.root = root
+        self.host = host
+        self.port = port
+
+    @asyncio.coroutine
+    def create(self):
+        return True
+
+    @asyncio.coroutine
+    def get(self, uri):
+        endpoint = "http://{}:{}/get/".format(self.host, self.port)
+        resp = requests.get(endpoint, data={'uri': uri})
+        if resp.text == '':
+            return None
+        return json.loads(resp.text)
+
+    @asyncio.coroutine
+    def resolve(self, uri):
+        return self.get(uri)
+
+    @asyncio.coroutine
+    def put(self, uri, value):
+        endpoint = "http://{}:{}/put/".format(self.host, self.port)
+        resp = requests.put(endpoint, data={'value': value, 'uri': uri})
+        res = json.loads(resp.text).get('res')
+        if res < 0:
+            return False
+        return True
+
+    @asyncio.coroutine
+    def dput(self, uri, values=None):
+        if values is None:
+            uri = uri.split('#')
+            uri_values = uri[-1]
+            uri = uri[0]
+            uri_values = uri_values.split('&')
+            for tokens in uri_values:
+                v = tokens.split('=')[-1]
+                k = tokens.split('=')[0]
+                d = json.dumps(self.dot2dict(k, v))
+        else:
+            d = values
+        endpoint = "http://{}:{}/dput/".format(self.host, self.port)
+        resp = requests.patch(endpoint, data={'value': d, 'uri': uri})
+        res = json.loads(resp.text).get('res')
+        if res < 0:
+            return False
+        return True
+
+    @asyncio.coroutine
+    def getAll(self, uri):
+        return self.get(uri)
+
+    @asyncio.coroutine
+    def resolveAll(self, uri):
+        return self.get(uri)
+
+    @asyncio.coroutine
+    def remove(self, uri):
+        endpoint = "http://{}:{}/remove/".format(self.host, self.port)
+        resp = requests.delete(endpoint, data={'uri': uri})
+        res = json.loads(resp.text).get('res')
+        return res
+
+    def dot2dict(self, dot_notation, value=None):
+        ld = []
+
+        tokens = dot_notation.split('.')
+        n_tokens = len(tokens)
+        for i in range(n_tokens, 0, -1):
+            if i == n_tokens and value is not None:
+                ld.append({tokens[i - 1]: value})
+            else:
+                ld.append({tokens[i - 1]: ld[-1]})
+
+        return ld[-1]
+
+    def args2dict(self, values):
+        data = {}
+        uri_values = values.split('&')
+        for tokens in uri_values:
+            v = tokens.split('=')[-1]
+            k = tokens.split('=')[0]
+            if len(k.split('.')) < 2:
+                data.update({k: v})
+            else:
+                d = self.dot2dict(k, v)
+                data.update(d)
+        return data
+
+
+class FOSRESTStore(object):
+
+    "Helper class to interact with the Store"
+
+    def __init__(self, host, port, aroot, droot):
+        self.aroot = aroot
+        self.droot = droot
+        self.actual = RESTStore(aroot, host, port)
+        self.desired = RESTStore(droot, host, port)
+
+
+
+    def close(self):
+        '''
+        Close the store
+
+        :return: None
+        '''
+        return None
+
 
 class WSStore(object):
     def __init__(self, sid, root, home, host, auth):
@@ -46,11 +159,9 @@ class WSStore(object):
     @asyncio.coroutine
     def create(self):
         cmd = 'create {} {} {} 1024'.format(self.sid, self.root, self.home)
-        ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host, self.auth))
+        ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
-        yield from ws.close()
-
         response = response.split(' ')
         if response[0] == 'OK':
             return True
@@ -66,7 +177,6 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
-        yield from ws.close()
         response = response.split(' ')
 
         if response[0] == 'OK':
@@ -85,7 +195,6 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
-        yield from ws.close()
         response = response.split(' ')
 
         if response[0] == 'OK':
@@ -103,7 +212,7 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
-        yield from ws.close()
+
         infos = response.split(uri)[-1]
         if infos in ['', ' ']:
             return None
@@ -120,7 +229,6 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host,self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
-        yield from ws.close()
         infos = response.split(uri)[-1].replace(' ', '')
         if infos is not None and infos != '':
             nodes_list = infos.split('|')
@@ -142,7 +250,6 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host, self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
-        yield from ws.close()
         infos = response.split(uri)[-1].replace(' ', '')
         if infos is not None and infos != '':
             nodes_list = infos.split('|')
@@ -163,7 +270,6 @@ class WSStore(object):
         ws = yield from websockets.connect('ws://{}:9876/{}'.format(self.host, self.auth))
         yield from ws.send(cmd)
         response = yield from ws.recv()
-        yield from ws.close()
         response = response.split(' ')
         if response[0] == 'OK':
             return True
@@ -175,7 +281,7 @@ class WSStore(object):
 
 
 class FOSStore(object):
-    def __init__(self, aroot, droot, home, host, id):
+    def __init__(self, aroot, droot, home, host):
         port = '5000'
         self.aroot = aroot #'dfos://{}'
         self.ahome = '{}/{}'.format(aroot, home) #'dfos://{}/{}' % self.uuid)
@@ -184,9 +290,12 @@ class FOSStore(object):
         self.dhome = '{}/{}'.format(droot, home)  # 'dfos://{}/{}' % self.uuid)
 
         self.auth = 'a1b2c3d4'
-        #id = random.randint(int(time.time() - 1000), int(time.time()))
-        self.actual = WSStore('a-{}-{}'.format(id, home), self.aroot, self.ahome, host, self.auth)
-        self.desired = WSStore('d-{}-{}'.format(id, home), self.droot, self.dhome, host, self.auth)
+
+        self.actual = RESTStore(aroot, host, port)
+        self.desired = RESTStore(droot, host, port)
+
+        # self.actual = WSStore('a{}'.format(home), self.aroot, self.ahome, host, self.auth)
+        # self.desired = WSStore('d{}'.format(home), self.droot, self.dhome, host, self.auth)
 
     def close(self):
         pass
@@ -219,11 +328,10 @@ class FOSCli(object):
             f = open(self.server_file, 'w')
             f_err = open(self.server_file_err, 'w')
             f_out = open(self.server_file_out, 'w')
-            cmd_splitted = 'f05ws -p 9876'.split()
-            #cmd_splitted = 'f05api'.split()
+            # cmd_splitted = 'f05ws -p 9876'.split()
+            cmd_splitted = 'f05api'.split()
             p = psutil.Popen(cmd_splitted, stdout=f_out, stderr=f_err)
             f.write(str(p.pid))
-            pid = p.pid
             f.close()
             flag = True
         else:
@@ -234,21 +342,20 @@ class FOSCli(object):
                 f = open(self.server_file, 'w')
                 f_err = open(self.server_file_err,'w')
                 f_out = open(self.server_file_out, 'w')
-                cmd_splitted = 'f05ws -p 9876'.split()
-                #cmd_splitted = 'f05api'.split()
+                #cmd_splitted = 'f05ws -p 9876'.split()
+                cmd_splitted = 'f05api'.split()
                 p = psutil.Popen(cmd_splitted, stdout=f_out,stderr=f_err)
                 f.write(str(p.pid))
-                pid = p.pid
                 f.close()
                 flag = True
 
-        self.store = FOSStore(self.aroot, self.droot, self.uuid, self.host, pid)
+        self.store = FOSStore(self.aroot, self.droot, self.uuid, self.host)
         if flag:
             time.sleep(3)
-            asyncio.get_event_loop().run_until_complete(self.store.desired.create())
-            time.sleep(0.01)
-            asyncio.get_event_loop().run_until_complete(self.store.actual.create())
-            time.sleep(0.01)
+            # asyncio.get_event_loop().run_until_complete(self.store.desired.create())
+            # time.sleep(0.01)
+            # asyncio.get_event_loop().run_until_complete(self.store.actual.create())
+            # time.sleep(0.01)
         pass
 
     def __read_file(self, file_path):

@@ -8,7 +8,7 @@ all:
 
 	cd ./tmp; git clone https://github.com/atolab/python-dstore; cd python-dstore; sudo python3 setup.py install --record dstore_files.txt;
 
-	pip3 install python-daemon psutil netifaces jinja2
+	pip3 install python-daemon psutil netifaces jinja2 flask websockets
 
 	#cd ./client; atdgen -t types/*.atd; atdgen -j types/*.atd; atdgen -v types/*.atd; jbuilder build;  cp ./_build/default/bin/fos.exe ./fos;
 

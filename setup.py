@@ -9,7 +9,7 @@ setup(
     author='ADLINK_ATO',
     packages=['fog05', 'fog05/interfaces'],
     install_requires=['networkx', 'jsonschema', 'python-daemon','websockets','colorama', 'urllib3', 'requests', 'psutil', 'flask'],
-    scripts=['bin/fos', 'bin/fos-ws','bin/fos-get','bin/fos.bat', 'bin/fos-get.bat','bin/f05ws','bin/f05log.bat',
+    scripts=['bin/fos', 'bin/fos-http','bin/fos-get','bin/fos.bat', 'bin/fos-get.bat','bin/f05ws','bin/f05log.bat',
              'bin/f05log','bin/f05ws.bat','bin/f05wc','bin/f05wc.bat' , 'bin/f05api', 'bin/f05api.bat'],
     include_package_data=True
 )
