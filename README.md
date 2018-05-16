@@ -15,7 +15,7 @@ Inside [examples](./examples) you can find some example/demo
 
 ## Agent
 
-You should have [Cyclone DDS](https://github.com/atolab/cdds) installed, [Python Cyclone DDS API Bindings](https://github.com/atolab/python-cdds) and the [DStore API](https://github.com/atolab/python-dstore)
+You should have [Eclipse Cyclone DDS](https://github.com/eclipse/cyclonedds) installed, [Python Cyclone DDS API Bindings](https://github.com/atolab/python-cdds) and the [DStore API](https://github.com/atolab/python-dstore)
 
 
 
