@@ -16,16 +16,8 @@ import fnmatch
 import sys
 import random
 from jsonschema import validate, ValidationError
-
 from fog05 import Schemas
-
 from fog05.fosagent import FosAgent
-
-
-
-import requests
-
-from fog05 import WebAPI
 
 
 
@@ -38,8 +30,6 @@ class WSStore(object):
         self.home = home
         self.host = host
         self.auth = auth
-
-        #self.websocket = websockets.connect('ws://{}:9669'.format(host))
 
     @asyncio.coroutine
     def create(self):
@@ -196,7 +186,6 @@ class FOSCli(object):
 
     def __init__(self,host):
 
-        self.api = WebAPI('127.0.0.1', '5000')
         #self.agent = None
         self.store = None
         self.sys_id = 0
@@ -261,32 +250,30 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_all_node_plugin(self,node_uuid):
-        self.api.node.plugins(node_uuid)
-        # uri = '{}/{}/plugins'.format(self.aroot, node_uuid)
-        # response = yield from self.store.actual.get(uri)
-        # if response is not None and response != '':
-        #     return json.loads(response).get('plugins')
-        # else:
-        #     return None
+        uri = '{}/{}/plugins'.format(self.aroot, node_uuid)
+        response = yield from self.store.actual.get(uri)
+        if response is not None and response != '':
+            return json.loads(response).get('plugins')
+        else:
+            return None
 
     @asyncio.coroutine
     def __send_add_network(self, node_uuid, manifest):
-        res = self.api.network.add(manifest, node_uuid)
-        # manifest.update({'status':'add'})
-        # all_plugins = yield from self.__get_all_node_plugin(node_uuid)
-        # if all_plugins is None:
-        #     print('Error on receive plugin from node')
-        #     return
-        # nws = [x for x in all_plugins if x.get('type') == 'network']
-        # if len(nws) == 0:
-        #     print('No network plugin loaded on node, aborting')
-        #     return
-        # brctl = nws[0]  # will use the first plugin
-        #
-        # json_data = json.dumps(manifest)#.replace(' ','')
-        # uri = '{}/{}/network/{}/networks/{}'.format(self.droot, node_uuid, brctl.get('uuid'), manifest.get('uuid'))
-        #
-        # res = yield from self.store.desired.put(uri, json_data)
+        manifest.update({'status':'add'})
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
+        if all_plugins is None:
+            print('Error on receive plugin from node')
+            return
+        nws = [x for x in all_plugins if x.get('type') == 'network']
+        if len(nws) == 0:
+            print('No network plugin loaded on node, aborting')
+            return
+        brctl = nws[0]  # will use the first plugin
+
+        json_data = json.dumps(manifest)#.replace(' ','')
+        uri = '{}/{}/network/{}/networks/{}'.format(self.droot, node_uuid, brctl.get('uuid'), manifest.get('uuid'))
+
+        res = yield from self.store.desired.put(uri, json_data)
         if res:
             print("Network {} added to {}".format(manifest.get('uuid'), node_uuid))
         else:
@@ -295,23 +282,22 @@ class FOSCli(object):
     @asyncio.coroutine
     def __send_remove_network(self, node_uuid, net_id):
 
-        # all_plugins = yield from self.__get_all_node_plugin(node_uuid)
-        # if all_plugins is None:
-        #     print('Error on receive plugin from node')
-        #     return
-        # nws = [x for x in all_plugins if x.get('type') == 'network']
-        # #print('locating brctl plugin')
-        # search = [x for x in nws if 'brctl' in x.get('name')]
-        # #print(search)
-        # if len(search) == 0:
-        #     print('Plugin was not loaded')
-        #     return
-        # else:
-        #     brctl = search[0]
-        #
-        # uri = '{}/{}/network/{}/networks/{}'.format(self.droot, node_uuid, brctl.get('uuid'), net_id)
-        # res = yield from self.store.desired.remove(uri)
-        res = self.api.network.remove(net_id,node_uuid)
+        all_plugins = yield from self.__get_all_node_plugin(node_uuid)
+        if all_plugins is None:
+            print('Error on receive plugin from node')
+            return
+        nws = [x for x in all_plugins if x.get('type') == 'network']
+        #print('locating brctl plugin')
+        search = [x for x in nws if 'brctl' in x.get('name')]
+        #print(search)
+        if len(search) == 0:
+            print('Plugin was not loaded')
+            return
+        else:
+            brctl = search[0]
+
+        uri = '{}/{}/network/{}/networks/{}'.format(self.droot, node_uuid, brctl.get('uuid'), net_id)
+        res = yield from self.store.desired.remove(uri)
         if res:
             print("Network {} removed from {}".format(net_id, node_uuid))
         else:
@@ -319,14 +305,13 @@ class FOSCli(object):
 
     @asyncio.coroutine
     def __get_flavors(self):
-        return self.api.flavor.list()
-        # uri = '{}/*/runtime/*/flavor/*/'.format(self.aroot)
-        # fls = []
-        # fl_list = yield from self.store.actual.resolveAll(uri)
-        # if fl_list is not None and len(fl_list) > 0:
-        #     for f in fl_list:
-        #         fls.append(json.loads(f[1]))
-        # return fls
+        uri = '{}/*/runtime/*/flavor/*/'.format(self.aroot)
+        fls = []
+        fl_list = yield from self.store.actual.resolveAll(uri)
+        if fl_list is not None and len(fl_list) > 0:
+            for f in fl_list:
+                fls.append(json.loads(f[1]))
+        return fls
 
     @asyncio.coroutine
     def __get_flavor(self, flavor_uuid):
