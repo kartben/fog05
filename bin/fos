@@ -27,8 +27,6 @@ import requests
 
 from fog05 import WebAPI
 
-if os.name == 'posix':
-    import daemon as dmn
 
 
 
@@ -952,14 +950,15 @@ class FOSCli(object):
         if plugins:
             sys.path.append(os.path.abspath(plugins))
             if daemon:
-                if os.name == 'posix':
-                    print('Forking in backgroud')
-                    pid = '/tmp/fos.pid'
-                    print('PID file {}'.format(pid))
-                    with dmn.DaemonContext(pidfile=pid, umask=0):
-                        self.__start_node(plugins, verbose)
-                else:
-                    print("Cannot daemonize on {} at the moment".format(os.name))
+                print("Cannot daemonize on {} at the moment".format(os.name))
+                # if os.name == 'posix':
+                #     print('Forking in backgroud')
+                #     pid = '/tmp/fos.pid'
+                #     print('PID file {}'.format(pid))
+                #     with dmn.DaemonContext(pidfile=pid, umask=0):
+                #         self.__start_node(plugins, verbose)
+                # else:
+                #     print("Cannot daemonize on {} at the moment".format(os.name))
             else:
                 self.__start_node(plugins, verbose)
         else:
