@@ -320,7 +320,7 @@ class Native(RuntimePlugin):
                         f_path = os.path.join(f_path,f_name)
                         self.agent.get_os_plugin().execute_command('chmod +x {}'.format(f_path))
 
-                        self.agent.logger.info('runEntity()', 'Command is {}'.format(cmd))
+                    self.agent.logger.info('runEntity()', 'Command is {}'.format(cmd))
 
                     process = self.__execute_command(cmd, instance.outfile)
                     instance.on_start(process.pid, process)
