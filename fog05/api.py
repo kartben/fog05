@@ -71,9 +71,9 @@ class API(object):
 
         for n in nodes:
             u = n[0]
-            uri = "{}/{}/entity_data/{}".format(self.a_root, u, manifest.get('uuid'))
+            uri = "{}/{}/onboard/{}".format(self.d_root, u, manifest.get('uuid'))
             value = json.dumps(manifest)
-            self.store.actual.put(uri, value)
+            self.store.desired.put(uri, value)
 
         instances_uuids = {}
         manifest.update({'status': 'define'})
@@ -101,25 +101,37 @@ class API(object):
             return {manifest.get('uuid'): instances_uuids}
 
     def remove(self, entity_uuid):
-        uri = "{}/*/entity_data/{}".format(self.a_root, entity_uuid)
-        data = self.store.actual.resolveAll(uri)
-        entities = self.entity.list() # {node uuid: {entity uuid: [instance list]} list}
-        if len(data)>0:
-            data = json.loads(data[0][1])
-            for c in data.get('components'):
-                eid = c.get('uuid')
-                for nid in entities:
-                    if eid in entities.get(nid):
-                        instances = entities.get(nid).get(eid)
-                        for inst in instances:
-                            self.entity.stop(eid, nid, inst, wait=True)
-                            self.entity.clean(eid, nid, inst, wait=True)
-                        self.entity.undefine(eid, nid, wait=True)
-            nodes = self.node.list()
-            for n in nodes:
-                u = n[0]
-                uri = "{}/{}/entity_data/{}".format(self.a_root, u, entity_uuid)
-                self.store.actual.remove(uri)
+        nodes = self.node.list()
+        if len(nodes)>0:
+            u = nodes[0][0]
+            uri = "{}/{}/onboard/{}".format(self.a_root, u, entity_uuid)
+            data = self.store.actual.resolve(uri)
+            entities = self.entity.list() # {node uuid: {entity uuid: [instance list]} list}
+            print('entities {}'.format(entities))
+            if len(data)>0:
+                data = json.loads(data[0][1])
+                print('Data {}'.format(data))
+                for c in data.get('components'):
+                    print('C {}'.format(c))
+                    eid = c.get('uuid')
+                    print('eid {}'.format(eid))
+                    for nid in entities:
+                        print('entities.get(nid) {}'.format(entities.get(nid)))
+                        if eid in entities.get(nid):
+                            instances = entities.get(nid).get(eid)
+                            print('instances {}'.format(instances))
+                            for inst in instances:
+                                print('I should stop {} -> {} -> {}'.format(inst,eid, nid))
+                                self.entity.stop(eid, nid, inst, wait=True)
+                                print('I should clean {} -> {} -> {}'.format(inst, eid, nid))
+                                self.entity.clean(eid, nid, inst, wait=True)
+                            print('I should undefine {} -> {}'.format(eid, nid))
+                            self.entity.undefine(eid, nid, wait=True)
+                for n in nodes:
+                    u = n[0]
+                    uri = "{}/{}/onboard/{}".format(self.d_root, u, entity_uuid)
+                    print('I should remove {}'.format(uri))
+                    self.store.desired.remove(uri)
 
 
 
