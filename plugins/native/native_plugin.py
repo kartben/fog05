@@ -319,6 +319,15 @@ class Native(RuntimePlugin):
                         cmd = '{} {}'.format('{}_{}.sh'.format(os.path.join(self.BASE_DIR,entity_uuid),instance_uuid),  ''.join(entity.args))
                         f_path = os.path.join(f_path,f_name)
                         self.agent.get_os_plugin().execute_command('chmod +x {}'.format(f_path))
+                    else:
+                        pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name, instance_uuid)
+                        template_xml = self.agent.get_os_plugin().read_file(os.path.join(self.DIR, 'templates', 'run_native_unix2.sh'))
+                        na_script = Environment().from_string(template_xml)
+                        na_script = na_script.render(command=cmd, outfile=pid_file)
+                        self.agent.get_os_plugin().store_file(run_script, native_dir, str("%s_run.sh" % instance_uuid))
+                        chmod_cmd = str("chmod +x %s" % os.path.join(native_dir, str("%s_run.sh" % instance_uuid)))
+                        self.agent.get_os_plugin().execute_command(chmod_cmd, True)
+                        cmd = str("%s" % os.path.join(native_dir, str("%s_run.sh" % instance_uuid)))
 
                     self.agent.logger.info('runEntity()', 'Command is {}'.format(cmd))
 
