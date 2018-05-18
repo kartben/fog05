@@ -780,31 +780,28 @@ class API(object):
             '''
 
             if node_uuid is not None:
-                entity_list = []
-                uri = '{}/{}/runtime/*/entity/'.format(self.store.aroot, node_uuid)
+                entity_list = {}
+                uri = '{}/{}/runtime/*/entity/*'.format(self.store.aroot, node_uuid)
                 response = self.store.actual.resolveAll(uri)
                 for i in response:
-                    en = json.loads(i[1])
-                    en_uuid = en.get('uuid')
-                    in_list = []
-                    uri = '{}/{}/runtime/*/entity/{}/instance/'.format(self.store.aroot, node_uuid,en_uuid)
-                    instances = self.store.actual.resolveAll(uri)
-                    for instance in instances:
-                        instance = json.loads(instance[1])
-                        i_uuid = instance.get('uuid')
-                        in_list.append(i_uuid)
-                    info = {en_uuid: in_list}
-                    entity_list.append(info)
+                    rid = i[0]
+                    en_uuid = rid.split('/')[7]
+                    if en_uuid not in entity_list:
+                        entity_list.update({en_uuid:[]})
+                    if len(rid.split('/')) == 8 and en_uuid in entity_list:
+                        pass
+                    if len(rid.split('/')) == 10:
+                        entity_list.get(en_uuid).append(rid.split('/')[9])
 
                 return {node_uuid: entity_list}
 
             entities = {}
-            uri = '{}/*/runtime/*/entity/'.format(self.store.aroot)
+            uri = '{}/*/runtime/*/entity/*'.format(self.store.aroot)
             response = self.store.actual.resolveAll(uri)
             for i in response:
-                node_id = i[0].split('/')[4]
+                node_id = i[0].split('/')[3]
                 elist = self.list(node_id)
-                entities.update({node_id: elist})
+                entities.update({node_id: elist.get(node_id)})
             return entities
 
 
