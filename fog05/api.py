@@ -63,6 +63,35 @@ class API(object):
         self.image = self.Image(self.store)
         self.flavor = self.Flavor(self.store)
 
+    def add(self, manifest):
+        nodes = self.node.list()
+        instances_uuids = {}
+        manifest.update({'status': 'define'})
+        try:
+            validate(manifest, Schemas.entity_schema)
+        except ValidationError as ve:
+            print(ve.message)
+            exit(-1)
+        nws = manifest.get('networks')
+        for n in nws:
+            for node in nodes:
+                self.network.add(manifest=n, node_uuid=node[0])
+        c_list = self.resolve_dependencies(manifest.get('components'))
+        for c in c_list:
+            search = [x for x in manifest.get("components") if x.get('name') == c]
+            if len(search) > 0:
+                component = search[0]
+                mf = component.get('manifest')
+                self.entity.define(manifest=mf, node_uuid=component.get('node'), wait=True)
+                c_i_uuid = '{}'.format(uuid.uuid4())
+                self.entity.configure(mf.get('uuid'), component.get('node'), instance_uuid=c_i_uuid, wait=True)
+                self.entity.run(mf.get('uuid'), component.get('node'), instance_uuid=c_i_uuid, wait=True)
+                instances_uuids.update({mf.get('uuid'): c_i_uuid})
+
+            return {manifest.get('uuid'): instances_uuids}
+
+
+
     def resolve_dependencies(self, components):
         '''
         The return list contains component's name in the order that can be used to deploy
@@ -469,48 +498,48 @@ class API(object):
                     if entity_info is not None and entity_info.get('status') == state:
                         return
 
-        def add(self, manifest, node_uuid=None, wait=False):
-            # manifest.update({'status': 'define'})
-            # try:
-            #     nodes = self
-            #     validate(manifest, Schemas.entity_schema)
-            #     nws = manifest.get('networks')
-            #     for n in nws:
-            #         for node in nodes:
-            #             yield from self.__send_add_network(node, n)
-            #
-            #
-            #
-            #
-            #
-            #
-            #
-            #
-            # except ValidationError as ve:
-            #     print(ve.message)
-
-            '''
-            define, configure and run an entity all in one shot
-            :param manifest: manifest rapresenting the entity
-            :param node_uuid: optional uuid of the node in which the entity will be added
-            :param wait: flag for wait that everything is started before returing
-            :return: the instance uuid
-            '''
-            pass
-
-
-
-        def remove(self, entity_uuid, node_uuid=None, wait=False):
-            '''
-
-            stop, clean and undefine entity all in one shot
-
-            :param entity_uuid:
-            :param node_uuid:
-            :param wait:
-            :return: the instance uuid
-            '''
-            pass
+        # def add(self, manifest, node_uuid=None, wait=False):
+        #     # manifest.update({'status': 'define'})
+        #     # try:
+        #     #     nodes = self
+        #     #     validate(manifest, Schemas.entity_schema)
+        #     #     nws = manifest.get('networks')
+        #     #     for n in nws:
+        #     #         for node in nodes:
+        #     #             yield from self.__send_add_network(node, n)
+        #     #
+        #     #
+        #     #
+        #     #
+        #     #
+        #     #
+        #     #
+        #     #
+        #     # except ValidationError as ve:
+        #     #     print(ve.message)
+        #
+        #     '''
+        #     define, configure and run an entity all in one shot
+        #     :param manifest: manifest rapresenting the entity
+        #     :param node_uuid: optional uuid of the node in which the entity will be added
+        #     :param wait: flag for wait that everything is started before returing
+        #     :return: the instance uuid
+        #     '''
+        #     pass
+        #
+        #
+        #
+        # def remove(self, entity_uuid, node_uuid=None, wait=False):
+        #     '''
+        #
+        #     stop, clean and undefine entity all in one shot
+        #
+        #     :param entity_uuid:
+        #     :param node_uuid:
+        #     :param wait:
+        #     :return: the instance uuid
+        #     '''
+        #     pass
 
         def define(self, manifest, node_uuid, wait=False):
             '''
