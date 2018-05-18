@@ -271,7 +271,7 @@ class Native(RuntimePlugin):
             else:
 
                 if instance.source is None:
-                    cmd = str("%s %s" % (entity.command, ' '.join(str(x) for x in entity.args)))
+                    cmd = "{} {}".format(entity.command, ' '.join(str(x) for x in entity.args))
                 else:
 
                     native_dir = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name)
@@ -319,6 +319,8 @@ class Native(RuntimePlugin):
                         cmd = '{} {}'.format('{}_{}.sh'.format(os.path.join(self.BASE_DIR,entity_uuid),instance_uuid),  ''.join(entity.args))
                         f_path = os.path.join(f_path,f_name)
                         self.agent.get_os_plugin().execute_command('chmod +x {}'.format(f_path))
+
+                        self.agent.logger.info('runEntity()', 'Command is {}'.format(cmd))
 
                     process = self.__execute_command(cmd, instance.outfile)
                     instance.on_start(process.pid, process)
