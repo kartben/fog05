@@ -418,7 +418,8 @@ class Native(RuntimePlugin):
 
     def __execute_command(self, command, out_file):
         f = open(out_file, 'w')
-        cmd_splitted = command.split()
+        cmd = 'sh -c {}'.format(command)
+        cmd_splitted = cmd.split()
         p = psutil.Popen(cmd_splitted, stdout=f, stderr=f)
         return p
 
