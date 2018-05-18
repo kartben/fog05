@@ -62,9 +62,19 @@ class API(object):
         self.entity = self.Entity(self.store)
         self.image = self.Image(self.store)
         self.flavor = self.Flavor(self.store)
+        self.onboard = self.add
+        self.offload =  self.remove
+
 
     def add(self, manifest):
         nodes = self.node.list()
+
+        for n in nodes:
+            u = n[0]
+            uri = "{}/{}/entity_data/{}".format(self.a_root, u, manifest.get('uuid'))
+            value = json.dumps(manifest)
+            self.store.actual.put(uri, value)
+
         instances_uuids = {}
         manifest.update({'status': 'define'})
         try:
@@ -89,6 +99,28 @@ class API(object):
                 instances_uuids.update({mf.get('uuid'): c_i_uuid})
 
             return {manifest.get('uuid'): instances_uuids}
+
+    def remove(self, entity_uuid):
+        uri = "{}/*/entity_data/{}".format(self.a_root, entity_uuid)
+        data = self.store.actual.resolveAll(uri)
+        entities = self.entity.list() # {node uuid: {entity uuid: [instance list]} list}
+        if len(data)>0:
+            data = json.loads(data[0][1])
+            for c in data.get('components'):
+                eid = c.get('uuid')
+                for nid in entities:
+                    if eid in entities.get(nid):
+                        instances = entities.get(nid).get(eid)
+                        for inst in instances:
+                            self.entity.stop(eid, nid, inst, wait=True)
+                            self.entity.clean(eid, nid, inst, wait=True)
+                        self.entity.undefine(eid, nid, wait=True)
+            nodes = self.node.list()
+            for n in nodes:
+                u = n[0]
+                uri = "{}/{}/entity_data/{}".format(self.a_root, u, entity_uuid)
+                self.store.actual.remove(uri)
+
 
 
 
