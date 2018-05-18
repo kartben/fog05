@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-sh -c {{ command }} & echo $! > {{outfile}}.pid
+{{ command }} & echo $! > {{outfile}}.pid
