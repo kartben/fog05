@@ -263,7 +263,7 @@ class FosAgent(Agent):
         else:
             nuri = '{}/onboard/{}'.format(self.ahome,application_uuid)
             self.astore.put(nuri,value)
-            self.logger.info('__react_to_onboarding()', 'Received a onboard information storing to -> '.format(uri, value, v))
+            self.logger.info('__react_to_onboarding()', 'Received a onboard information storing to -> {}'.format(nuri))
             application_uuid = uri.split('/')[-1]
         # self.__application_onboarding(application_uuid, value)
 
