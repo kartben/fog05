@@ -770,6 +770,44 @@ class API(object):
         def search(self, search_dict, node_uuid=None):
             pass
 
+        def list(self, node_uuid=None):
+            '''
+
+            List all entity element available in the system/teneant or in a specified node
+
+            :param node_uuid: optional node uuid
+            :return: dictionary {node uuid: {entity uuid: instance list} list}
+            '''
+
+            if node_uuid is not None:
+                entity_list = []
+                uri = '{}/{}/runtime/*/entity/'.format(self.store.aroot, node_uuid)
+                response = self.store.actual.resolveAll(uri)
+                for i in response:
+                    en = json.loads(i[1])
+                    en_uuid = en.get('uuid')
+                    in_list = []
+                    uri = '{}/{}/runtime/*/entity/{}/instance/'.format(self.store.aroot, node_uuid,en_uuid)
+                    instances = self.store.actual.resolveAll(uri)
+                    for instance in instances:
+                        instance = json.loads(instance[1])
+                        i_uuid = instance.get('uuid')
+                        in_list.append(i_uuid)
+                    info = {en_uuid: in_list}
+                    entity_list.append(info)
+
+                return {node_uuid: info}
+
+            entities = {}
+            uri = '{}/*/runtime/*/entity/'.format(self.store.aroot)
+            response = self.store.actual.resolveAll(uri)
+            for i in response:
+                node_id = i[0].split('/')[4]
+                elist = self.list(node_id)
+                entities.update({node_id: elist})
+            return entities
+
+
     class Image(object):
         '''
 
@@ -913,11 +951,14 @@ class API(object):
         - resume
         - migrate
         - search
+        - list
     - images
         - add
         - remove 
         - search
+        - list
     - flavor
+        - list
         - add
         - remove
         - search
