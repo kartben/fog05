@@ -240,7 +240,7 @@ class API(object):
 
             manifest.update({'status':'add'})
             plugins = {"plugins": [manifest]}
-            plugins = json.dumps(plugins).replace(' ', '')
+            plugins = json.dumps(plugins)
             if node_uuid is None:
                 uri = '{}/*/plugins'.format(self.store.droot)
             else:
@@ -325,7 +325,7 @@ class API(object):
 
 
             manifest.update({'status': 'add'})
-            json_data = json.dumps(manifest).replace(' ', '')
+            json_data = json.dumps(manifest)
 
             if node_uuid is not None:
                 uri = '{}/{}/network/*/networks/{}'.format(self.store.droot, node_uuid, manifest.get('uuid'))
@@ -551,7 +551,7 @@ class API(object):
 
             entity_uuid = manifest.get('uuid')
             entity_definition = manifest
-            json_data = json.dumps(entity_definition).replace(' ', '')
+            json_data = json.dumps(entity_definition)
             uri = '{}/{}/runtime/{}/entity/{}'.format(self.store.droot, node_uuid, handler.get('uuid'), entity_uuid)
 
             res = self.store.desired.put(uri, json_data)
@@ -752,10 +752,10 @@ class API(object):
 
             uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.droot, destination_node_uuid, destination_handler.get('uuid'), entity_uuid, instance_uuid)
 
-            res = self.store.desired.put(uri, json.dumps(entity_info_dst).replace(' ', ''))
+            res = self.store.desired.put(uri, json.dumps(entity_info_dst))
             if res:
                 uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
-                res_dest = yield from self.store.desired.dput(uri, json.dumps(entity_info_src).replace(' ', ''))
+                res_dest = yield from self.store.desired.dput(uri, json.dumps(entity_info_src))
                 if res_dest:
                     if wait:
                         self.__wait_atomic_entity_instance_state_change(destination_node_uuid, destination_handler.get('uuid'), entity_uuid, instance_uuid, 'run')
@@ -792,7 +792,7 @@ class API(object):
             :return: boolean
             '''
             manifest.update({'status': 'add'})
-            json_data = json.dumps(manifest).replace(' ', '')
+            json_data = json.dumps(manifest)
             if node_uuid is None:
                 uri = '{}/*/runtime/*/image/{}'.format(self.store.droot, manifest.get('uuid'))
             else:
@@ -846,7 +846,7 @@ class API(object):
             :return: boolean
             '''
             manifest.update({'status': 'add'})
-            json_data = json.dumps(manifest).replace(' ', '')
+            json_data = json.dumps(manifest)
             if node_uuid is None:
                 uri = '{}/*/runtime/*/flavor/{}'.format(self.store.droot, manifest.get('uuid'))
             else:
