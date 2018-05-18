@@ -63,6 +63,33 @@ class API(object):
         self.image = self.Image(self.store)
         self.flavor = self.Flavor(self.store)
 
+    def resolve_dependencies(self, components):
+        '''
+        The return list contains component's name in the order that can be used to deploy
+         @TODO: should use less cycle to do this job
+        :rtype: list
+        :param components: list like [{'name': 'c1', 'need': ['c2', 'c3']}, {'name': 'c2', 'need': ['c3']}, {'name': 'c3', 'need': ['c4']}, {'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}]
+
+        no_dependable_components -> list like [[{'name': 'c4', 'need': []}, {'name': 'c5', 'need': []}], [{'name': 'c3', 'need': []}], [{'name': 'c2', 'need': []}], [{'name': 'c1', 'need': []}], []]
+        :return: list like ['c4', 'c5', 'c3', 'c2', 'c1']
+        '''
+        c = list(components)
+        no_dependable_components = []
+        for i in range(0, len(components)):
+            no_dependable_components.append([x for x in c if len(x.get('need')) == 0])
+            # print (no_dependable_components)
+            c = [x for x in c if x not in no_dependable_components[i]]
+            for y in c:
+                n = y.get('need')
+                n = [x for x in n if x not in [z.get('name') for z in no_dependable_components[i]]]
+                y.update({"need": n})
+
+        order = []
+        for i in range(0, len(no_dependable_components)):
+            n = [x.get('name') for x in no_dependable_components[i]]
+            order.extend(n)
+        return order
+
     class Manifest(object):
         '''
         This class encapsulates API for manifests
@@ -443,6 +470,25 @@ class API(object):
                         return
 
         def add(self, manifest, node_uuid=None, wait=False):
+            # manifest.update({'status': 'define'})
+            # try:
+            #     nodes = self
+            #     validate(manifest, Schemas.entity_schema)
+            #     nws = manifest.get('networks')
+            #     for n in nws:
+            #         for node in nodes:
+            #             yield from self.__send_add_network(node, n)
+            #
+            #
+            #
+            #
+            #
+            #
+            #
+            #
+            # except ValidationError as ve:
+            #     print(ve.message)
+
             '''
             define, configure and run an entity all in one shot
             :param manifest: manifest rapresenting the entity
@@ -451,6 +497,8 @@ class API(object):
             :return: the instance uuid
             '''
             pass
+
+
 
         def remove(self, entity_uuid, node_uuid=None, wait=False):
             '''
