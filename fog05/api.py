@@ -796,7 +796,7 @@ class API(object):
                     info = {en_uuid: in_list}
                     entity_list.append(info)
 
-                return {node_uuid: info}
+                return {node_uuid: entity_list}
 
             entities = {}
             uri = '{}/*/runtime/*/entity/'.format(self.store.aroot)
