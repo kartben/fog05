@@ -561,7 +561,7 @@ class FosAgent(Agent):
     def run(self):
 
 
-        uri = str('{}/onboard/*/'.format(self.dhome))
+        uri = str('{}/onboard/*'.format(self.dhome))
         self.dstore.observe(uri, self.__react_to_onboarding)
         self.logger.info('run()', 'fosAgent Observing for onboarding on: {}'.format(uri))
 
