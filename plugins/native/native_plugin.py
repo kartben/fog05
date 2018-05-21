@@ -391,7 +391,7 @@ class Native(RuntimePlugin):
                         if self.agent.get_os_plugin().check_if_pid_exists(pid):
                             self.agent.get_os_plugin().send_sig_kill(pid)
 
-                    pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name, instance_uuid)
+                    pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name, '{}.pid'.format(instance_uuid))
                     self.agent.logger.info('stopEntity()', 'Check if PID file exists {}'.format(pid_file))
                     if self.agent.get_os_plugin().file_exists(pid_file):
                         pid = int(self.agent.get_os_plugin().read_file(pid_file))
