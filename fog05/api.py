@@ -105,32 +105,31 @@ class API(object):
             u = nodes[0][0]
             uri = "{}/{}/onboard/{}".format(self.a_root, u, entity_uuid)
             data = self.store.actual.resolve(uri)
-            print('data {}'.format(data))
             entities = self.entity.list() # {node uuid: {entity uuid: [instance list]} list}
-            print('entities {}'.format(entities))
+            # print('entities {}'.format(entities))
             if data is not None and len(data) > 0:
                 data = json.loads(data)
-                print('Data {}'.format(data))
+                # print('Data {}'.format(data))
                 for c in data.get('components'):
-                    print('C {}'.format(c))
-                    eid = c.get('uuid')
-                    print('eid {}'.format(eid))
+                    # print('C {}'.format(c))
+                    eid = c.get('manifest').get('uuid')
+                    # print('eid {}'.format(eid))
                     for nid in entities:
-                        print('entities.get(nid) {}'.format(entities.get(nid)))
+                        # print('entities.get(nid) {}'.format(entities.get(nid)))
                         if eid in entities.get(nid):
                             instances = entities.get(nid).get(eid)
-                            print('instances {}'.format(instances))
+                            # print('instances {}'.format(instances))
                             for inst in instances:
-                                print('I should stop {} -> {} -> {}'.format(inst,eid, nid))
+                                # print('I should stop {} -> {} -> {}'.format(inst,eid, nid))
                                 self.entity.stop(eid, nid, inst, wait=True)
-                                print('I should clean {} -> {} -> {}'.format(inst, eid, nid))
+                                # print('I should clean {} -> {} -> {}'.format(inst, eid, nid))
                                 self.entity.clean(eid, nid, inst, wait=True)
-                            print('I should undefine {} -> {}'.format(eid, nid))
+                            # print('I should undefine {} -> {}'.format(eid, nid))
                             self.entity.undefine(eid, nid, wait=True)
                 for n in nodes:
                     u = n[0]
                     uri = "{}/{}/onboard/{}".format(self.d_root, u, entity_uuid)
-                    print('I should remove {}'.format(uri))
+                    # print('I should remove {}'.format(uri))
                     self.store.desired.remove(uri)
 
 
