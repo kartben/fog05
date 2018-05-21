@@ -248,9 +248,17 @@ class FosAgent(Agent):
 
     def __react_to_onboarding(self, uri, value, v):
         self.logger.info('__react_to_onboarding()', 'Received a onboard action on Desired Store with URI:{} Value:{} Version:{}'.format(uri, value, v))
-        value = json.loads(value)
         application_uuid = uri.split('/')[-1]
-        self.__application_onboarding(application_uuid, value)
+        if value is None and v is None:
+            self.logger.info('__react_to_onboarding()', 'This is a remove for URI: %s' % uri)
+            nuri = '{}/onboard/{}'.format(self.ahome, application_uuid)
+            self.astore.remove(nuri)
+        else:
+            nuri = '{}/onboard/{}'.format(self.ahome, application_uuid)
+            self.astore.put(nuri, value)
+            self.logger.info('__react_to_onboarding()', 'Received a onboard information storing to -> {}'.format(nuri))
+            application_uuid = uri.split('/')[-1]
+        # self.__application_onboarding(application_uuid, value)
 
     def __application_onboarding(self, application_uuid, value):
         self.logger.info('__application_onboarding()', ' Onboarding application with uuid: {}'.format(application_uuid))
