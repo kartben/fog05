@@ -86,14 +86,10 @@ class API(object):
             for node in nodes:
                 self.network.add(manifest=n, node_uuid=node[0])
         c_list = self.resolve_dependencies(manifest.get('components'))
-        print('Clist is : {}'.format(c_list))
         for c in c_list:
-            print('C is : {}'.format(c))
             search = [x for x in manifest.get("components") if x.get('name') == c]
-            print('search is : {}'.format(search))
             if len(search) > 0:
                 component = search[0]
-                print('component is : {}'.format(component))
                 mf = component.get('manifest')
                 self.entity.define(manifest=mf, node_uuid=component.get('node'), wait=True)
                 c_i_uuid = '{}'.format(uuid.uuid4())
