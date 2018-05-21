@@ -96,8 +96,8 @@ class FosAgent(Agent):
                         plugin_uuid = manifest.get('uuid')
                         conf = manifest.get('configuration', None)
                         req = manifest.get('requirements', None)
-                        if req is not None:
-                            self.pl.install_requirements(req)
+                        # if req is not None:
+                        #     self.pl.install_requirements(req)
                         load_method = self.__load_plugin_method_selection(manifest.get('type'))
                         if load_method is not None:
                             if conf is None:
