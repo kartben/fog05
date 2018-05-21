@@ -101,7 +101,7 @@ class API(object):
                 self.entity.run(mf.get('uuid'), component.get('node'), instance_uuid=c_i_uuid, wait=True)
                 instances_uuids.update({mf.get('uuid'): c_i_uuid})
 
-            return {manifest.get('uuid'): instances_uuids}
+        return {manifest.get('uuid'): instances_uuids}
 
     def remove(self, entity_uuid):
         nodes = self.node.list()
