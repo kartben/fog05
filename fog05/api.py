@@ -105,10 +105,11 @@ class API(object):
             u = nodes[0][0]
             uri = "{}/{}/onboard/{}".format(self.a_root, u, entity_uuid)
             data = self.store.actual.resolve(uri)
+            print('data {}'.format(data))
             entities = self.entity.list() # {node uuid: {entity uuid: [instance list]} list}
             print('entities {}'.format(entities))
-            if len(data)>0:
-                data = json.loads(data[0][1])
+            if data is not None and len(data) > 0:
+                data = json.loads(data)
                 print('Data {}'.format(data))
                 for c in data.get('components'):
                     print('C {}'.format(c))
