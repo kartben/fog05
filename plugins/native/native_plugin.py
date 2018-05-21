@@ -372,7 +372,7 @@ class Native(RuntimePlugin):
                 if instance.source is None:
                     #pid = int(self.agent.get_os_plugin().read_file(os.path.join(self.BASE_DIR,entity_uuid)))
                     pid = instance.pid
-
+                    self.agent.logger.info('stopEntity()', 'Instance source is none')
                     self.agent.logger.info('stopEntity()', 'Native Plugin - PID {}'.format(pid))
                     self.agent.get_os_plugin().send_sig_int(pid)
                     f_name = '{}_{}.pid'.format(entity_uuid, instance_uuid)
@@ -402,6 +402,7 @@ class Native(RuntimePlugin):
                             self.agent.get_os_plugin().send_sig_kill(pid)
 
                 else:
+                    self.agent.logger.info('stopEntity()', 'Instance source is not none')
                     pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name, '{}.pid'.format(instance_uuid))
                     pid = int(self.agent.get_os_plugin().read_file(pid_file))
                     self.agent.logger.info('stopEntity()', 'Native Plugin - PID {}'.format(pid))
