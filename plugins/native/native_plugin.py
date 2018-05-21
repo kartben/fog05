@@ -366,6 +366,9 @@ class Native(RuntimePlugin):
             else:
                 p = instance.process
                 p.terminate()
+
+                cmd = "{} {}".format(entity.command, ' '.join(str(x) for x in entity.args))
+
                 if instance.source is None:
                     #pid = int(self.agent.get_os_plugin().read_file(os.path.join(self.BASE_DIR,entity_uuid)))
                     pid = instance.pid
@@ -379,6 +382,9 @@ class Native(RuntimePlugin):
                     if self.agent.get_os_plugin().file_exists(pid_file):
                         pid = int(self.agent.get_os_plugin().read_file(pid_file))
                         self.agent.logger.info('stopEntity()', 'Native Plugin - PID {}'.format(pid))
+                        if 'sudo' in cmd:
+                            self.agent.get_os_plugin().execute_command('sudo kill -9 {}'.format(pid))
+
                         self.agent.get_os_plugin().send_sig_int(pid)
                         time.sleep(10)
                         if self.agent.get_os_plugin().check_if_pid_exists(pid):
@@ -388,6 +394,8 @@ class Native(RuntimePlugin):
                     if self.agent.get_os_plugin().file_exists(pid_file):
                         pid = int(self.agent.get_os_plugin().read_file(pid_file))
                         self.agent.logger.info('stopEntity()', 'Native Plugin - PID {}'.format(pid))
+                        if 'sudo' in cmd:
+                            self.agent.get_os_plugin().execute_command('sudo kill -9 {}'.format(pid))
                         self.agent.get_os_plugin().send_sig_int(pid)
                         time.sleep(10)
                         if self.agent.get_os_plugin().check_if_pid_exists(pid):

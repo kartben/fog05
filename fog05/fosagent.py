@@ -30,6 +30,8 @@ class FosAgent(Agent):
         else:
             self.__PLUGINDIR = plugins_path
 
+        self.__PLUGIN_AUTOLOAD = True
+
         try:
 
             self.logger.info('__init__()', 'Plugins Dir: {}'.format(self.__PLUGINDIR))
@@ -82,6 +84,34 @@ class FosAgent(Agent):
 
             self.__populate_node_information()
             self.logger.info('__init__()', '[ DONE ] Populating Actual Store with data from OS Plugin')
+
+            if self.__PLUGIN_AUTOLOAD:
+                self.logger.info('__init__()', 'Autoloading plugins....')
+                plugins = self.pl.plugins
+                for p in plugins:
+                    mfile = p.get('info').replace('__init__.py','{}_plugin.json'.format(p.get('name')))
+                    if self.__osPlugin.file_exists(mfile):
+                        manifest = json.loads(self.__osPlugin.read_file(mfile))
+                        name = manifest.get('name')
+                        plugin_uuid = manifest.get('uuid')
+                        conf = manifest.get('configuration', None)
+                        req = manifest.get('requirements', None)
+                        if req is not None:
+                            self.pl.install_requirements(req)
+                        load_method = self.__load_plugin_method_selection(manifest.get('type'))
+                        if load_method is not None:
+                            if conf is None:
+                                load_method(name, plugin_uuid)
+                            else:
+                                load_method(name, plugin_uuid, conf)
+                        else:
+                            if len(s) != 0:
+                                self.logger.warning('__react_to_plugins()', '[ WARN ] Plugins of type {} are not yet supported...'.format(v.get('type')))
+                            else:
+                                self.logger.warning('__react_to_plugins()', '[ WARN ] Plugin already loaded')
+
+
+
         except FileNotFoundError as fne:
             self.logger.error('__init__()', "File Not Found Aborting {} ".format(fne.strerror))
             exit(-1)
