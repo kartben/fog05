@@ -17,8 +17,6 @@ from fog05 import Schemas
 from fog05.DStore import *
 from fog05.fosagent import FosAgent
 
-if os.name == 'posix':
-    import daemon as dmn
 
 
 class WSStore(object):
@@ -38,6 +36,7 @@ class WSStore(object):
         yield from ws.send(cmd)
         response = yield from ws.recv()
         response = response.split(' ')
+        yield from ws.close()
         if response[0] == 'OK':
             return True
         elif response[0] == 'NOK':
@@ -53,7 +52,7 @@ class WSStore(object):
         yield from ws.send(cmd)
         response = yield from ws.recv()
         response = response.split(' ')
-
+        yield from ws.close()
         if response[0] == 'OK':
             return True
         elif response[0] == 'NOK':
@@ -71,7 +70,7 @@ class WSStore(object):
         yield from ws.send(cmd)
         response = yield from ws.recv()
         response = response.split(' ')
-
+        yield from ws.close()
         if response[0] == 'OK':
             return True
         elif response[0] == 'NOK':
@@ -89,6 +88,7 @@ class WSStore(object):
         response = yield from ws.recv()
 
         infos = response.split(uri)[-1]
+        yield from ws.close()
         if infos in ['', ' ']:
             return None
         infos = infos.replace(' ', '')
@@ -105,6 +105,7 @@ class WSStore(object):
         yield from ws.send(cmd)
         response = yield from ws.recv()
         infos = response.split(uri)[-1].replace(' ', '')
+        yield from ws.close()
         if infos is not None and infos != '':
             nodes_list = infos.split('|')
             for e in nodes_list:
@@ -126,6 +127,7 @@ class WSStore(object):
         yield from ws.send(cmd)
         response = yield from ws.recv()
         infos = response.split(uri)[-1].replace(' ', '')
+        yield from ws.close()
         if infos is not None and infos != '':
             nodes_list = infos.split('|')
             for e in nodes_list:
@@ -146,6 +148,7 @@ class WSStore(object):
         yield from ws.send(cmd)
         response = yield from ws.recv()
         response = response.split(' ')
+        yield from ws.close()
         if response[0] == 'OK':
             return True
         elif response[0] == 'NOK':
@@ -898,14 +901,15 @@ class FOSCli(object):
         if plugins:
             sys.path.append(os.path.abspath(plugins))
             if daemon:
-                if os.name == 'posix':
-                    print('Forking in backgroud')
-                    pid = '/tmp/fos.pid'
-                    print('PID file {}'.format(pid))
-                    with dmn.DaemonContext(pidfile=pid, umask=0):
-                        self.__start_node(plugins, verbose)
-                else:
-                    print("Cannot daemonize on {} at the moment".format(os.name))
+                print("Daemon is not working at the moment please start without the -d flag")
+                # if os.name == 'posix':
+                #     print('Forking in backgroud')
+                #     pid = '/tmp/fos.pid'
+                #     print('PID file {}'.format(pid))
+                #     with dmn.DaemonContext(pidfile=pid, umask=0):
+                #         self.__start_node(plugins, verbose)
+                # else:
+                #     print("Cannot daemonize on {} at the moment".format(os.name))
             else:
                 self.__start_node(plugins, verbose)
         else:
