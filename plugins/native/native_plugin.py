@@ -378,7 +378,8 @@ class Native(RuntimePlugin):
                     f_name = '{}_{}.pid'.format(entity_uuid, instance_uuid)
                     f_path = self.BASE_DIR
 
-                    pid_file = os.path.join(f_path,f_name)
+                    pid_file = os.path.join(f_path, f_name)
+                    self.agent.logger.info('stopEntity()', 'Check if PID file exists {}'.format(pid_file))
                     if self.agent.get_os_plugin().file_exists(pid_file):
                         pid = int(self.agent.get_os_plugin().read_file(pid_file))
                         self.agent.logger.info('stopEntity()', 'Native Plugin - PID {}'.format(pid))
@@ -391,6 +392,7 @@ class Native(RuntimePlugin):
                             self.agent.get_os_plugin().send_sig_kill(pid)
 
                     pid_file = os.path.join(self.BASE_DIR, self.STORE_DIR, entity_uuid, instance.name, instance_uuid)
+                    self.agent.logger.info('stopEntity()', 'Check if PID file exists {}'.format(pid_file))
                     if self.agent.get_os_plugin().file_exists(pid_file):
                         pid = int(self.agent.get_os_plugin().read_file(pid_file))
                         self.agent.logger.info('stopEntity()', 'Native Plugin - PID {}'.format(pid))
