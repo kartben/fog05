@@ -611,10 +611,11 @@ class API(object):
             uri = '{}/{}/runtime/{}/entity/{}'.format(self.store.droot, node_uuid, handler, entity_uuid)
 
             res = self.store.desired.remove(uri)
-            if res >= 0:
-                return True
-            else:
-                return False
+            return True
+            # if res >= 0:
+            #     return True
+            # else:
+            #     return False
 
         def configure(self, entity_uuid, node_uuid, instance_uuid=None, wait=False):
             '''
@@ -654,10 +655,11 @@ class API(object):
             handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
             uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.aroot, node_uuid, handler, entity_uuid, instance_uuid)
             res = self.store.desired.remove(uri)
-            if res >= 0:
-                return True
-            else:
-                return False
+            # if res >= 0:
+            #     return True
+            # else:
+            #     return False
+            return True
 
         def run(self, entity_uuid, node_uuid, instance_uuid, wait=False):
             '''
