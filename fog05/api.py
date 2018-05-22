@@ -581,8 +581,6 @@ class API(object):
             except ValidationError as ve:
                 return False
 
-            print(handler)
-            print(handler.get('uuid'))
             if handler.get('uuid') is None:
                 return False
 
@@ -592,7 +590,7 @@ class API(object):
             uri = '{}/{}/runtime/{}/entity/{}'.format(self.store.droot, node_uuid, handler.get('uuid'), entity_uuid)
 
             res = self.store.desired.put(uri, json_data)
-            if res:
+            if res >= 0:
                 if wait:
                     self.__wait_atomic_entity_state_change(node_uuid,handler.get('uuid'), entity_uuid, 'defined')
                 return True
@@ -613,7 +611,7 @@ class API(object):
             uri = '{}/{}/runtime/{}/entity/{}'.format(self.store.droot, node_uuid, handler, entity_uuid)
 
             res = self.store.desired.remove(uri)
-            if res:
+            if res >= 0:
                 return True
             else:
                 return False
@@ -635,7 +633,7 @@ class API(object):
 
             uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=configure'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
             res = self.store.desired.dput(uri)
-            if res:
+            if res >= 0:
                 if wait:
                     self.__wait_atomic_entity_instance_state_change(node_uuid, handler, entity_uuid, instance_uuid, 'configured')
                 return instance_uuid
@@ -656,7 +654,7 @@ class API(object):
             handler = yield from self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
             uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.aroot, node_uuid, handler, entity_uuid, instance_uuid)
             res = self.store.desired.remove(uri)
-            if res:
+            if res >= 0:
                 return True
             else:
                 return False
@@ -675,7 +673,7 @@ class API(object):
             handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
             uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=run'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
             res = self.store.desired.dput(uri)
-            if res:
+            if res >= 0:
                 if wait:
                     self.__wait_atomic_entity_instance_state_change(node_uuid, handler, entity_uuid, instance_uuid, 'run')
                 return True
@@ -697,7 +695,7 @@ class API(object):
             handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
             uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=stop'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
             res = self.store.desired.dput(uri)
-            if res:
+            if res >= 0:
                 if wait:
                     self.__wait_atomic_entity_instance_state_change(node_uuid, handler, entity_uuid, instance_uuid, 'stop')
                 return True
@@ -718,7 +716,7 @@ class API(object):
             handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
             uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=pause'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
             res = self.store.desired.dput(uri)
-            if res:
+            if res >= 0:
                 if wait:
                     self.__wait_atomic_entity_instance_state_change(node_uuid, handler, entity_uuid, instance_uuid, 'pause')
                 return True
@@ -741,7 +739,7 @@ class API(object):
             handler = self.__get_entity_handler_by_uuid(node_uuid, entity_uuid)
             uri = '{}/{}/runtime/{}/entity/{}/instance/{}#status=resume'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
             res = self.store.desired.dput(uri)
-            if res:
+            if res >= 0:
                 if wait:
                     self.__wait_atomic_entity_instance_state_change(node_uuid, handler, entity_uuid, instance_uuid, 'run')
                 return True
@@ -790,7 +788,7 @@ class API(object):
             uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.droot, destination_node_uuid, destination_handler.get('uuid'), entity_uuid, instance_uuid)
 
             res = self.store.desired.put(uri, json.dumps(entity_info_dst))
-            if res:
+            if res >= 0:
                 uri = '{}/{}/runtime/{}/entity/{}/instance/{}'.format(self.store.droot, node_uuid, handler, entity_uuid, instance_uuid)
                 res_dest = yield from self.store.desired.dput(uri, json.dumps(entity_info_src))
                 if res_dest:
