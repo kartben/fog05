@@ -91,10 +91,13 @@ class API(object):
             if len(search) > 0:
                 component = search[0]
                 mf = component.get('manifest')
-                self.entity.define(manifest=mf, node_uuid=component.get('node'), wait=True)
+                if not self.entity.define(manifest=mf, node_uuid=component.get('node'), wait=True):
+                    raise Exception('Error on define entity {} -> {} on {}'.format(manifest.get('uuid'),mf.get('uuid'),component.get('node')))
                 c_i_uuid = '{}'.format(uuid.uuid4())
-                self.entity.configure(mf.get('uuid'), component.get('node'), instance_uuid=c_i_uuid, wait=True)
-                self.entity.run(mf.get('uuid'), component.get('node'), instance_uuid=c_i_uuid, wait=True)
+                if not self.entity.configure(mf.get('uuid'), component.get('node'), instance_uuid=c_i_uuid, wait=True):
+                    raise Exception('Error on define entity {} -> {} on {}'.format(manifest.get('uuid'), mf.get('uuid'), component.get('node')))
+                if not self.entity.run(mf.get('uuid'), component.get('node'), instance_uuid=c_i_uuid, wait=True):
+                    raise Exception('Error on define entity {} -> {} on {}'.format(manifest.get('uuid'), mf.get('uuid'), component.get('node')))
                 instances_uuids.update({mf.get('uuid'): c_i_uuid})
 
         return {manifest.get('uuid'): instances_uuids}
@@ -541,49 +544,6 @@ class API(object):
                     if entity_info is not None and entity_info.get('status') == state:
                         return
 
-        # def add(self, manifest, node_uuid=None, wait=False):
-        #     # manifest.update({'status': 'define'})
-        #     # try:
-        #     #     nodes = self
-        #     #     validate(manifest, Schemas.entity_schema)
-        #     #     nws = manifest.get('networks')
-        #     #     for n in nws:
-        #     #         for node in nodes:
-        #     #             yield from self.__send_add_network(node, n)
-        #     #
-        #     #
-        #     #
-        #     #
-        #     #
-        #     #
-        #     #
-        #     #
-        #     # except ValidationError as ve:
-        #     #     print(ve.message)
-        #
-        #     '''
-        #     define, configure and run an entity all in one shot
-        #     :param manifest: manifest rapresenting the entity
-        #     :param node_uuid: optional uuid of the node in which the entity will be added
-        #     :param wait: flag for wait that everything is started before returing
-        #     :return: the instance uuid
-        #     '''
-        #     pass
-        #
-        #
-        #
-        # def remove(self, entity_uuid, node_uuid=None, wait=False):
-        #     '''
-        #
-        #     stop, clean and undefine entity all in one shot
-        #
-        #     :param entity_uuid:
-        #     :param node_uuid:
-        #     :param wait:
-        #     :return: the instance uuid
-        #     '''
-        #     pass
-
         def define(self, manifest, node_uuid, wait=False):
             '''
 
@@ -619,6 +579,11 @@ class API(object):
                 if handler is None:
                     return False
             except ValidationError as ve:
+                return False
+
+            print(handler)
+            print(handler.get('uuid'))
+            if handler.get('uuid') is None:
                 return False
 
             entity_uuid = manifest.get('uuid')
