@@ -49,7 +49,7 @@ install_requirements_cyclone() {
 install_cyclone () {
 
     git clone https://github.com/eclipse/cyclonedds
-    cd cdds/src
+    cd cyclonedds/src
     mkdir build
     cd build
     cmake ..
